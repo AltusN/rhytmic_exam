@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <h2>Test Exam</h2>
+    {% for error in form.errors %}
+        <span style="color:red;">[{{ error }}]</span>
+    {% endfor %}
+    <form action="" method="POST">
+        {{ form.hidden_tag() }}
+        {% for q in form.choices %}
+        <p>
+            {{ q.label }}
+        </p>
+        {% endfor %}
+    </form>
+{% endblock %}

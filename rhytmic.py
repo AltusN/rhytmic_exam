@@ -1,0 +1,1 @@
+from rhytmic_exam_app import app

@@ -1,0 +1,5 @@
+question types
+
+type 1: text question and text answer
+type 2: table with images as questions and images as answers
+type 3: text question with image and image answers with text
