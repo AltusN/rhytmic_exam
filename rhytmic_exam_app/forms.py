@@ -65,10 +65,10 @@ class AddExamQuestionsForm(FlaskForm):
         ("3", "Type 3"),
         ])
     question_images = StringField("Question Images")
-    option_1 = StringField("Option A", validators=[DataRequired()])
-    option_2 = StringField("Option B", validators=[DataRequired()])
-    option_3 = StringField("Option C", validators=[DataRequired()])
-    option_4 = StringField("Option D", validators=[DataRequired()])
+    option_a = StringField("Option A", validators=[DataRequired()])
+    option_b = StringField("Option B", validators=[DataRequired()])
+    option_c = StringField("Option C", validators=[DataRequired()])
+    option_d = StringField("Option D", validators=[DataRequired()])
     answer = SelectField("Answer", choices=[
         ("A", "A"),
         ("B", "B"),

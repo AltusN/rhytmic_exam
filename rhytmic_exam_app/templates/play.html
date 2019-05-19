@@ -2,9 +2,19 @@
 
 {% block app_content %}
 
-<video width="320" height="240" controls>
-    <source src="static/Megamind.mp4" type="video/mp4">
+<video id="video" width="320" height="240" autoplay>
+    <source src={{ video }} type="video/mp4">
     Your browser does not support the video tag.
 </video>
 
+{% endblock %}
+
+{% block app_scripts %}
+    <script>
+        document.getElementById('video').addEventListener('ended',myHandler,false);
+    function myHandler(e) {
+        // What you want to do after the event
+        $(this).parent().fadeOut();
+    }
+    </script>
 {% endblock %}

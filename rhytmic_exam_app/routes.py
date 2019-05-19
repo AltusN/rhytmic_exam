@@ -1,4 +1,6 @@
-from flask import render_template, redirect, url_for, flash, redirect, request
+import json
+
+from flask import render_template, redirect, url_for, flash, redirect, request, make_response
 from flask_login import login_user, current_user, logout_user, login_required
 from werkzeug.urls import url_parse
 
@@ -147,10 +149,10 @@ def add_question():
             question=form.question.data,
             question_type=form.question_type.data,
             question_images=form.question_images.data,
-            option_a=form.option_1.data,
-            option_b=form.option_2.data,
-            option_c=form.option_3.data,
-            option_d=form.option_4.data,
+            option_a=form.option_a.data,
+            option_b=form.option_b.data,
+            option_c=form.option_c.data,
+            option_d=form.option_d.data,
             answer=form.answer.data
         )
         db.session.add(q)
@@ -164,4 +166,57 @@ def add_question():
 
 @app.route("/play", methods=("GET",))
 def play():
-    return render_template("play.html")
+    #Get a cookie if the video was laoded
+    #figure out how cookies work
+    if "video_loaded" in request.cookies:
+        pass
+        #return "Video already loaded"
+
+    video = "static/Megamind.mp4"
+    resp = make_response(render_template("play.html", video=video))
+    resp.set_cookie("video_loaded", "1")
+    return resp
+
+@app.route("/table_radio", methods=("GET", "POST"))
+def table_radio():
+    q_list = []
+    questions = {
+        "q":"q17",
+        "q_string":"What are the correct symbols for the following difficulties?",
+        "type":"2",
+        "attributes":{
+            "header":[
+                "static/q17/q17_q_1.jpg",
+                "static/q17/q17_q_2.jpg",
+                "static/q17/q17_q_3.jpg",
+                "static/q17/q17_q_4.jpg"
+            ],
+            "radio1":[
+                "static/q17/q17_a_1.jpg",
+                "static/q17/q17_a_2.jpg",
+                "static/q17/q17_a_3.jpg",
+                "static/q17/q17_a_4.jpg"
+            ],
+            "radio2":[
+                "static/q17/q17_b_1.jpg",
+                "static/q17/q17_b_2.jpg",
+                "static/q17/q17_b_3.jpg",
+                "static/q17/q17_b_4.jpg"
+            ],
+            "radio3":[
+                "static/q17/q17_c_1.jpg",
+                "static/q17/q17_c_2.jpg",
+                "static/q17/q17_c_3.jpg",
+                "static/q17/q17_c_4.jpg"
+            ],
+            "radio4":[
+                "static/q17/q17_d_1.jpg",
+                "static/q17/q17_d_2.jpg",
+                "static/q17/q17_d_3.jpg",
+                "static/q17/q17_d_4.jpg"
+            ],
+        }
+    }
+    q_list.append(questions)
+
+    return render_template("table_radio.html", questions=q_list)
