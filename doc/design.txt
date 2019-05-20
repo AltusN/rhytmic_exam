@@ -2,4 +2,21 @@ question types
 
 type 1: text question and text answer
 type 2: table with images as questions and images as answers
-type 3: text question with image and image answers with text
+	format for option_a should look like:
+	'{"type":"image", "table_columns":"4", "path" :  {"location":"static/q17","filename":["q17_a_1.jpg","q17_a_2.jpg","q17_a_3.jpg","q17_a_4.jpg"]}}'
+	where
+		type = image
+		table_columns = <number of images which translates to table columns
+		path = json object including:
+		location = where the images are located
+		filename = should be array (json) which contains [<question_id>_<radio option value i.e. "a">_<index>]
+	
+type 3 table with images and questions in text
+
+type 4: text question with image and image answers with text
+
+type 5: image question rowspanned with text answers	
+
+{"type":"image", "table_columns":"4", "path" :  {"location":"static/q17","filename":["q17_a_1.jpg","q17_a_2.jpg","q17_a_3.jpg","q17_a_4.jpg"]}}
+
+{"type":"image", "table_columns":"4", "path" :  {"location":"static/q17","filename":["q17_q_1.jpg","q17_q_2.jpg","q17_q_3.jpg","q17_q_4.jpg"]}}

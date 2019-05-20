@@ -4,13 +4,28 @@
     <h2>
         Test Exam
     </h2>
-    {% for q in questions %}
-    {% set question_id = q["q"] %}
+
+
+    <form action="" method="POST">
+        {% for q in questions %}
         <div>
-            {{ q["q_string"] }}
-        </div>
-        {% if q["type"] == "2" %}
+            <strong>Question {{ q["q"] }}</strong><br>
             <p>
+                {{ q["q_string"]|safe }}
+            </p>
+        </div>
+        {% if q["type"] == "1" %}
+            <div>
+                <p>
+                A <input type="radio" name="{{ q['q'] }}" value="A"> &nbsp;&nbsp;{{ q['option_a'] }}<br>
+                B <input type="radio" name="{{ q['q'] }}" value="B"> &nbsp;&nbsp;{{ q['option_b'] }}<br>
+                C <input type="radio" name="{{ q['q'] }}" value="C"> &nbsp;&nbsp;{{ q['option_c'] }}<br>
+                D <input type="radio" name="{{ q['q'] }}" value="D"> &nbsp;&nbsp;{{ q['option_d'] }}<br>
+                </p>
+            </div>
+            <br>
+        {% elif q["type"] == "2" %}
+            <div>
                 <table class="table table-bordered">
                     <tr>
                         <th></th>
@@ -22,7 +37,7 @@
                     </tr>
                     <tr>
                         <td>
-                            A <input type="radio" name="{{ question_id }}" value="A">
+                            A <input type="radio" name="{{ q['q'] }}" value="A">
                         </td>
                         {% for i in q["attributes"]["radio1"] %}
                             <td>
@@ -32,7 +47,7 @@
                     </tr>
                     <tr>
                         <td>
-                            B <input type="radio" name="{{ question_id }}" value="B">
+                            B <input type="radio" name="{{ q['q'] }}" value="B">
                         </td>
                         {% for i in q["attributes"]["radio2"] %}
                             <td>
@@ -42,7 +57,7 @@
                     </tr>
                     <tr>
                         <td>
-                            C <input type="radio" name="{{ question_id }}" value="C">
+                            C <input type="radio" name="{{ q['q'] }}" value="C">
                         </td>
                         {% for i in q["attributes"]["radio3"] %}
                             <td>
@@ -52,7 +67,7 @@
                     </tr>
                     <tr>
                         <td>
-                            D <input type="radio" name="{{ question_id }}" value="D">
+                            D <input type="radio" name="{{ q['q'] }}" value="D">
                         </td>
                         {% for i in q["attributes"]["radio4"] %}
                             <td>
@@ -61,7 +76,98 @@
                         {% endfor %}
                     </tr>
                 </table>
-            </p>
+            {% elif q["type"] == "3" %}
+            <div>
+                <table class="table table-bordered">
+                    <tr>
+                        <th></th>
+                        {% for i in q["images"] %}
+                            <th>
+                                <img src="{{ i }}">
+                            </th>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>
+                            A <input type="radio" name="{{ q['q'] }}" value="A">
+                        </td>
+                        {% for i in q["option_a"] %}
+                            <td>{{ i }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>
+                            B <input type="radio" name="{{ q['q'] }}" value="B">
+                        </td>
+                        {% for i in q["option_b"] %}
+                            <td>{{ i }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>
+                            C <input type="radio" name="{{ q['q'] }}" value="C">
+                        </td>
+                        {% for i in q["option_c"] %}
+                            <td>{{ i }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>
+                            D <input type="radio" name="{{ q['q'] }}" value="D">
+                        </td>
+                        {% for i in q["option_d"] %}
+                            <td>{{ i }}</td>
+                        {% endfor %}
+                    </tr>
+                </table>
+        {% elif q["type"] == "4" %}
+            <div>
+                <table class="table table-bordered">
+                    <tr>
+                        <td style="text-align:center; width: 5%">
+                            A <input type="radio" name="{{ q['q'] }}" value="A">
+                        </td>
+                        <td>
+                            <img src="{{ q['attributes']['radio1_image'] }}">&nbsp;{{ q["attributes"]["radio1_text"]}}
+                        </td>
+                        <td rowspan="4" style="vertical-align:middle"><img src="{{ q['attributes']['question_image'] }}""></td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center; width: 5%">
+                            B <input type="radio" name="{{ q['q'] }}" value="B">
+                        </td>
+                        <td>
+                            <img src="{{ q['attributes']['radio2_image'] }}">&nbsp;{{ q["attributes"]["radio2_text"]}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center; width: 5%">
+                            C <input type="radio" name="{{ q['q'] }}" value="C">
+                        </td>
+                        <td>
+                            <img src="{{ q['attributes']['radio3_image'] }}">&nbsp;{{ q["attributes"]["radio3_text"]}}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center; width: 5%">
+                            D <input type="radio" name="{{ q['q'] }}" value="D">
+                        </td>
+                        <td>
+                            <img src="{{ q['attributes']['radio4_image'] }}">&nbsp;{{ q["attributes"]["radio4_text"]}}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        {% elif q["type"] == "5" %}
+            <div>
+                    A <input type="radio" name="{{ q['q'] }}" value="A"> <img src="{{ q['attributes']['radio1_image'] }}">&nbsp;{{ q["attributes"]["radio1_text"]}}<br>
+                    B <input type="radio" name="{{ q['q'] }}" value="B"> <img src="{{ q['attributes']['radio2_image'] }}">&nbsp;{{ q["attributes"]["radio2_text"]}}<br>
+                    C <input type="radio" name="{{ q['q'] }}" value="C"> <img src="{{ q['attributes']['radio3_image'] }}">&nbsp;{{ q["attributes"]["radio3_text"]}}<br>
+                    D <input type="radio" name="{{ q['q'] }}" value="D"> <img src="{{ q['attributes']['radio4_image'] }}">&nbsp;{{ q["attributes"]["radio4_text"]}}
+            </div>
         {% endif %}
-    {% endfor %}
-{% endblock %}
+        {% endfor %}
+        
+        <input type="submit" name="submit" value="submit">
+    </form>
+{% endblock %} 

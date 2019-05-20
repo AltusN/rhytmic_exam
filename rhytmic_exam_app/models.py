@@ -10,9 +10,9 @@ from rhytmic_exam_app import db, login, app
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
-    sagf_id = db.Column(db.Integer, index=True, unique=True)
-    name = db.Column(db.String(64))
-    surname = db.Column(db.String(64))
+    sagf_id = db.Column(db.String(64), index=True, unique=True)
+    name = db.Column(db.String(128))
+    surname = db.Column(db.String(128))
     email = db.Column(db.String(128), index=True, unique=True)
     password_hash = db.Column(db.String(128))
     enabled = db.Column(db.Boolean(), default=False)
@@ -62,12 +62,12 @@ class ExamResult(db.Model):
 class ExamQuestions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     question = db.Column(db.String(200), index=True)
-    question_type = db.Column(db.String(64))
+    question_type = db.Column(db.String(256))
     question_images = db.Column(db.Text) # store as json the images
-    option_a = db.Column(db.String(64))
-    option_b = db.Column(db.String(64))
-    option_c = db.Column(db.String(64))
-    option_d = db.Column(db.String(64))
+    option_a = db.Column(db.String(256))
+    option_b = db.Column(db.String(256))
+    option_c = db.Column(db.String(256))
+    option_d = db.Column(db.String(256))
     answer = db.Column(db.String(1))
 
     def __repr__(self):

@@ -15,6 +15,7 @@ from rhytmic_exam_app.forms import (
 )
 from rhytmic_exam_app.models import User, ExamQuestions
 from rhytmic_exam_app.email import send_password_reset_email, send_email
+from rhytmic_exam_app.exam_utils import make_question_for_exam
 
 @app.route("/")
 @app.route("/index")
@@ -179,44 +180,18 @@ def play():
 
 @app.route("/table_radio", methods=("GET", "POST"))
 def table_radio():
-    q_list = []
-    questions = {
-        "q":"q17",
-        "q_string":"What are the correct symbols for the following difficulties?",
-        "type":"2",
-        "attributes":{
-            "header":[
-                "static/q17/q17_q_1.jpg",
-                "static/q17/q17_q_2.jpg",
-                "static/q17/q17_q_3.jpg",
-                "static/q17/q17_q_4.jpg"
-            ],
-            "radio1":[
-                "static/q17/q17_a_1.jpg",
-                "static/q17/q17_a_2.jpg",
-                "static/q17/q17_a_3.jpg",
-                "static/q17/q17_a_4.jpg"
-            ],
-            "radio2":[
-                "static/q17/q17_b_1.jpg",
-                "static/q17/q17_b_2.jpg",
-                "static/q17/q17_b_3.jpg",
-                "static/q17/q17_b_4.jpg"
-            ],
-            "radio3":[
-                "static/q17/q17_c_1.jpg",
-                "static/q17/q17_c_2.jpg",
-                "static/q17/q17_c_3.jpg",
-                "static/q17/q17_c_4.jpg"
-            ],
-            "radio4":[
-                "static/q17/q17_d_1.jpg",
-                "static/q17/q17_d_2.jpg",
-                "static/q17/q17_d_3.jpg",
-                "static/q17/q17_d_4.jpg"
-            ],
-        }
-    }
-    q_list.append(questions)
 
+    if request.method == "POST":
+        result = request.form
+        flash(result)
+        return(redirect(url_for("index")))
+
+    q_list = []
+
+    exam_questions = ExamQuestions.query.all()
+
+    for exam_question in exam_questions:
+        q_list.append(make_question_for_exam(exam_question,exam_question.question_type))
+        
     return render_template("table_radio.html", questions=q_list)
+

@@ -63,6 +63,8 @@ class AddExamQuestionsForm(FlaskForm):
         ("1", "Type 1"),
         ("2", "Type 2"),
         ("3", "Type 3"),
+        ("4", "Type 4"),
+        ("5", "Type 5")
         ])
     question_images = StringField("Question Images")
     option_a = StringField("Option A", validators=[DataRequired()])
