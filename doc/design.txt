@@ -1,6 +1,8 @@
 question types
 
 type 1: text question and text answer
+format:
+	plain text
 type 2: table with images as questions and images as answers
 	format for option_a should look like:
 	'{"type":"image", "table_columns":"4", "path" :  {"location":"static/q17","filename":["q17_a_1.jpg","q17_a_2.jpg","q17_a_3.jpg","q17_a_4.jpg"]}}'
@@ -10,13 +12,70 @@ type 2: table with images as questions and images as answers
 		path = json object including:
 		location = where the images are located
 		filename = should be array (json) which contains [<question_id>_<radio option value i.e. "a">_<index>]
+		
+		typically
+		questions = {
+        "q":"q17",
+        "q_string":"What are the correct symbols for the following difficulties?",
+        "type":"2",
+        "attributes":{
+            "header":[
+                "static/q17/q17_q_1.jpg",
+                "static/q17/q17_q_2.jpg",
+                "static/q17/q17_q_3.jpg",
+                "static/q17/q17_q_4.jpg"
+            ],
+            "radio1":[
+                "static/q17/q17_a_1.jpg",
+                "static/q17/q17_a_2.jpg",
+                "static/q17/q17_a_3.jpg",
+                "static/q17/q17_a_4.jpg"
+            ],
+            "radio2":[
+                "static/q17/q17_b_1.jpg",
+                "static/q17/q17_b_2.jpg",
+                "static/q17/q17_b_3.jpg",
+                "static/q17/q17_b_4.jpg"
+            ],
+            "radio3":[
+                "static/q17/q17_c_1.jpg",
+                "static/q17/q17_c_2.jpg",
+                "static/q17/q17_c_3.jpg",
+                "static/q17/q17_c_4.jpg"
+            ],
+            "radio4":[
+                "static/q17/q17_d_1.jpg",
+                "static/q17/q17_d_2.jpg",
+                "static/q17/q17_d_3.jpg",
+                "static/q17/q17_d_4.jpg"
+            ],
+        }
+    }
 	
 type 3 table with images and questions in text
+format:
+	for question image:
+	{"type":"image", "table_columns":"4", "path" :  {"location":"static/q19","filename":["q19_q_1.jpg","q19_q_2.jpg","q19_q_3.jpg","q19_q_4.jpg"]}}
+	
+	for question options:
+	{"q_a":[1,2,3,4]}
 
-type 4: text question with image and image answers with text
+type 4: table with image and options with image answers with text
+format:
+	for question image:
+	{"type":"image", "table_columns":"4", "location":"static/q18/q18_q_1.jpg"}
+	for question options
+	{"type":"image", "image_location":"static/q18/q18_a_1.jpg", "text":"0.4"}
 
-type 5: image question rowspanned with text answers	
-
-{"type":"image", "table_columns":"4", "path" :  {"location":"static/q17","filename":["q17_a_1.jpg","q17_a_2.jpg","q17_a_3.jpg","q17_a_4.jpg"]}}
-
-{"type":"image", "table_columns":"4", "path" :  {"location":"static/q17","filename":["q17_q_1.jpg","q17_q_2.jpg","q17_q_3.jpg","q17_q_4.jpg"]}}
+type 5: text question with potential image as part of text and images and text as options
+format:
+	for theq question, we need some key so that we can replace it in the html. we'll use <q_x> where x is the index in the json
+	
+	for question (at most 2 images are there)
+	{question:"what is this <q_1> and this <q_2>, "images":["/static/q17/q17/q17_a_1.jpg",image_2]}
+	for options, use same as for type 4
+	{"type":"image", "image_location":"static/q18/q18_a_1.jpg", "text":"0.4"}
+	
+	
+	
+	In a routine, a gymnast intends to perform    but the free leg only reaches 100 degrees.  What is the symbol and value that the judge should record?

@@ -39,6 +39,11 @@ class User(UserMixin, db.Model):
         """
         return self.enabled
 
+    def is_admin(self):
+        """ admin can do other stuff users can't. like edit the exam
+        """
+        return self.admin
+
     @staticmethod
     def verify_reset_password_token(token):
         try:

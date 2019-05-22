@@ -128,7 +128,7 @@
                             A <input type="radio" name="{{ q['q'] }}" value="A">
                         </td>
                         <td>
-                            <img src="{{ q['attributes']['radio1_image'] }}">&nbsp;{{ q["attributes"]["radio1_text"]}}
+                            <img src="{{ q['attributes']['radio1_image'] }}">&nbsp;{{ q["attributes"]["radio1_text"] }}
                         </td>
                         <td rowspan="4" style="vertical-align:middle"><img src="{{ q['attributes']['question_image'] }}""></td>
                     </tr>
@@ -160,10 +160,10 @@
             </div>
         {% elif q["type"] == "5" %}
             <div>
-                    A <input type="radio" name="{{ q['q'] }}" value="A"> <img src="{{ q['attributes']['radio1_image'] }}">&nbsp;{{ q["attributes"]["radio1_text"]}}<br>
-                    B <input type="radio" name="{{ q['q'] }}" value="B"> <img src="{{ q['attributes']['radio2_image'] }}">&nbsp;{{ q["attributes"]["radio2_text"]}}<br>
-                    C <input type="radio" name="{{ q['q'] }}" value="C"> <img src="{{ q['attributes']['radio3_image'] }}">&nbsp;{{ q["attributes"]["radio3_text"]}}<br>
-                    D <input type="radio" name="{{ q['q'] }}" value="D"> <img src="{{ q['attributes']['radio4_image'] }}">&nbsp;{{ q["attributes"]["radio4_text"]}}
+                    A <input type="radio" name="{{ q['q'] }}" value="A"> <img src="{{ q['attributes']['radio1_image'] }}">&nbsp;{{ q["attributes"]["radio1_text"] | safe}}<br>
+                    B <input type="radio" name="{{ q['q'] }}" value="B"> <img src="{{ q['attributes']['radio2_image'] }}">&nbsp;{{ q["attributes"]["radio2_text"] | safe}}<br>
+                    C <input type="radio" name="{{ q['q'] }}" value="C"> <img src="{{ q['attributes']['radio3_image'] }}">&nbsp;{{ q["attributes"]["radio3_text"] | safe}}<br>
+                    D <input type="radio" name="{{ q['q'] }}" value="D"> <img src="{{ q['attributes']['radio4_image'] }}">&nbsp;{{ q["attributes"]["radio4_text"] | safe}}<br><br>
             </div>
         {% endif %}
         {% endfor %}

@@ -141,6 +141,7 @@ def test_temp():
     
     return render_template("temp.html", form=form)
 
+@login_required
 @app.route("/add_question", methods=("GET", "POST"))
 def add_question():
     form = AddExamQuestionsForm()
@@ -173,7 +174,7 @@ def play():
         pass
         #return "Video already loaded"
 
-    video = "static/Megamind.mp4"
+    video = "static/video/Megamind.mp4"
     resp = make_response(render_template("play.html", video=video))
     resp.set_cookie("video_loaded", "1")
     return resp

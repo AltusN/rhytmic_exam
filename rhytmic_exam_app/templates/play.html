@@ -2,7 +2,9 @@
 
 {% block app_content %}
 
-<video id="video" width="320" height="240" autoplay>
+<button onclick="playVid()" type="button">Play Video</button>
+
+<video id="video" width="320" height="240">
     <source src={{ video }} type="video/mp4">
     Your browser does not support the video tag.
 </video>
@@ -12,9 +14,13 @@
 {% block app_scripts %}
     <script>
         document.getElementById('video').addEventListener('ended',myHandler,false);
-    function myHandler(e) {
+        function myHandler(e) {
         // What you want to do after the event
-        $(this).parent().fadeOut();
-    }
+            $(this).parent().fadeOut();
+        }
+        var vid = document.getElementById("video");
+        function playVid(){
+            vid.play();
+        }
     </script>
 {% endblock %}

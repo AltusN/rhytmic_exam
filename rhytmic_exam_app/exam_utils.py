@@ -1,6 +1,8 @@
 import json
 import os
 
+
+
 def make_question_for_exam(question, type):
     make_question = {
         "1":make_type_one_question,
@@ -9,7 +11,6 @@ def make_question_for_exam(question, type):
         "4":make_type_four_question,
         "5":make_type_five_question
     }
-
     return make_question[type](question)
 
 def make_type_one_question(question):
@@ -25,13 +26,6 @@ def make_type_one_question(question):
 
     return q
 def make_type_two_question(question):
-
-    '''
-    #TODO
-        This needs to be updated so that the actual tags are looked at to
-        determine whether its text or images
-    '''
-
     header = json.loads(question.question_images)
     path = header["path"]["location"]
 
@@ -103,9 +97,13 @@ def make_type_five_question(question):
     
     replace_with_image = json.loads(question.question)["images"]
 
-    replacement_string = question_string.replace("<q_1>","<img src='{}'>".format(replace_with_image[0]))
+    #if there is nothing to replace... then we'll just return the string later
+    if "<q_1>" in question_string:
+        question_string = question_string.replace("<q_1>","<img src='{}'>".format(replace_with_image[0]))
+    if "<q_2>" in question_string:
+        question_string = question_string.replace("<q_2>","<img src='{}'>".format(replace_with_image[1]))
 
-    q["q_string"] = replacement_string
+    q["q_string"] = question_string
     q["type"] = "5"
     q["attributes"] = {}
     q["attributes"]["radio1_image"] = json.loads(question.option_a)["image_location"]
