@@ -128,19 +128,6 @@ def reset_password(token):
 
     return render_template("reset_password.html", form=form)
 
-@app.route("/temp", methods=("GET", "POST"))
-@login_required
-def test_temp():
-    form = Questionare()
-
-    form.q3.choices=[("A","<img src={}> Value=0.30".format(url_for('static', filename='q17/A-1.png'))),
-                        ("B","<img src={}>".format(url_for('static', filename='q17/A-2.png')))]
-
-    if form.validate_on_submit():
-        pass
-    
-    return render_template("temp.html", form=form)
-
 @login_required
 @app.route("/add_question", methods=("GET", "POST"))
 def add_question():
@@ -179,8 +166,8 @@ def play():
     resp.set_cookie("video_loaded", "1")
     return resp
 
-@app.route("/table_radio", methods=("GET", "POST"))
-def table_radio():
+@app.route("/theory_exam", methods=("GET", "POST"))
+def theory_exam():
 
     if request.method == "POST":
         result = request.form
@@ -194,5 +181,5 @@ def table_radio():
     for exam_question in exam_questions:
         q_list.append(make_question_for_exam(exam_question,exam_question.question_type))
         
-    return render_template("table_radio.html", questions=q_list)
+    return render_template("theory_exam.html", questions=q_list)
 
