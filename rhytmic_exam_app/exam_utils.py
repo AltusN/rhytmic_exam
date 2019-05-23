@@ -26,6 +26,7 @@ def make_type_one_question(question):
 
     return q
 def make_type_two_question(question):
+    
     header = json.loads(question.question_images)
     path = header["path"]["location"]
 

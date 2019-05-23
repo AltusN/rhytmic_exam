@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import RadioField, SubmitField, StringField, PasswordField, BooleanField, SelectField
+from wtforms import RadioField, SubmitField, StringField, PasswordField, BooleanField, SelectField, TextAreaField
 from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length
 
 from rhytmic_exam_app.models import User
@@ -44,7 +44,7 @@ class ResetPasswordForm(FlaskForm):
     submit = SubmitField("Reset Password")
 
 class AddExamQuestionsForm(FlaskForm):
-    question = StringField("Question", validators=[DataRequired()])
+    question = TextAreaField("Question", validators=[DataRequired()])
     question_type = SelectField("Question Type", choices=[
         ("1", "Type 1"),
         ("2", "Type 2"),
@@ -53,10 +53,10 @@ class AddExamQuestionsForm(FlaskForm):
         ("5", "Type 5")
         ])
     question_images = StringField("Question Images")
-    option_a = StringField("Option A", validators=[DataRequired()])
-    option_b = StringField("Option B", validators=[DataRequired()])
-    option_c = StringField("Option C", validators=[DataRequired()])
-    option_d = StringField("Option D", validators=[DataRequired()])
+    option_a = TextAreaField("Option A", validators=[DataRequired()])
+    option_b = TextAreaField("Option B", validators=[DataRequired()])
+    option_c = TextAreaField("Option C", validators=[DataRequired()])
+    option_d = TextAreaField("Option D", validators=[DataRequired()])
     answer = SelectField("Answer", choices=[
         ("A", "A"),
         ("B", "B"),

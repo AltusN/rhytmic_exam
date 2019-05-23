@@ -4,7 +4,10 @@
     <h2>
         Test Exam
     </h2>
-    <p id="demo"></p>
+    <div id=the-sticky-div class="pull-right">
+        <p id="demo"></p>
+    </div>
+    
 
     <form id="exam" action="" method="POST">
         {% for q in questions %}
@@ -168,23 +171,28 @@
         {% endif %}
         {% endfor %}
         
-        <input type="submit" name="submit" value="submit">
+        <input type="submit" onClick="myClick()" name="btnsubmit" value="submit">
     </form>
 {% endblock %}
 {% block app_scripts %}
     <script>
         $('#exam').submit(function(){
        //result = "success";
-       var i = 0;
-        $(":radio:checked").each(function(){
-            i++;
+            var i = 0;
+            $(":radio:checked").each(function(){
+                i++;
+            });
+            if(i != 1){
+                alert(85 - i + " questions not answered");
+                return false;
+            }
+            return true;
         });
-        if(i != 84){
-            alert(85 - i + " questions not answered");
-            return false;
-        }
-    return true;
-    });
+
+    function submitOnExpire(){
+        var frm = document.getElementById("exam");
+        frm.submit();
+    }
 
     // Set the date we're counting down to	
     var stop_at = new Date();
@@ -210,9 +218,27 @@
         // If the count down is over, write some text 
         if (distance < 0) {
             clearInterval(x);
+            window.onbeforeunload = null;
             document.getElementById("demo").innerHTML = "EXPIRED";
-            document.getElementById("exam").submit();
+            submitOnExpire();
         }
         }, 1000);
+
+        window.onbeforeunload = function() {
+            return true;
+        };
+
+        function myClick(){
+            window.onbeforeunload = null;
+            document.getElementById("exam").subnit();
+        };
+        
+        var $window = $(window),
+            $stickyEl = $('#the-sticky-div'),
+            elTop = $stickyEl.offset().top;
+
+        $window.scroll(function() {
+                $stickyEl.toggleClass('sticky', $window.scrollTop() > elTop);
+            });
         </script>
 {% endblock %}

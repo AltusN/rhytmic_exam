@@ -29,3 +29,11 @@
         {% endif %}
     {% endfor %}
 {% endblock %}
+
+{% block app_scripts %}
+<script>
+    setTimeout(function() {
+        $("div[class='alert alert-success']").fadeOut("slow");
+    }, 3000);
+</script>
+{% endblock %}

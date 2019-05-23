@@ -123,7 +123,7 @@ def reset_password(token):
     if form.validate_on_submit():
         user.set_password(form.password.data)
         db.session.commit()
-        flash("Your password has been reset", "success")
+        flash("Your password has been reset. Please check your email.", "success")
         return redirect(url_for("login"))
 
     return render_template("reset_password.html", form=form)
@@ -137,19 +137,44 @@ def dashboard():
 def edit_questions():
     page = request.args.get("page", 1, type=int)
 
-    question_pages = ExamQuestions.query.paginate(page=page , per_page=10)
+    question_pages = ExamQuestions.query.paginate(page=page , per_page=8)
     
     return render_template(
         "edit_questions.html",
         title="Edit Questions",
         questions=question_pages)
 
-@app.route("/edit_exam_question/<int:question_id>")
+@app.route("/edit_exam_question/<int:question_id>", methods=("GET", "POST"))
 def edit_exam_question(question_id):
     exam_question = ExamQuestions.query.filter_by(id=question_id).first_or_404()
 
+    form = AddExamQuestionsForm()
+
+    if form.validate_on_submit():
+        exam_question.question = form.question.data
+        exam_question.question_images = form.question_images.data
+        exam_question.question_type = form.question_type.data
+        exam_question.option_a = form.option_a.data
+        exam_question.option_b = form.option_b.data
+        exam_question.option_c = form.option_c.data
+        exam_question.option_d = form.option_d.data
+        exam_question.answer = form.answer.data
+
+        db.session.add(exam_question)
+        db.session.commit()
+
+        flash(f"Question {question_id} updated successfully", "success")
+        return redirect(url_for("edit_questions"))
+
+    form.question.data = exam_question.question
+    form.question_type.data = exam_question.question_type
+    form.question_images.data = exam_question.question_images
+    form.option_a.data = exam_question.option_a
+    form.option_b.data = exam_question.option_b
+    form.option_c.data = exam_question.option_c
+    form.option_d.data = exam_question.option_d
     
-    return render_template("edit_exam_question.html", question=exam_question)
+    return render_template("edit_exam_question.html", question_id=exam_question.id, form=form)
 
 @app.route("/add_question", methods=("GET", "POST"))
 @login_required
@@ -195,8 +220,9 @@ def theory_exam():
 
     if request.method == "POST":
         result = request.form
-        flash(result)
-        return(redirect(url_for("index")))
+        flash(result, "info")
+        flash("Exam completed. Good luck!", "success")
+        return(redirect(url_for("dashboard")))
 
     q_list = []
 

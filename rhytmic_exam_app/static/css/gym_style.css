@@ -1,2 +1,7 @@
+#the-sticky-div.sticky {
+    position: fixed;
+    top: 0;
+ }
+
 .my_body { 
-    padding-top: 70px; }
+padding-top: 70px; }
