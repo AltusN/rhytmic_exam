@@ -1,22 +1,8 @@
 from flask_wtf import FlaskForm
 from wtforms import RadioField, SubmitField, StringField, PasswordField, BooleanField, SelectField
-from wtforms.validators import DataRequired, Email, EqualTo, ValidationError
+from wtforms.validators import DataRequired, Email, EqualTo, ValidationError, Length
 
 from rhytmic_exam_app.models import User
-
-class Questionare(FlaskForm):
-    
-    q1 = RadioField("1. Which statement is NOT correct regarding the Difficulty judges?", choices=[("A", "There are 4 D judges"),
-                                    ("B", "Each subgroup (2+2) gives a partial D score"),
-                                    ("C", "The D score is the average of the two middle scores"),
-                                    ("D", "The final D score is the sum of the two partial scores")], validators=[DataRequired()])
-
-    q2 = RadioField("2. Which statement eats pie?", choices=[("A", "Pie is great"),
-                                    ("B", "Peanuts are better"),
-                                    ("C", "Marmite is the best"),
-                                    ("D", "Milk and cookies")])
-    q3 = RadioField("3. What are the correct deductions for this bla bla", choices=[])
-    submit = SubmitField("Submit")
 
 class LoginForm(FlaskForm):
     username = StringField("Username", validators=[DataRequired()])
@@ -31,7 +17,7 @@ class RegistrationForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired()])
     surname = StringField("Surname", validators=[DataRequired()])
     email = StringField("Email", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired()])
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=5)])
     password2 = PasswordField("Repeat Password", validators=[DataRequired(), EqualTo("password")])
 
     submit = SubmitField("Request Login")

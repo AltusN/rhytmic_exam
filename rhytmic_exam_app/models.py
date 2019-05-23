@@ -76,7 +76,7 @@ class ExamQuestions(db.Model):
     answer = db.Column(db.String(1))
 
     def __repr__(self):
-        return f"Question <{self.question}>"
+        return f"Question <{self.id}>"
 
 @login.user_loader
 def load_user(id):

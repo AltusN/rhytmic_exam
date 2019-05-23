@@ -9,8 +9,7 @@ from rhytmic_exam_app.forms import (
     LoginForm, 
     RegistrationForm, 
     ResetPasswordRequestForm, 
-    ResetPasswordForm, 
-    Questionare,
+    ResetPasswordForm,
     AddExamQuestionsForm,
 )
 from rhytmic_exam_app.models import User, ExamQuestions
@@ -20,13 +19,13 @@ from rhytmic_exam_app.exam_utils import make_question_for_exam
 @app.route("/")
 @app.route("/index")
 def index():
-
     return render_template("index.html", title="Home")
 
 @app.route("/login", methods=("GET","POST"))
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for("index"))
+        flash("You are already logged in", "info")
+        return redirect(url_for("dashboard"))
 
     form = LoginForm()
 
@@ -45,7 +44,8 @@ def login():
         next_page = request.args.get("next")
 
         if not next_page or url_parse(next_page).netloc:
-            next_page = url_for("index")
+            flash("Logged in successfully", "success")
+            next_page = url_for("dashboard")
         
         return redirect(next_page)
     
@@ -85,7 +85,7 @@ def register():
             html_body=render_template("email/new_user.html")
         )
 
-        flash("Registration requested. You will receive an email once activated")
+        flash("Registration requested. You will receive an email once activated", "info")
         return redirect(url_for("index"))
     
     return render_template("register.html", title="Regisgter", form=form)
@@ -94,7 +94,7 @@ def register():
 def reset_password_request():
     if current_user.is_authenticated:
         flash("You're already logged in")
-        return redirect(url_for("index"))
+        return redirect(url_for("dashboard"))
 
     form = ResetPasswordRequestForm()
 
@@ -103,7 +103,7 @@ def reset_password_request():
         if user:
             send_password_reset_email(user)
         #flash even if there isn't a valid user
-        flash("Password request has been sent. Check your email for instructions")
+        flash("Password request has been sent. Check your email for instructions", "info")
         return redirect(url_for("login"))
 
     return render_template("reset_password_request.html", title="Reset Password", form=form)
@@ -123,13 +123,36 @@ def reset_password(token):
     if form.validate_on_submit():
         user.set_password(form.password.data)
         db.session.commit()
-        flash("Your password has been reset")
+        flash("Your password has been reset", "success")
         return redirect(url_for("login"))
 
     return render_template("reset_password.html", form=form)
 
+@app.route("/dashboard")
 @login_required
+def dashboard():
+    return render_template("dashboard.html", title="Dashboard")
+
+@app.route("/edit_questions")
+def edit_questions():
+    page = request.args.get("page", 1, type=int)
+
+    question_pages = ExamQuestions.query.paginate(page=page , per_page=10)
+    
+    return render_template(
+        "edit_questions.html",
+        title="Edit Questions",
+        questions=question_pages)
+
+@app.route("/edit_exam_question/<int:question_id>")
+def edit_exam_question(question_id):
+    exam_question = ExamQuestions.query.filter_by(id=question_id).first_or_404()
+
+    
+    return render_template("edit_exam_question.html", question=exam_question)
+
 @app.route("/add_question", methods=("GET", "POST"))
+@login_required
 def add_question():
     form = AddExamQuestionsForm()
 
@@ -147,7 +170,7 @@ def add_question():
         db.session.add(q)
         db.session.commit()
 
-        flash("Question successfully added")
+        flash("Question successfully added", "success")
         return redirect(url_for("add_question"))
     
     return render_template("add_question.html", title="Add Exam Question", form=form)
@@ -167,6 +190,7 @@ def play():
     return resp
 
 @app.route("/theory_exam", methods=("GET", "POST"))
+@login_required
 def theory_exam():
 
     if request.method == "POST":
@@ -181,5 +205,9 @@ def theory_exam():
     for exam_question in exam_questions:
         q_list.append(make_question_for_exam(exam_question,exam_question.question_type))
         
-    return render_template("theory_exam.html", questions=q_list)
+    return render_template("theory_exam.html", title="National Theory Exam 2019", questions=q_list)
 
+@app.route("/test")
+def test_html():
+    """ quickly check something out """
+    return render_template("test.html")

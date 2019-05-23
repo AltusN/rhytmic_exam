@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block app_content %}
+    <h1>Edit exam questions</h1>
+    <table class="table table-striped">
+        <tr>
+            <th>ID</th>
+            <th>Question</th>
+            <th></th>
+            <th></th>
+        </tr>
+        {% for question in questions.items %}
+            <tr>
+                <td>{{ question.id }}</td>
+                <td>{{ question.question }}</td>
+                <td><a href="{{ url_for('edit_exam_question',  question_id=question.id) }}" class="btn btn-default pull-right">Edit</a></td>
+                <td><a href="{{ url_for('edit_exam_question',  question_id=question.id) }}" class="btn btn-danger">Delete</a></td>
+            </tr>
+        {% endfor %}>
+    </table>
+    {% for page_num in questions.iter_pages(left_edge=1, right_edge=2, left_current=1, right_current=2) %}
+        {% if page_num %}
+            {% if questions.page == page_num %}
+                <a class="btn btn-info mb-4" href="{{ url_for('edit_questions', page=page_num) }}">{{ page_num }}</a>
+            {% else %}
+                <a class="btn btn-outline-info mb-4" href="{{ url_for('edit_questions', page=page_num) }}">{{ page_num }}</a>
+            {% endif %}
+        {% else %}
+            ...
+        {% endif %}
+    {% endfor %}
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block app_content %}
+    <h1>Dashboard <p><small> Welcome {{current_user.username}}</small></p></h1>
+    <a class="btn btn-success" href="{{ url_for('theory_exam') }}">Take Theory Exam</a>
+    <p>
+        {{ session }}
+        {{ current_user }}
+    </p>
+{% endblock %}
+
+{% block app_scripts %}
+<script>
+setTimeout(function() {
+    $("div[name='flash_message']").fadeOut("slow");
+}, 3000);
+</script></script>
+{% endblock %}

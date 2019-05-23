@@ -29,15 +29,15 @@
             </div>
             <div class="collapse navbar-collapse" id="main_nav">
                 <ul class="nav navbar-nav">
-                    <li><a href="{{ url_for('index') }}"><span class="glyphicon glyphicon-home"></span> Home</a></li>
+                    <li><a href="{{ url_for('dashboard') }}"><span class="glyphicon glyphicon-home"></span> Home</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
                     {% if current_user.is_anonymous %}
                         <li><a href="{{ url_for('register') }}"><span class="glyphicon glyphicon-user"></span> Register</a></li>
                         <li><a href="{{ url_for('login') }}"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
                     {% else %}
-                        <li><a href="{{ url_for('user', username=current_user.username) }}"><span class="glyphicon glyphicon-edit"></span> Profile</a></li>
-                        <li><a href="{{ url_for('logout') }}"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
+                        <li><a href="{{ url_for('user', username=current_user.username) }}"><span class="glyphicon glyphicon-edit"></span>Profile</a></li>
+                        <li><a href="{{ url_for('logout') }}"><span class="glyphicon glyphicon-log-out"></span>Logout</a></li>
                     {% endif %}
                 </ul>
             </div>
@@ -46,13 +46,7 @@
     {% endblock %}
     {% block content %}
         <div class="container">
-            {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                <div class="alert alert-info" role="alert">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-            {% endwith %}
+            {% include "includes/_messages.html" %}
         </div>
         {# application content needs to be provided in the app_content block #}
         <div class="container">
