@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 
 {% block app_content %}
+    <div id="timer" class="container">
+        <div class="row">
+          <div class="col-md-6"></div>
+          <div class="col-md-6"><span class="pull-right">Time left:  <span id="demo"></span></span></div>
+        </div>
+      </div>
     <h2>
-        Test Exam
+        Theory Exam
     </h2>
-    <div id=the-sticky-div class="pull-right">
-        <p id="demo"></p>
-    </div>
-    
-
     <form id="exam" action="" method="POST">
         {% for q in questions %}
         <div>
@@ -233,12 +234,21 @@
             document.getElementById("exam").subnit();
         };
         
-        var $window = $(window),
-            $stickyEl = $('#the-sticky-div'),
-            elTop = $stickyEl.offset().top;
+        window.onscroll = function() {myFunction()};
 
-        $window.scroll(function() {
-                $stickyEl.toggleClass('sticky', $window.scrollTop() > elTop);
-            });
+        // Get the navbar
+        var navbar = document.getElementById("timer");
+
+        // Get the offset position of the navbar
+        var sticky = navbar.offsetTop;
+
+        // Add the sticky class to the navbar when you reach its scroll position. Remove "sticky" when you leave the scroll position
+        function myFunction() {
+        if (window.pageYOffset >= sticky) {
+            navbar.classList.add("sticky")
+        } else {
+            navbar.classList.remove("sticky");
+        }
+        }
         </script>
 {% endblock %}
