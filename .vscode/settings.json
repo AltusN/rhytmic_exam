@@ -1,3 +1,10 @@
 {
     "python.pythonPath": "venv\\Scripts\\python.exe",
+    "python.testing.pyTestArgs": [
+        "test",
+        "--setup-show",
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pyTestEnabled": true,
 }
