@@ -2,12 +2,19 @@
 
 {% block app_content %}
 
-<button onclick="playVid()" type="button">Play Video</button>
+<div class="row>
+        <button onclick="playVid()" type="button">Play Video</button>
 
-<video id="video" width="320" height="240">
-    <source src={{ video }} type="video/mp4">
-    Your browser does not support the video tag.
-</video>
+        <video id="video" width="320" height="240">
+            <source src={{ video }} type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        
+</div>
+
+<div>
+
+</div>
 
 {% endblock %}
 

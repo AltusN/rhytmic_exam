@@ -32,7 +32,7 @@ class User(UserMixin, db.Model):
             algorithm="HS256"
         ).decode("utf-8")
 
-    def allow_login(self):
+    def is_enabled(self):
         """ a 2 step proccess to actually authenticate on the website.
             Once registration requested, it must be enabled by an admin
             for now

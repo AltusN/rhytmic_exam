@@ -11,10 +11,13 @@ from rhytmic_exam_app.forms import (
     ResetPasswordRequestForm, 
     ResetPasswordForm,
     AddExamQuestionsForm,
+    Disclaimer,
 )
 from rhytmic_exam_app.models import User, ExamQuestions
 from rhytmic_exam_app.email import send_password_reset_email, send_email
 from rhytmic_exam_app.exam_utils import make_question_for_exam
+
+agreed = True
 
 @app.route("/")
 @app.route("/index")
@@ -34,10 +37,10 @@ def login():
         user = User.query.filter_by(username = form.username.data).first()
         #check if it's a valid login attempt
         if not user or not user.check_password(form.password.data):
-            flash("Invalid username or password")
+            flash("Invalid username or password", "danger")
             return redirect(url_for("login"))
-        if not user.allow_login():
-            flash("Registration not completed.")
+        if not user.is_enabled():
+            flash("Registration is still in progress", "info")
             return redirect(url_for("login"))
 
         login_user(user, remember = form.remember_me.data)
@@ -200,9 +203,21 @@ def add_question():
     
     return render_template("add_question.html", title="Add Exam Question", form=form)
 
+@app.route("/delete_question/<int:question_id>", methods=("POST",))
+@login_required
+def delete_question(question_id):
+    ExamQuestions.query.filter_by(id=question_id).delete()
+
+    db.session.commit()
+
+    flash(f"Question number {question_id} deleted", "success")
+    
+    return redirect(url_for("edit_questions"))
 
 @app.route("/play", methods=("GET",))
 def play():
+    if not agreed:
+        return redirect(url_for("disclaimer"))
     #Get a cookie if the video was laoded
     #figure out how cookies work
     if "video_loaded" in request.cookies:
@@ -214,13 +229,32 @@ def play():
     resp.set_cookie("video_loaded", "1")
     return resp
 
+@app.route("/disclaimer", methods=("GET", "POST"))
+def disclaimer():
+    """ the user must agree (and mostly be aware) that they will have a limited
+    time to complete the theory and practical exam
+    """
+    prev_page = request.cookies.get("previous_page")
+    form = Disclaimer()
+
+    if request.method == "POST":
+        flash("redirected")
+        #go back to the caller
+        agreed = request.get["invalidCheck"]
+        return redirect(redirect_url())
+
+    resp = make_response(render_template("disclaimer.html", form=form))
+    resp.set_cookie("previous_page", request.referrer)
+
+    return resp
+    
 @app.route("/theory_exam", methods=("GET", "POST"))
 @login_required
 def theory_exam():
 
     if request.method == "POST":
         result = request.form
-        flash(result, "info")
+
         flash("Exam completed. Good luck!", "success")
         return(redirect(url_for("dashboard")))
 
@@ -237,3 +271,8 @@ def theory_exam():
 def test_html():
     """ quickly check something out """
     return render_template("test.html")
+
+def redirect_url(default='index'):
+    return request.args.get('next') or \
+           request.referrer or \
+           url_for(default)

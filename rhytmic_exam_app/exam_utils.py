@@ -1,9 +1,11 @@
 import json
 import os
 
-
-
 def make_question_for_exam(question, type):
+    """ the question types that are rendered on the theory form
+    can be in of 5 formats. consult the doc for examples on how the layout
+    will look when deciding which layout to use
+    """
     make_question = {
         "1":make_type_one_question,
         "2":make_type_two_question,
@@ -101,7 +103,7 @@ def make_type_five_question(question):
     #if there is nothing to replace... then we'll just return the string later
     if "<q_1>" in question_string:
         question_string = question_string.replace("<q_1>","<img src='{}'>".format(replace_with_image[0]))
-    if "<q_2>" in question_string:
+    elif "<q_2>" in question_string:
         question_string = question_string.replace("<q_2>","<img src='{}'>".format(replace_with_image[1]))
 
     q["q_string"] = question_string

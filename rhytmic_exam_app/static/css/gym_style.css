@@ -1,6 +1,7 @@
-#the-sticky-div.sticky {
+.sticky {
     position: fixed;
     top: 0;
+    text-align: right;
  }
 
 .my_body { 

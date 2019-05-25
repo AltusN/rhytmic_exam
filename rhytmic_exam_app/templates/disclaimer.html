@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<h3>Important... please read</h3>
+    {% from "includes/_formhelpers.html" import render_field %}
+    <form action="" method="POST">
+    <div class="form-group">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="" id="invalidCheck" required>
+          <label class="form-check-label" for="invalidCheck">
+            Agree to terms and conditions
+          </label>
+          <div class="invalid-feedback">
+            You must agree before submitting.
+          </div>
+        </div>
+        {{ form.submit(class_="btn btn-success", value="Submit") }}
+        <a href="{{ url_for('index') }}" class="btn btn-danger mb-4">Cancel</a>
+      </div>
+    </form>
+{% endblock %}

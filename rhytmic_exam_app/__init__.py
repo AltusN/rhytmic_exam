@@ -12,13 +12,19 @@ from flask_bootstrap import Bootstrap
 from config import Config
 
 app = Flask(__name__)
+#config
 app.config.from_object(Config)
+#db
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 #login stuff
 login = LoginManager(app)
 login.login_view = "login"
+login.login_message = "Please login to access this page"
+login.login_message_category = "info"
+#mail
 mail = Mail(app)
+#bootstrap
 bootstrap = Bootstrap(app)
 
 if not app.debug:
