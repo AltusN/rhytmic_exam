@@ -1,4 +1,5 @@
 import json
+from functools import wraps
 
 from flask import render_template, redirect, url_for, flash, redirect, request, make_response
 from flask_login import login_user, current_user, logout_user, login_required
@@ -18,6 +19,17 @@ from rhytmic_exam_app.email import send_password_reset_email, send_email
 from rhytmic_exam_app.exam_utils import make_question_for_exam
 
 agreed = True
+
+def admin_required(f):
+    @wraps(f)
+    def wrap(*args, **kwargs):
+        user = User.query.filter_by(id=current_user.id).first()
+        if user.is_admin:
+            return f(*args, **kwargs)
+        else:
+            flash("You must be logged in as an admininstrative user to delete a quesiton", "danger")
+            return redirect(url_for("index"))
+    return wrap
 
 @app.route("/")
 @app.route("/index")
@@ -134,6 +146,9 @@ def reset_password(token):
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    #Since we know there is a user already because of login_required
+    user = User.query.filter_by(id=current_user.id).first()
+
     return render_template("dashboard.html", title="Dashboard")
 
 @app.route("/edit_questions")
@@ -205,6 +220,7 @@ def add_question():
 
 @app.route("/delete_question/<int:question_id>", methods=("POST",))
 @login_required
+@admin_required
 def delete_question(question_id):
     ExamQuestions.query.filter_by(id=question_id).delete()
 

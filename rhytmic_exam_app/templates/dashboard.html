@@ -6,6 +6,11 @@
         {{ session }}
         {{ current_user }}
     </p>
+    <p>
+        {% if current_user.is_admin %}
+            <span>Current user is an admin</span>
+        {% endif %}
+    </p>
 {% endblock %}
 
 {% block app_scripts %}

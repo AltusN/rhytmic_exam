@@ -39,9 +39,9 @@ class User(UserMixin, db.Model):
         """
         return self.enabled
 
+    @property
     def is_admin(self):
-        """ admin can do other stuff users can't. like edit the exam
-        """
+        """ admin can do other stuff users can't. like edit the exam """
         return self.admin
 
     @staticmethod
