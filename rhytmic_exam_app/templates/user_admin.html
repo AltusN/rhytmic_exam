@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<h1>Edit Users</h1>
+    <table class="table table-striped">
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Name</th>
+            <th>Surname</th>
+            <th>Enabled</th>
+            <th></th>
+            <th></th>
+        </tr>
+        {% for user in users.items %}
+            <tr>
+                <td>{{ user.id }}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.name }}</td>
+                <td>{{ user.surname }}</td>
+                <td>{{ user.enabled }}</td>
+                <td><a href="{{ url_for('update_user', id=user.id) }}" class="btn btn-info pull-right">Edit</a></td>
+                <td>
+                    <form action="{{ url_for('delete_user', id=user.id) }}" method="POST">
+                        <input type="hidden" nanme="_method" value="DELETE">
+                        <input type="submit" value="Delete" class="btn btn-danger">
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+    {% for page_num in users.iter_pages(left_edge=1, right_edge=2, left_current=2, right_current=2) %}
+        {% if page_num %}
+            {% if users.page == page_num %}
+                <a class="btn btn-info mb-4" href="{{ url_for('user_admin', page=page_num) }}">{{ page_num }}</a>
+            {% else %}
+                <a class="btn btn-outline-info mb-4" href="{{ url_for('user_admin', page=page_num) }}">{{ page_num }}</a>
+            {% endif %}
+        {% else %}
+            ...
+        {% endif %}
+    {% endfor %}
+{% endblock %}
+
+{% block app_scripts %}
+<script>
+    //setTimeout(function() {
+    //    $("div[class='alert alert-success']").fadeOut("slow");
+    //}, 3000);
+</script>
+{% endblock %}

@@ -1,4 +1,5 @@
 import json
+import datetime
 from functools import wraps
 
 from flask import render_template, redirect, url_for, flash, redirect, request, make_response
@@ -13,8 +14,9 @@ from rhytmic_exam_app.forms import (
     ResetPasswordForm,
     AddExamQuestionsForm,
     Disclaimer,
+    UserEditForm
 )
-from rhytmic_exam_app.models import User, ExamQuestions
+from rhytmic_exam_app.models import User, ExamQuestions, ExamResult
 from rhytmic_exam_app.email import send_password_reset_email, send_email
 from rhytmic_exam_app.exam_utils import make_question_for_exam
 
@@ -27,7 +29,7 @@ def admin_required(f):
         if user.is_admin:
             return f(*args, **kwargs)
         else:
-            flash("You must be logged in as an admininstrative user to delete a quesiton", "danger")
+            flash("You must be logged in as an admininstrative user to perform this action", "danger")
             return redirect(url_for("index"))
     return wrap
 
@@ -71,13 +73,71 @@ def logout():
     logout_user()
     return redirect(url_for("index"))
 
-@app.route("/user/<username>")
-def user(username):
-    return username
+@app.route("/user_admin", methods=("GET", "POST"))
+@login_required
+@admin_required
+def user_admin():
+    page = request.args.get("page", 1, type=int)
+
+    users = User.query.paginate(page=page , per_page=8)
+    
+    return render_template("user_admin.html", title="User Admin", users=users)
+
+@app.route("/update_user/<int:id>", methods=("GET", "POST"))
+@login_required
+def update_user(id):
+    user = User.query.filter_by(id=id).first_or_404()
+
+    form = UserEditForm()
+
+    if form.validate_on_submit(): 
+        user.name = form.name.data
+        user.surname = form.surname.data
+        user.email = form.email.data
+        user.enabled = form.enabled.data
+        user.admin = form.admin.data
+
+        db.session.add(user)
+        db.session.commit()
+
+        flash("User updated successfully", "success")
+
+        return redirect(url_for("user_admin"))
+
+
+    form.username.data = user.username
+    form.name.data = user.name
+    form.surname.data = user.surname
+    form.sagf_id.data = user.sagf_id
+    form.email.data = user.email
+    form.enabled.data = user.enabled
+    form.admin.data = user.admin
+    
+    return render_template("update_user.html", title="Edit User", form=form, the_user=user.username)
+
+@app.route("/delete_user/<int:id>", methods=("POST",))
+def delete_user(id):
+    user = User.query.filter_by(id=id).first_or_404()
+
+    if user.username == current_user.username:
+        flash("You cannot delete yourself", "danger")
+        return redirect(url_for("index"))
+    else:
+        db.session.delete(user)
+        db.session.commit()
+        
+        flash(f"{user.username} has been deleted", "success")
+        return redirect(url_for("index"))
+    
+
+@app.route("/profile/<string:username>")
+def profile(username):
+    return render_template("profile.html")
 
 @app.route("/register", methods=("GET", "POST"))
 def register():
     if current_user.is_authenticated:
+        flash("You already have an account. Log out to create a new one", "info")
         return redirect(url_for("index"))
 
     form = RegistrationForm()
@@ -146,10 +206,9 @@ def reset_password(token):
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    #Since we know there is a user already because of login_required
-    user = User.query.filter_by(id=current_user.id).first()
-
-    return render_template("dashboard.html", title="Dashboard")
+    exam_results = ExamResult.query.filter_by(sagf_id=current_user.sagf_id).first()
+    
+    return render_template("dashboard.html", title="Dashboard", exam_result=exam_results)
 
 @app.route("/edit_questions")
 def edit_questions():
@@ -164,7 +223,7 @@ def edit_questions():
 
 @app.route("/edit_exam_question/<int:question_id>", methods=("GET", "POST"))
 def edit_exam_question(question_id):
-    exam_question = ExamQuestions.query.filter_by(id=question_id).first_or_404()
+    exam_question = ExamQuestions.query.filter_by(question_id=question_id).first_or_404()
 
     form = AddExamQuestionsForm()
 
@@ -192,7 +251,7 @@ def edit_exam_question(question_id):
     form.option_c.data = exam_question.option_c
     form.option_d.data = exam_question.option_d
     
-    return render_template("edit_exam_question.html", question_id=exam_question.id, form=form)
+    return render_template("edit_exam_question.html", question_id=exam_question.question_id, form=form)
 
 @app.route("/add_question", methods=("GET", "POST"))
 @login_required
@@ -201,6 +260,7 @@ def add_question():
 
     if form.validate_on_submit():
         q = ExamQuestions(
+            question_id = db.session.query(db.func.max(ExamQuestions.question_id)).scalar() + 1,
             question=form.question.data,
             question_type=form.question_type.data,
             question_images=form.question_images.data,
@@ -222,7 +282,7 @@ def add_question():
 @login_required
 @admin_required
 def delete_question(question_id):
-    ExamQuestions.query.filter_by(id=question_id).delete()
+    ExamQuestions.query.filter_by(question_id=question_id).delete()
 
     db.session.commit()
 
@@ -232,15 +292,13 @@ def delete_question(question_id):
 
 @app.route("/play", methods=("GET",))
 def play():
-    if not agreed:
-        return redirect(url_for("disclaimer"))
     #Get a cookie if the video was laoded
     #figure out how cookies work
     if "video_loaded" in request.cookies:
         pass
         #return "Video already loaded"
 
-    video = "static/video/Megamind.mp4"
+    video = "static/exam_videos/Anna_Sokolova_rope.mp4"
     resp = make_response(render_template("play.html", video=video))
     resp.set_cookie("video_loaded", "1")
     return resp
@@ -263,25 +321,49 @@ def disclaimer():
     resp.set_cookie("previous_page", request.referrer)
 
     return resp
+
+@app.route("/practical_exam", methods=("GET", "POST"))
+def practical_exam():
+
+    return render_template("practical_exam.html")
     
 @app.route("/theory_exam", methods=("GET", "POST"))
 @login_required
 def theory_exam():
+    user = User.query.filter_by(id = current_user.id).first_or_404()
 
-    if request.method == "POST":
-        result = request.form
+    if request.method == "POST" and request.endpoint == "theory_exam":
+        if not ExamResult.query.filter_by(sagf_id=user.sagf_id):
+            flash("You have already taken the Theory Exam", "info")
+            return redirect(url_for("dashboard"))
+        else:
+            answers = request.form.to_dict()
+            if "btnsubmit" in answers: 
+                del answers["btnsubmit"]
+            result = ExamResult(
+                theory_answer=json.dumps(answers), 
+                theory_taken=True,
+                exam_start_date = datetime.datetime.today(),
+                result=user)
+
+
+            db.session.add(result)
+            db.session.commit()
 
         flash("Exam completed. Good luck!", "success")
         return(redirect(url_for("dashboard")))
 
     q_list = []
-
     exam_questions = ExamQuestions.query.all()
 
     for exam_question in exam_questions:
         q_list.append(make_question_for_exam(exam_question,exam_question.question_type))
-        
-    return render_template("theory_exam.html", title="National Theory Exam 2019", questions=q_list)
+
+    resp = make_response(render_template("theory_exam.html", title="National Theory Exam 2019", questions=q_list))
+    #Set the cookie to expire
+
+    return resp
+
 
 @app.route("/test")
 def test_html():

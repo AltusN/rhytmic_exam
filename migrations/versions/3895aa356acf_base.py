@@ -52,7 +52,6 @@ def upgrade():
     sa.Column('theory_answer', sa.Text(), nullable=True),
     sa.Column('practical_answer', sa.Text(), nullable=True),
     sa.Column('exam_start_date', sa.DateTime(), nullable=True),
-    sa.Column('exam_end_date', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['sagf_id'], ['user.sagf_id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('sagf_id')

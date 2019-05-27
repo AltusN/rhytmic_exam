@@ -1,13 +1,15 @@
 {% extends "base.html" %}
 
 {% block app_content %}
+    <div id="load_div"><div id="load_screen"><div id="loading">Document loading</div></div></div>
+    
     <div id="timer" class="container">
         <div class="row">
           <div class="col-md-6"></div>
           <div class="col-md-6"><span class="pull-right">Time left:  <span id="demo"></span></span></div>
         </div>
       </div>
-    <h2>
+    <h2 class="h2">
         Theory Exam
     </h2>
     <form id="exam" action="" method="POST">
@@ -171,24 +173,27 @@
             </div>
         {% endif %}
         {% endfor %}
+        <span class="border">
+            <input type="submit" class="btn btn-success" onClick="submitForm()" name="btnsubmit" value="submit">
+        </span>
+               
         
-        <input type="submit" onClick="myClick()" name="btnsubmit" value="submit">
     </form>
 {% endblock %}
 {% block app_scripts %}
     <script>
-        $('#exam').submit(function(){
-       //result = "success";
-            var i = 0;
-            $(":radio:checked").each(function(){
-                i++;
-            });
-            if(i != 1){
-                alert(85 - i + " questions not answered");
-                return false;
-            }
-            return true;
-        });
+    //     $('#exam').submit(function(){
+    //    //result = "success";
+    //         var i = 0;
+    //         $(":radio:checked").each(function(){
+    //             i++;
+    //         });
+    //         if(i != 1){
+    //             alert(85 - i + " questions not answered");
+    //             return false;
+    //         }
+    //         return true;
+    //     });
 
     function submitOnExpire(){
         var frm = document.getElementById("exam");
@@ -220,16 +225,16 @@
         if (distance < 0) {
             clearInterval(x);
             window.onbeforeunload = null;
-            document.getElementById("demo").innerHTML = "EXPIRED";
+            document.getElementById("demo").innerHTML = "Times UP!";
             submitOnExpire();
         }
-        }, 1000);
+        }, 3000);
 
         window.onbeforeunload = function() {
             return true;
         };
 
-        function myClick(){
+        function submitForm(){
             window.onbeforeunload = null;
             document.getElementById("exam").subnit();
         };

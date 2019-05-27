@@ -1,16 +1,64 @@
 {% extends "base.html" %}
 {% block app_content %}
-    <h1>Dashboard <p><small> Welcome {{current_user.username}}</small></p></h1>
-    <a class="btn btn-success" href="{{ url_for('theory_exam') }}">Take Theory Exam</a>
-    <p>
-        {{ session }}
-        {{ current_user }}
-    </p>
-    <p>
-        {% if current_user.is_admin %}
-            <span>Current user is an admin</span>
-        {% endif %}
-    </p>
+    <h1><small> Welcome {{current_user.username}}</small></h1>
+    <div class=row>
+        <p>Status of exams</p>
+        <table class="table table-striped">
+            <tr>
+                <th>Exam name</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+            <tr>
+                <td>Theory Exam</td>
+                <td>
+                    {% if exam_result %}
+                        {% if exam_result.theory_taken %}
+                            <span class="label label-success">Completed</span>
+                        {% else %}
+                            <span class="label label-primary">Not Complete</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if exam_result %}
+                        {% if exam_result.theory_answer is not none %}
+                            {#The user has already taken the exam #}
+                            <a class="btn btn-info disabled" href="{{ url_for('theory_exam') }}">Take Theory Exam</a>
+                        {% else %}
+                            <a class="btn btn-primary" href="{{ url_for('theory_exam') }}">Take Theory Exam</a>
+                        {% endif %}
+                    {% else %}
+                        <a class="btn btn-primary" href="{{ url_for('theory_exam') }}">Take Theory Exam</a>
+                    {% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td>Practical Exam</td>
+                <td> 
+                    {% if exam_result %}
+                        {% if exam_result.practical_taken %}
+                            <span class="label label-success">Completed</span>
+                        {% else %}
+                            <span class="label label-primary">Not Completed</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if exam_result %}
+                        {% if exam_result.practical_answer is not none %}
+                            {#The user has already taken the exam #}
+                            <a class="btn btn-primary disabled" href="{{ url_for('practical_exam') }}">Take Practical Exam</a>
+                        {% else %}
+                            <a class="btn btn-primary" href="{{ url_for('practical_exam') }}">Take Practical Exam</a>
+                        {% endif %}
+                    {% else %}
+                        <a class="btn btn-primary" href="{{ url_for('practical_exam') }}">Take Practical Exam</a>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+    </div>
 {% endblock %}
 
 {% block app_scripts %}

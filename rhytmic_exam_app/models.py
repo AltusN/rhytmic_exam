@@ -4,6 +4,7 @@ from datetime import datetime
 import jwt
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
+from sqlalchemy.orm import backref
 
 from rhytmic_exam_app import db, login, app
 
@@ -17,7 +18,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     enabled = db.Column(db.Boolean(), default=False)
     admin = db.Column(db.Boolean, default=False)
-    answers = db.relationship("ExamResult", backref="result", uselist=False)
+    answers = db.relationship("ExamResult", backref=backref("result", uselist=False))
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -62,10 +63,12 @@ class ExamResult(db.Model):
     theory_answer = db.Column(db.Text) #Store as json the result set
     practical_answer = db.Column(db.Text) #Store as json
     exam_start_date = db.Column(db.DateTime, default=datetime.today)
-    exam_end_date = db.Column(db.DateTime)
+    theory_taken = db.Column(db.Boolean)
+    pratical_taken = db.Column(db.Boolean)
 
 class ExamQuestions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    question_id = db.Column(db.Integer, index=True)
     question = db.Column(db.String(200), index=True)
     question_type = db.Column(db.String(256))
     question_images = db.Column(db.Text) # store as json the images

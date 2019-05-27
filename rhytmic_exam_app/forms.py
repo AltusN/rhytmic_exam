@@ -68,3 +68,16 @@ class AddExamQuestionsForm(FlaskForm):
 class Disclaimer(FlaskForm):
     agree = BooleanField("Agree", validators=[DataRequired()])
     submit = SubmitField()
+
+class UserEditForm(FlaskForm):
+    username = StringField("Username", validators=[DataRequired()])
+    name = StringField("Name", validators=[DataRequired()])
+    surname = StringField("Surname", validators=[DataRequired()])
+    sagf_id = StringField("SAGF ID", validators=[DataRequired()])
+    email = StringField("Email Adrress", validators=[DataRequired(), Email()])
+    password = PasswordField("Password")
+    password2 = PasswordField("Repear Password", validators=[EqualTo("password")])
+    enabled = BooleanField("Enabled")
+    admin = BooleanField("Admin User")
+
+    submit = SubmitField()

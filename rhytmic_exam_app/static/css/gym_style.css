@@ -4,5 +4,7 @@
     text-align: right;
  }
 
-.my_body { 
-padding-top: 70px; }
+ .container-fluid{
+     padding-left: 2%;
+     padding-right: 2%;
+ }
