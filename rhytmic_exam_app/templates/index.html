@@ -1,8 +1,12 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-    <div class="jumbotron text-center">
-      <h1>Some random stuff for the main landing page</h1>
+    <div class="jumbotron">
+        <div class="container">
+        <h1>Online Exam</h1>
+        <p>This is the first and unique way for taking the exam. Totally legit</p>
+        <p><a class="btn btn-primary btn-lg" href="{{ url_for('dashboard') }}" role="button">Get Started &raquo;</a></p>
+        </div>
     </div>
     <p id="demo"></p>
     <ul class="list-group">

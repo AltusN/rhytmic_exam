@@ -18,6 +18,8 @@
                         {% else %}
                             <span class="label label-primary">Not Complete</span>
                         {% endif %}
+                    {% else %}
+                        <span class="label label-info">Not Taken Yet</span>
                     {% endif %}
                 </td>
                 <td>
@@ -42,13 +44,15 @@
                         {% else %}
                             <span class="label label-primary">Not Completed</span>
                         {% endif %}
+                    {% else %}
+                        <span class="label label-info">Not Taken Yet</span>
                     {% endif %}
                 </td>
                 <td>
                     {% if exam_result %}
-                        {% if exam_result.practical_answer is not none %}
+                        {% if exam_result.practical_taken %}
                             {#The user has already taken the exam #}
-                            <a class="btn btn-primary disabled" href="{{ url_for('practical_exam') }}">Take Practical Exam</a>
+                            <a class="btn btn-info disabled" href="{{ url_for('practical_exam') }}">Take Practical Exam</a>
                         {% else %}
                             <a class="btn btn-primary" href="{{ url_for('practical_exam') }}">Take Practical Exam</a>
                         {% endif %}
@@ -58,13 +62,18 @@
                 </td>
             </tr>
         </table>
+        {% if exam_result.practical_taken and exam_result.theory_taken %}
+            <div class="row">
+                <h3 class="bg-success text-center">You've completed your National Theory Exam.</h3>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}
 
 {% block app_scripts %}
 <script>
 setTimeout(function() {
-    $("div[name='flash_message']").fadeOut("slow");
-}, 3000);
+    $("div[name='flash_message']").slideUp("slow");
+}, 5000);
 </script>
 {% endblock %}

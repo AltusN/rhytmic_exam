@@ -40,7 +40,7 @@ venv
 rhytmic.db
 rhytmic.log*
 
-Megamind.mp4
-
 #Environment
 .flaskenv
+
+test_videos

@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-
+    <h1>Profile for {{ current_user.username }}</h1>
+    <div class="row">
+        <h4>You cannot make updates to your profile at this time</h4>
+        <p><a class="btn btn-primary btn-lg" href="{{ url_for('dashboard') }}" role="button">Back to my dashboard</a></p>
+    </div>
 {% endblock %}

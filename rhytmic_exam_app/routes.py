@@ -236,6 +236,7 @@ def edit_exam_question(question_id):
         exam_question.option_c = form.option_c.data
         exam_question.option_d = form.option_d.data
         exam_question.answer = form.answer.data
+        exam_question.question_category = form.question_category.data
 
         db.session.add(exam_question)
         db.session.commit()
@@ -250,6 +251,7 @@ def edit_exam_question(question_id):
     form.option_b.data = exam_question.option_b
     form.option_c.data = exam_question.option_c
     form.option_d.data = exam_question.option_d
+    form.question_category.data = exam_question.question_category
     
     return render_template("edit_exam_question.html", question_id=exam_question.question_id, form=form)
 
@@ -268,7 +270,8 @@ def add_question():
             option_b=form.option_b.data,
             option_c=form.option_c.data,
             option_d=form.option_d.data,
-            answer=form.answer.data
+            answer=form.answer.data,
+            question_category=form.question_category.data
         )
         db.session.add(q)
         db.session.commit()
@@ -290,7 +293,7 @@ def delete_question(question_id):
     
     return redirect(url_for("edit_questions"))
 
-@app.route("/play", methods=("GET",))
+@app.route("/play", methods=("GET","POST"))
 def play():
     #Get a cookie if the video was laoded
     #figure out how cookies work
@@ -298,7 +301,11 @@ def play():
         pass
         #return "Video already loaded"
 
-    video = "static/exam_videos/Anna_Sokolova_rope.mp4"
+    if request.method == "POST":
+        pass
+
+    #video = "static/exam_videos/Anna_Sokolova_rope.mp4"
+    video = "static/video/Megamind.mp4"
     resp = make_response(render_template("play.html", video=video))
     resp.set_cookie("video_loaded", "1")
     return resp
@@ -324,46 +331,103 @@ def disclaimer():
 
 @app.route("/practical_exam", methods=("GET", "POST"))
 def practical_exam():
+    user = User.query.filter_by(id = current_user.id).first_or_404()
 
-    return render_template("practical_exam.html")
+    practical_questions = ExamQuestions.query.filter_by(question_category="practical")
+    
+    practical_progress = ExamResult.query.filter_by(sagf_id=user.sagf_id).first()
+
+    x = 1
+    q_dict = {
+        "questions":[],
+        "videos":[]  
+    }
+
+    for question in practical_questions:
+        q_dict["questions"].append(question.question)
+        #find a better way to do this... .loading the same data over and over again here
+        q_dict["videos"] = [vid for vid in json.loads(question.question_images)["videos"]]
+        x += 1
+
+    if user.answers and user.answers[0].practical_taken:
+        flash("You have already taken the practical exam")
+        return redirect(url_for("dashboard"))
+
+    progress = {"q_id":0, "v_id":0, "answered":0}
+    if user.answers and user.answers[0].practical_progress is not None:
+        progress = json.loads(user.answers[0].practical_progress)
+
+    if request.method == "POST":
+        form_result = request.form.to_dict()
+        #Do some work to update the db with the progress
+        if progress["v_id"] == 4:
+            progress["v_id"] = 0
+            progress["q_id"] += 1
+        else:
+            progress["v_id"] += 1
+        #Save the answers so long
+        progress["answered"] += 1
+
+        practical_progress.practical_progress = json.dumps(progress)
+
+        if practical_progress.practical_answer is None:
+            practical_progress.practical_answer = json.dumps({f"answer_{progress['answered']}": form_result.get("answer")})
+        else:
+            answered_sofar = json.loads(practical_progress.practical_answer)
+            answered_sofar[f"answer_{progress['answered']}"] = form_result.get("answer")
+            practical_progress.practical_answer = json.dumps(answered_sofar)
+
+        if progress["answered"] == 20:
+            practical_progress.practical_taken = True
+
+            db.session.add(practical_progress)
+            db.session.commit()
+
+            flash("Practical Exam completed. Good luck!", "success")
+            return redirect(url_for("dashboard"))
+
+        db.session.add(practical_progress)
+        db.session.commit()
+
+        return render_template("practical_exam.html", q_dict=q_dict, progress=progress)
+       
+
+    return render_template("practical_exam.html", q_dict=q_dict, progress=progress)
     
 @app.route("/theory_exam", methods=("GET", "POST"))
 @login_required
 def theory_exam():
     user = User.query.filter_by(id = current_user.id).first_or_404()
+    #check if the current user has already taken the theory exam
+    if user.answers and user.answers[0].theory_taken:
+            flash("You have already completed the theory exam", "info")
+            return redirect(url_for("dashboard"))
 
     if request.method == "POST" and request.endpoint == "theory_exam":
-        if not ExamResult.query.filter_by(sagf_id=user.sagf_id):
-            flash("You have already taken the Theory Exam", "info")
-            return redirect(url_for("dashboard"))
-        else:
-            answers = request.form.to_dict()
-            if "btnsubmit" in answers: 
-                del answers["btnsubmit"]
-            result = ExamResult(
-                theory_answer=json.dumps(answers), 
-                theory_taken=True,
-                exam_start_date = datetime.datetime.today(),
-                result=user)
+        answers = request.form.to_dict()
+        if "btnsubmit" in answers: 
+            del answers["btnsubmit"]
+        result = ExamResult(
+            theory_answer=json.dumps(answers), 
+            theory_taken=True,
+            exam_start_date = datetime.datetime.today(),
+            result=user)
 
-
-            db.session.add(result)
-            db.session.commit()
+        db.session.add(result)
+        db.session.commit()
 
         flash("Exam completed. Good luck!", "success")
         return(redirect(url_for("dashboard")))
 
     q_list = []
-    exam_questions = ExamQuestions.query.all()
+    exam_questions = ExamQuestions.query.filter_by(question_category="theory")
 
     for exam_question in exam_questions:
         q_list.append(make_question_for_exam(exam_question,exam_question.question_type))
 
     resp = make_response(render_template("theory_exam.html", title="National Theory Exam 2019", questions=q_list))
-    #Set the cookie to expire
 
     return resp
-
 
 @app.route("/test")
 def test_html():

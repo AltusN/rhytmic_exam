@@ -63,6 +63,10 @@ class AddExamQuestionsForm(FlaskForm):
         ("C", "C"),
         ("D", "D"),
     ])
+    question_category = SelectField("Question Category", choices=[
+        ("theory", "Theory"),
+        ("practical", "Practical"),
+    ])
     submit = SubmitField()
 
 class Disclaimer(FlaskForm):

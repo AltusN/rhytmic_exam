@@ -1,4 +1,8 @@
+import sys
+
 import pytest
+
+sys.path.append(".")
 
 from rhytmic_exam_app.models import User
 

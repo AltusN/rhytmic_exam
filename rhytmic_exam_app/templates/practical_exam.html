@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+    <div class="row">
+        {{q_dict}}
+    </div>
+    <div class="row">
+        {{ progress }}
+    </div>
+    {{ q_dict['videos'][progress['v_id']] }}
+    <form action="" method="POST" name="form">
+        <div>
+            <video id="video" width="25%" height="25%" controls>
+                <source src="{{ q_dict['videos'][progress['v_id']] }}" type="video/mp4">
+            </video>
+        </div>
+        <div>
+            <label for="answer">{{q_dict["questions"][progress["q_id"]] }}</label>
+            <input id="answer" type="text" name="answer">
+        </div>
+        <div>
+            <input type="hidden" name="progress" value="{{ progress['v_id'] }} {{ progress['q_id'] }}">
+        </div>
+        <div>
+            <input type="submit" value="submit" name="submit">
+        </div>
+        
+    </form>
+{% endblock %}
+{% block app_scripts %}
+
+{% endblock %}

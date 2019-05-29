@@ -42,7 +42,9 @@ class User(UserMixin, db.Model):
 
     @property
     def is_admin(self):
-        """ admin can do other stuff users can't. like edit the exam """
+        """ admin can do other stuff users can't. like edit the exam 
+        or update users
+        """
         return self.admin
 
     @staticmethod
@@ -62,9 +64,10 @@ class ExamResult(db.Model):
     sagf_id = db.Column(db.Integer, db.ForeignKey("user.sagf_id"), unique=True)
     theory_answer = db.Column(db.Text) #Store as json the result set
     practical_answer = db.Column(db.Text) #Store as json
+    practical_progress = db.Column(db.Text)
     exam_start_date = db.Column(db.DateTime, default=datetime.today)
     theory_taken = db.Column(db.Boolean)
-    pratical_taken = db.Column(db.Boolean)
+    practical_taken = db.Column(db.Boolean)
 
 class ExamQuestions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -77,6 +80,7 @@ class ExamQuestions(db.Model):
     option_c = db.Column(db.String(256))
     option_d = db.Column(db.String(256))
     answer = db.Column(db.String(1))
+    question_category = db.Column(db.String(64))
 
     def __repr__(self):
         return f"Question <{self.id}>"

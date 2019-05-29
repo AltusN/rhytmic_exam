@@ -2,12 +2,25 @@
 
 {% block app_content %}
 
-        <video id="video" width="80%" height="auto">
+    <div class="row" id="video_row">
+        <video oncontextmenu="return false;" id="video" width="80%" height="auto">
             <source src={{ video }} type="video/mp4">
             Your browser does not support the video tag.
         </video>
-        <br>
-        <button onclick="playVid()" type="button">Play Video</button>
+        <button class="btn btn-primary" onclick="playVid()" type="button">Play Video</button>
+    </div>
+    <div class="row">
+        <div class="row" id="showme" style="display: none">
+            <div class="col-sm-3"> What is the value for D1 and D2?</div>
+            <div class="col-sm-6">
+                <form role="form" action="" method="POST">
+                    <input type="text" id="peanuts" name="eatme">
+                    <input type="submit" name="submit">
+                </form>
+            </div>
+        </div>
+        
+    </div>
         
 
 {% endblock %}
@@ -18,10 +31,11 @@
         function myHandler(e) {
         // What you want to do after the event
             $(this).parent().fadeOut();
-        }
+            $("#showme").show();
+        };
         var vid = document.getElementById("video");
         function playVid(){
             vid.play();
-        }
+        };
     </script>
 {% endblock %}

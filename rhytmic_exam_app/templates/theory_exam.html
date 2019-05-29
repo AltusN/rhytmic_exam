@@ -6,7 +6,7 @@
     <div id="timer" class="container">
         <div class="row">
           <div class="col-md-6"></div>
-          <div class="col-md-6"><span class="pull-right">Time left:  <span id="demo"></span></span></div>
+          <div class="col-md-6"><span class="pull-right">Time left:  <span id="countdown"></span></span></div>
         </div>
       </div>
     <h2 class="h2">
@@ -202,8 +202,8 @@
 
     // Set the date we're counting down to	
     var stop_at = new Date();
-    stop_at.setHours(stop_at.getHours() + 1);
-    stop_at.setMinutes(stop_at.getMinutes() + 30);
+    stop_at.setHours(stop_at.getHours() + 2);
+    stop_at.setMinutes(stop_at.getMinutes() + 1);
 
     // Update the count down every 1 second
     var x = setInterval(function() {
@@ -218,7 +218,7 @@
         var seconds = Math.floor((distance % (1000 * 60)) / 1000);
             
         // Output the result in an element with id="demo"
-        document.getElementById("demo").innerHTML = hours + "h "
+        document.getElementById("countdown").innerHTML = hours + "h "
         + minutes + "m " + seconds + "s ";
             
         // If the count down is over, write some text 
@@ -227,7 +227,7 @@
             window.onbeforeunload = null;
             document.getElementById("demo").innerHTML = "Times UP!";
             submitOnExpire();
-        }
+            }
         }, 3000);
 
         window.onbeforeunload = function() {
@@ -250,10 +250,10 @@
         // Add the sticky class to the navbar when you reach its scroll position. Remove "sticky" when you leave the scroll position
         function myFunction() {
         if (window.pageYOffset >= sticky) {
-            navbar.classList.add("sticky")
+            navbar.classList.add("sticky");
         } else {
             navbar.classList.remove("sticky");
-        }
+            }
         }
         </script>
 {% endblock %}
