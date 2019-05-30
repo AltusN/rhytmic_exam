@@ -1,6 +1,6 @@
 <html>
     A new user has registered
     <p>
-        Please click <a href="bla">here</a>
+        Please click <a href="{{ url_for('reset_password', token=token, _external=True) }}">here</a> to activate the user.
     </p>
 </html>

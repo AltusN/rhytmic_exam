@@ -151,7 +151,7 @@ def register():
         db.session.commit()
         #Now the user is in the database, send an email to admin to request activation
         send_email(
-            "New User Registration",
+            "Rhytmic Exam - New User Registration",
             sender="no-reply.rhytmic_exam.co.za",
             recipients=[app.config["ADMINS"][0]],
             text_body=render_template("email/new_user.txt"),

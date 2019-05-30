@@ -69,6 +69,9 @@ class ExamResult(db.Model):
     theory_taken = db.Column(db.Boolean)
     practical_taken = db.Column(db.Boolean)
 
+    def __repr__(self):
+        return f"Result <{self.id}>"
+
 class ExamQuestions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     question_id = db.Column(db.Integer, index=True)
