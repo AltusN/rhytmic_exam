@@ -104,7 +104,6 @@ def update_user(id):
 
         return redirect(url_for("user_admin"))
 
-
     form.username.data = user.username
     form.name.data = user.name
     form.surname.data = user.surname
@@ -129,7 +128,6 @@ def delete_user(id):
         flash(f"{user.username} has been deleted", "success")
         return redirect(url_for("index"))
     
-
 @app.route("/profile/<string:username>")
 def profile(username):
     return render_template("profile.html")
@@ -330,8 +328,13 @@ def disclaimer():
     return resp
 
 @app.route("/practical_exam", methods=("GET", "POST"))
+@login_required
 def practical_exam():
     user = User.query.filter_by(id = current_user.id).first_or_404()
+
+    if user.answers and user.answers[0].practical_taken:
+        flash("You have already taken the practical exam", "info")
+        return redirect(url_for("dashboard"))
 
     practical_questions = ExamQuestions.query.filter_by(question_category="practical")
     
@@ -348,10 +351,6 @@ def practical_exam():
         #find a better way to do this... .loading the same data over and over again here
         q_dict["videos"] = [vid for vid in json.loads(question.question_images)["videos"]]
         x += 1
-
-    if user.answers and user.answers[0].practical_taken:
-        flash("You have already taken the practical exam")
-        return redirect(url_for("dashboard"))
 
     progress = {"q_id":0, "v_id":0, "answered":0}
     if user.answers and user.answers[0].practical_progress is not None:
@@ -391,7 +390,6 @@ def practical_exam():
 
         return render_template("practical_exam.html", q_dict=q_dict, progress=progress)
        
-
     return render_template("practical_exam.html", q_dict=q_dict, progress=progress)
     
 @app.route("/theory_exam", methods=("GET", "POST"))
@@ -416,7 +414,7 @@ def theory_exam():
         db.session.add(result)
         db.session.commit()
 
-        flash("Exam completed. Good luck!", "success")
+        flash("Theory Exam completed. Good luck!", "success")
         return(redirect(url_for("dashboard")))
 
     q_list = []

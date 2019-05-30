@@ -1,32 +1,38 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-    <div class="row">
-        {{q_dict}}
+    <h1>include judging type like EX or AV</h1>
+    <div class="row" id="video_row">
+        <button class="btn btn-primary btn-block" onclick="playVid()" type="button">Play Video</button>
+        <video oncontextmenu="return false;" id="video" width="60%" height="auto">
+            <source src="{{ q_dict['videos'][progress['v_id']] }}" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
     </div>
+    
     <div class="row">
-        {{ progress }}
+        <div class="row" id="showme" style="display: none">
+            <form class="form-inline" action="" method="POST" name="form">
+                <div class="form-group">
+                    <label for="answer">{{q_dict["questions"][progress["q_id"]] }}</label>
+                    <input type="text" id="answer" name="answer" placeholder="Answer" required>
+                </div>    
+                    <input type="submit" class="btn btn-sm btn-info" value="Submit">
+            </form>
+        </div>
     </div>
-    {{ q_dict['videos'][progress['v_id']] }}
-    <form action="" method="POST" name="form">
-        <div>
-            <video id="video" width="25%" height="25%" controls>
-                <source src="{{ q_dict['videos'][progress['v_id']] }}" type="video/mp4">
-            </video>
-        </div>
-        <div>
-            <label for="answer">{{q_dict["questions"][progress["q_id"]] }}</label>
-            <input id="answer" type="text" name="answer">
-        </div>
-        <div>
-            <input type="hidden" name="progress" value="{{ progress['v_id'] }} {{ progress['q_id'] }}">
-        </div>
-        <div>
-            <input type="submit" value="submit" name="submit">
-        </div>
-        
-    </form>
 {% endblock %}
 {% block app_scripts %}
-
+    <script>
+        document.getElementById('video').addEventListener('ended',myHandler,false);
+        function myHandler(e) {
+        // What you want to do after the event
+            $(this).parent().fadeOut();
+            $("#showme").show();
+        };
+        var vid = document.getElementById("video");
+        function playVid(){
+            vid.play();
+        };
+    </script>
 {% endblock %}
