@@ -2,7 +2,7 @@ A new user has registered,
 
 Please click the following link to review:
 
-{{ url_for('user_admin') }}
+{{ url_for('user_admin', _external=True) }}
 
 Regards,
 Rhytmic Exam
