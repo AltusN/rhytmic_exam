@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block app_content %}
+<div class="row">
+    <span id="countdown"></span>
+</div>
+<div class="row">
+    <input type="button" class="btn btn-default" value="click me" onclick="startCountDown(0,1)">
+</div>
+<form action="" method="POST" id="exam">
+    <input type="hidden" value="pie">
+</form>
+
+{% endblock %}
+{% block app_scripts %}
+    <script src="{{ url_for('static', filename='js/exam_util.js') }}"></script>
+
+{% endblock %}

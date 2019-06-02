@@ -4,7 +4,7 @@
     <h1>{{ q_dict["heading"][progress["q_id"]] }}</h1>
     <div class="row" id="video_row">
         <button class="btn btn-primary btn-block" onclick="playVid()" type="button">Click here to play video number {{ progress["v_id"] + 1 }}</button>
-        <video oncontextmenu="return false;" id="video" width="60%" height="auto">
+        <video oncontextmenu="return false;" preload="auto" id="video" width="60%" height="auto">
             <source src="{{ q_dict['videos'][progress['v_id']] }}" type="video/mp4">
             Your browser does not support the video tag.
         </video>
@@ -13,29 +13,37 @@
     <div class="container-fluid">
         <div class="row">
             <div class="row" id="showme" style="display: none">
-                <form class="form-inline" action="" method="POST" name="form">
+                <div class="row-fluid">
+                    <span id="countdown"></span>
+                </div>
+                <form class="form-inline" action="" method="POST" name="form" id="exam">
                     <div class="form-group">
                         <label for="answer">{{ q_dict["questions"][progress["q_id"]] }}</label>
                         <input type="text" id="answer" name="answer" placeholder="Answer" required>
                     </div>    
-                        <input type="submit" class="btn btn-sm btn-info" value="Submit">
+                        <input type="submit" class="btn btn-sm btn-success" value="Submit" onclick="submitForm()">
                 </form>
             </div>
         </div>
     </div>
 {% endblock %}
 {% block app_scripts %}
+    <script src="{{ url_for('static', filename='js/cookiemonster.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/exam_util.js') }}"></script>
+
     <script>
         document.getElementById('video').addEventListener('ended',myHandler,false);
         function myHandler(e) {
         // What you want to do after the event
             $(this).parent().fadeOut();
+            setCookie("test_me","{{ q_dict }}",1)
             $("#showme").show();
+            startCountDown(0,2, true);
         };
         var vid = document.getElementById("video");
         function playVid(){
             vid.play();
         };
+        
     </script>
-    <script src="{{ url_for('static', filename='js/cookiemonster.js') }}"></script>
 {% endblock %}

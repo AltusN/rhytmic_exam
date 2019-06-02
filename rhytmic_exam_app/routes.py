@@ -36,7 +36,8 @@ def admin_required(f):
 @app.route("/")
 @app.route("/index")
 def index():
-    return render_template("index.html", title="Home")
+    user_agent = request.user_agent.platform
+    return render_template("index.html", title="Home", user_agent=user_agent)
 
 @app.route("/login", methods=("GET","POST"))
 def login():
@@ -341,7 +342,7 @@ def practical_exam():
     practical_progress = ExamResult.query.filter_by(sagf_id=user.sagf_id).first()
     if not practical_progress:
         #The user has not taken the theory yet
-        flash("Please take the theory assesment first", "info")
+        flash("The Theory Exam must be taken first", "info")
         return(redirect(url_for("dashboard")))
 
     x = 1
@@ -439,7 +440,7 @@ def theory_exam():
 
     resp = make_response(render_template("theory_exam.html", title="National Theory Exam", questions=q_list))
 
-    #set the cookie to expire in 2 hours
+    #set the cookie that will expire
     expire_date = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
     resp.set_cookie("theory_loaded", "1", expires=expire_date)
 

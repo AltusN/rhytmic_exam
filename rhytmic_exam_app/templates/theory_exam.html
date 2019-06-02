@@ -33,7 +33,7 @@
     <div id="timer" class="container">
         <div class="row">
           <div class="col-md-6"></div>
-          <div class="col-md-6"><span class="pull-right">Time left:  <span id="countdown"></span></span></div>
+          <div class="col-md-6"><span class="pull-right">Time left: <span id="countdown"></span></span></div>
         </div>
       </div>
     <h2 class="h2">
@@ -201,13 +201,14 @@
         {% endif %}
         {% endfor %}
         <span class="border">
-            <input type="submit" class="btn btn-success" onClick="submitForm()" name="btnsubmit" value="submit">
+            <input type="submit" class="btn btn-success" onclick="submitForm()" name="btnsubmit" value="submit">
         </span>
                
         
     </form>
 {% endblock %}
 {% block app_scripts %}
+    <script src="{{ url_for('static', filename='js/cookiemonster.js') }}"></script>
     <script>
     //     $('#exam').submit(function(){
     //    //result = "success";
@@ -232,7 +233,7 @@
     stop_at.setHours(stop_at.getHours() + 2);
     stop_at.setMinutes(stop_at.getMinutes() + 1);
 
-    // Update the count down every 1 second
+    // Update the count down every 5 second
     var x = setInterval(function() {
         var now = new Date();
         
@@ -263,6 +264,8 @@
 
         function submitForm(){
             window.onbeforeunload = null;
+            //expire the cookie so that we don't get an exception on POST
+            setCookie("theory_loaded", "0", 0);
             document.getElementById("exam").subnit();
         };
         
