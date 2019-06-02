@@ -9,36 +9,17 @@
 {% endblock %}
 
 {% block head %}
+    
     {{ super() }}
     <link href="{{ url_for('static', filename='favicon.ico') }}" rel="shorcut icon">
-    <script>
-        window.addEventListener("load", function(){
-            var load_screen = document.getElementById("load_screen");
-            document.getElementById("load_div").removeChild(load_screen);
-        });
-    </script>
+    {% block page_head %}{% endblock %}
+    
 {% endblock %}
 
 {% block styles %}
     {{ super() }}
     <link href="{{ url_for('static', filename='css/gym_style.css')}}" rel="stylesheet">
-    <style>
-        div#load_screen{
-            background: #000;
-            opacity: 1;
-            position: fixed;
-            z-index: 10;
-            top: 0px;
-            width: 100%;
-            height: 1600px;
-        }
-        div#load_screen > div#loading{
-            color: #FFF;
-            width: 120px;
-            height: 24px;
-            margin: 300px auto;
-        }
-    </style>
+    {% block page_style %}{% endblock %}
 {% endblock %}
 
 {% block body %}
@@ -52,7 +33,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="{{ url_for('index') }}">Rhytmic National Exam</a>
+                <a class="navbar-brand" href="{{ url_for('index') }}">Rhytmic Exam</a>
             </div>
             <div class="collapse navbar-collapse" id="main_nav">
                 <ul class="nav navbar-nav">
@@ -63,7 +44,8 @@
                         <li><a href="{{ url_for('register') }}"><span class="glyphicon glyphicon-user"></span> Register</a></li>
                         <li><a href="{{ url_for('login') }}"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
                     {% else %}
-                        <li><a href="{{ url_for('profile', username=current_user.username) }}"><span class="glyphicon glyphicon-edit"></span> Profile</a></li>
+                        <li><a href="{{ url_for('profile', username=current_user.username) }}"><span class="glyphicon glyphicon-edit"></span>
+                             {{ current_user.username[0]|upper }}{{ current_user.username[1:] }}</a></li>
                         <li><a href="{{ url_for('logout') }}"><span class="glyphicon glyphicon-log-out"></span> Logout</a></li>
                     {% endif %}
                 </ul>
@@ -81,7 +63,7 @@
         <div class="fixed-bottom">
                 <div class="container-fluid">
                   <div class="row">
-                    <div class="span8 offset2">
+                    <div class="span8 offset2 pull-right">
                       <hr>
                       <p><strong> &copy 2019 Altus Nel. </strong></p>
                     </div>

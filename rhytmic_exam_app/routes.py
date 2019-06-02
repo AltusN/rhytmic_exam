@@ -126,7 +126,7 @@ def delete_user(id):
         db.session.commit()
         
         flash(f"{user.username} has been deleted", "success")
-        return redirect(url_for("index"))
+        return redirect(url_for("dashboard"))
     
 @app.route("/profile/<string:username>")
 def profile(username):
@@ -199,7 +199,7 @@ def reset_password(token):
         flash("Your password has been reset. Please check your email.", "success")
         return redirect(url_for("login"))
 
-    return render_template("reset_password.html", form=form)
+    return render_template("reset_password.html", title="Reset Password", form=form)
 
 @app.route("/dashboard")
 @login_required
@@ -251,7 +251,7 @@ def edit_exam_question(question_id):
     form.option_d.data = exam_question.option_d
     form.question_category.data = exam_question.question_category
     
-    return render_template("edit_exam_question.html", question_id=exam_question.question_id, form=form)
+    return render_template("edit_exam_question.html", title="Edit Exam Quesitons", question_id=exam_question.question_id, form=form)
 
 @app.route("/add_question", methods=("GET", "POST"))
 @login_required
@@ -339,15 +339,21 @@ def practical_exam():
     practical_questions = ExamQuestions.query.filter_by(question_category="practical")
     
     practical_progress = ExamResult.query.filter_by(sagf_id=user.sagf_id).first()
+    if not practical_progress:
+        #The user has not taken the theory yet
+        flash("Please take the theory assesment first", "info")
+        return(redirect(url_for("dashboard")))
 
     x = 1
     q_dict = {
         "questions":[],
-        "videos":[]  
+        "videos":[],
+        "heading":[],
     }
 
     for question in practical_questions:
-        q_dict["questions"].append(question.question)
+        q_dict["questions"].append(json.loads(question.question)["question"])
+        q_dict["heading"].append(json.loads(question.question)["heading"])
         #find a better way to do this... .loading the same data over and over again here
         q_dict["videos"] = [vid for vid in json.loads(question.question_images)["videos"]]
         x += 1
@@ -388,13 +394,21 @@ def practical_exam():
         db.session.add(practical_progress)
         db.session.commit()
 
-        return render_template("practical_exam.html", q_dict=q_dict, progress=progress)
+        return render_template("practical_exam.html", title="National Practical Exam", q_dict=q_dict, progress=progress)
        
-    return render_template("practical_exam.html", q_dict=q_dict, progress=progress)
+    return render_template("practical_exam.html", title="National Practical Exam", q_dict=q_dict, progress=progress)
     
 @app.route("/theory_exam", methods=("GET", "POST"))
 @login_required
 def theory_exam():
+    #set a cookie in the browser that will disable rendering the page in case a 
+    #user deciceds to reload the page - which he shouldn't
+    theory_exam_started = int(request.cookies.get("theory_loaded", 0))
+    if theory_exam_started == 1:
+        flash("You have already attempted the theory exam", "danger")
+        app.logger.error(f"{current_user.username} attempted re-entry into theory exam")
+        return redirect(url_for("dashboard"))
+
     user = User.query.filter_by(id = current_user.id).first_or_404()
     #check if the current user has already taken the theory exam
     if user.answers and user.answers[0].theory_taken:
@@ -423,10 +437,13 @@ def theory_exam():
     for exam_question in exam_questions:
         q_list.append(make_question_for_exam(exam_question,exam_question.question_type))
 
-    resp = make_response(render_template("theory_exam.html", title="National Theory Exam 2019", questions=q_list))
+    resp = make_response(render_template("theory_exam.html", title="National Theory Exam", questions=q_list))
+
+    #set the cookie to expire in 2 hours
+    expire_date = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+    resp.set_cookie("theory_loaded", "1", expires=expire_date)
 
     return resp
-
 @app.route("/test")
 def test_html():
     """ quickly check something out """

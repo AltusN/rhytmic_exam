@@ -9,6 +9,7 @@
             <th>Name</th>
             <th>Surname</th>
             <th>Enabled</th>
+            <th>Admin</th>
             <th></th>
             <th></th>
         </tr>
@@ -18,8 +19,29 @@
                 <td>{{ user.username }}</td>
                 <td>{{ user.name }}</td>
                 <td>{{ user.surname }}</td>
-                <td>{{ user.enabled }}</td>
-                <td><a href="{{ url_for('update_user', id=user.id) }}" class="btn btn-info pull-right">Edit</a></td>
+                <td>
+                    {% if user.enabled  %}
+                        <div class="checkbox disabled">
+                            <label><input type="checkbox" value="" checked disabled></label>
+                        </div>
+                    {% else %}
+                        <div class="checkbox disabled">
+                            <label><input type="checkbox" value="" disabled></label>
+                        </div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.admin  %}
+                        <div class="checkbox disabled">
+                            <label><input type="checkbox" value="" checked disabled></label>
+                        </div>
+                    {% else %}
+                        <div class="checkbox disabled">
+                            <label><input type="checkbox" value="" disabled></label>
+                        </div>
+                    {% endif %}
+                </td>
+                <td><a href="{{ url_for('update_user', id=user.id) }}" class="btn btn-primary pull-right">Edit</a></td>
                 <td>
                     <form action="{{ url_for('delete_user', id=user.id) }}" method="POST">
                         <input type="hidden" nanme="_method" value="DELETE">

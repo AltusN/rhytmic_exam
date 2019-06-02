@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-    <h1>include judging type like EX or AV</h1>
+    <h1>{{ q_dict["heading"][progress["q_id"]] }}</h1>
     <div class="row" id="video_row">
-        <button class="btn btn-primary btn-block" onclick="playVid()" type="button">Play Video</button>
+        <button class="btn btn-primary btn-block" onclick="playVid()" type="button">Click here to play video number {{ progress["v_id"] + 1 }}</button>
         <video oncontextmenu="return false;" id="video" width="60%" height="auto">
             <source src="{{ q_dict['videos'][progress['v_id']] }}" type="video/mp4">
             Your browser does not support the video tag.
@@ -15,7 +15,7 @@
             <div class="row" id="showme" style="display: none">
                 <form class="form-inline" action="" method="POST" name="form">
                     <div class="form-group">
-                        <label for="answer">{{q_dict["questions"][progress["q_id"]] }}</label>
+                        <label for="answer">{{ q_dict["questions"][progress["q_id"]] }}</label>
                         <input type="text" id="answer" name="answer" placeholder="Answer" required>
                     </div>    
                         <input type="submit" class="btn btn-sm btn-info" value="Submit">
@@ -37,4 +37,5 @@
             vid.play();
         };
     </script>
+    <script src="{{ url_for('static', filename='js/cookiemonster.js') }}"></script>
 {% endblock %}

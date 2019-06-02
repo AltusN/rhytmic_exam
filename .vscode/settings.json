@@ -7,4 +7,5 @@
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.testing.pyTestEnabled": true,
+    "editor.tabSize": 4
 }

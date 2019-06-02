@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block app_content %}
-    <h1><small> Welcome {{current_user.username}}</small></h1>
+    <h1><small> Welcome {{ current_user.username[0]|upper }}{{ current_user.username[1:] }}</small></h1>
     {% if current_user.is_admin %}
         <ul class="list-group">
             <li class="list-group-item">
@@ -23,8 +23,7 @@
             </li>
         </ul>
     {% else %}
-        <div class=row>
-            <p>Status of exams</p>
+        <div class=row-fluid>
             <table class="table table-striped">
                 <tr>
                     <th>Exam name</th>
@@ -86,17 +85,41 @@
             </table>
             {% if exam_result.practical_taken and exam_result.theory_taken %}
                 <div class="row">
-                    <h3 class="bg-success text-center">You have completed your National Theory Exam.</h3>
+                    <h3 class="bg-success text-center">You have completed your National Rhytmic Exam.<br>
+                    You will be notifed soon about yout results</h3>
                 </div>
             {% endif %}
         </div>
     {% endif %}
+    <hr>
+    <div class="container-fluid">
+        
+        <p class="lead">
+            <h2>Exam Rules <p><small>Please ensure you follow these rules when taking the exam</small></p></h2>
+            
+            <dl>
+                <dt>
+                    Theory Exam
+                    <dd>- Do not reload the page</dd>
+                    <dd>- Do not use the back button of the browser</dd>
+                    <dd>- You will not have an option to go back into the exam. Ensure you answer all the questions.</dd>
+                </dt>
+                <dt>
+                    Practical Exam
+                    <dd>- Do not reload the page. You will be forwarded to the next quesiton with no chance to go back</dd>
+                    <dd>- Do not use the back button of the browser</dd>
+                    <dd>- You cannot pause or reload the video. Make sure you are ready when you play the video.</dd>
+                </dt>
+            </dl>
+        </p>
+    </div>
+    
 {% endblock %}
 
 {% block app_scripts %}
-<script>
-setTimeout(function() {
-    $("div[name='flash_message']").slideUp("slow");
-}, 5000);
-</script>
+    <script>
+        setTimeout(function() {
+            $("div[name='flash_message']").slideUp("slow");
+        }, 10000);
+    </script>
 {% endblock %}

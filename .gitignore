@@ -42,3 +42,6 @@ rhytmic.log*
 
 #Environment
 .flaskenv
+
+#local only
+quick_test.py
