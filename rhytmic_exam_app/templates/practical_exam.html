@@ -3,7 +3,7 @@
 {% block app_content %}
     <h1>{{ q_dict["heading"][progress["q_id"]] }}</h1>
     <div class="row" id="vid_loading">
-        <img src="{{ url_for('static', filename='wait.jpg') }}">
+        <span>Video status: </span><span id="vid_text"></span>
     </div>
     <div class="row" id="video_row">
         <button class="btn btn-primary btn-block" onclick="playVid()" type="button">Click here to play video number {{ progress["v_id"] + 1 }}</button>
@@ -55,10 +55,12 @@
         };
 
         function testme(){
-            console.log("can play through fired");
+            console.log("can play through fired")
+            document.getElementById("vid_text").innerHTML = "Can play video through";
         }
         function testmeagain(){
-            console.log("can play fired");
+            console.log("All video loaded")
+            document.getElementById("vid_text").innerHTML = "Can play some video";
         }
 
     </script>
