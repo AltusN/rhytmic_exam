@@ -38,7 +38,7 @@ function countdown(hrs, mins, show_seconds){
 }
 
 function submitForm(formname){
-    if (!fornmae){
+    if (!formname){
         formname="exam";
     }
     window.onbeforeunload = null;
