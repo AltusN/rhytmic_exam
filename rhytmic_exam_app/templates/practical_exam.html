@@ -2,6 +2,9 @@
 
 {% block app_content %}
     <h1>{{ q_dict["heading"][progress["q_id"]] }}</h1>
+    <div class="row" id="vid_loading">
+        <img src="{{ url_for('static', filename='wait.jpg') }}">
+    </div>
     <div class="row" id="video_row">
         <button class="btn btn-primary btn-block" onclick="playVid()" type="button">Click here to play video number {{ progress["v_id"] + 1 }}</button>
         <video oncontextmenu="return false;" preload="auto" id="video" width="60%" height="auto">
@@ -32,11 +35,13 @@
     <script src="{{ url_for('static', filename='js/exam_util.js') }}"></script>
 
     <script>
+        document.getElementById('video').addEventListener('canplaythrough',testme);
+        document.getElementById('video').addEventListener('canplay',testmeagain);
         document.getElementById('video').addEventListener('ended',myHandler,false);
         function myHandler(e) {
         // What you want to do after the event
             $(this).parent().fadeOut();
-            $("#showme").show();
+            $("#showme").fadeIn();
             //Once the video is played, then the countdown must start
             startCountDown(0,2, true, "exam");
         };
@@ -48,6 +53,13 @@
         window.onbeforeunload = function() {
             return true;
         };
-        
+
+        function testme(){
+            console.log("can play through fired");
+        }
+        function testmeagain(){
+            console.log("can play fired");
+        }
+
     </script>
 {% endblock %}
