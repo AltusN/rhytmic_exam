@@ -116,6 +116,8 @@ def update_user(id):
     return render_template("update_user.html", title="Edit User", form=form, the_user=user.username)
 
 @app.route("/delete_user/<int:id>", methods=("POST",))
+@login_required
+@admin_required
 def delete_user(id):
     user = User.query.filter_by(id=id).first_or_404()
 
@@ -210,6 +212,7 @@ def dashboard():
     return render_template("dashboard.html", title="Dashboard", exam_result=exam_results)
 
 @app.route("/edit_questions")
+@login_required
 def edit_questions():
     page = request.args.get("page", 1, type=int)
 
@@ -221,6 +224,8 @@ def edit_questions():
         questions=question_pages)
 
 @app.route("/edit_exam_question/<int:question_id>", methods=("GET", "POST"))
+@login_required
+@admin_required
 def edit_exam_question(question_id):
     exam_question = ExamQuestions.query.filter_by(question_id=question_id).first_or_404()
 
@@ -256,6 +261,7 @@ def edit_exam_question(question_id):
 
 @app.route("/add_question", methods=("GET", "POST"))
 @login_required
+@admin_required
 def add_question():
     form = AddExamQuestionsForm()
 
@@ -445,6 +451,7 @@ def theory_exam():
     resp.set_cookie("theory_loaded", "1", expires=expire_date)
 
     return resp
+    
 @app.route("/test")
 def test_html():
     """ quickly check something out """

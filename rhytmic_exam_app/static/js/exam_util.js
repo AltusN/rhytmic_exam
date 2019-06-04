@@ -38,10 +38,11 @@ function countdown(hrs, mins, show_seconds){
 }
 
 function submitForm(formname){
-    document.getElementById("exam").submit();
+    window.onbeforeunload = null;
+    document.getElementById(formname).submit();
 }
 
-function startCountDown(hrs, mins, show_seconds){
+function startCountDown(hrs, mins, show_seconds, formname){
     countdown(hrs,mins, show_seconds);
-    setTimeout(submitForm, (parseInt(mins) * 60 * 1000));
+    setTimeout(submitForm, (parseInt(mins) * 60 * 1000), formname);
 }

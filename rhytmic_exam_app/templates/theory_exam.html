@@ -228,6 +228,10 @@
         frm.submit();
     }
 
+    // $(document).ready(function(){
+    //     startCountDown(0,1,true);
+    // })
+
     // Set the date we're counting down to	
     var stop_at = new Date();
     stop_at.setHours(stop_at.getHours() + 2);
@@ -266,10 +270,10 @@
             window.onbeforeunload = null;
             //expire the cookie so that we don't get an exception on POST
             setCookie("theory_loaded", "0", 0);
-            document.getElementById("exam").subnit();
+            document.getElementById("exam").submit();
         };
         
-        window.onscroll = function() {myFunction()};
+        window.onscroll = function() {stickyScroll()};
 
         // Get the navbar
         var navbar = document.getElementById("timer");
@@ -278,7 +282,7 @@
         var sticky = navbar.offsetTop;
 
         // Add the sticky class to the navbar when you reach its scroll position. Remove "sticky" when you leave the scroll position
-        function myFunction() {
+        function stickyScroll() {
         if (window.pageYOffset >= sticky) {
             navbar.classList.add("sticky");
         } else {

@@ -36,13 +36,17 @@
         function myHandler(e) {
         // What you want to do after the event
             $(this).parent().fadeOut();
-            setCookie("test_me","{{ q_dict }}",1)
             $("#showme").show();
-            startCountDown(0,2, true);
+            //Once the video is played, then the countdown must start
+            startCountDown(0,2, true, "exam");
         };
         var vid = document.getElementById("video");
         function playVid(){
             vid.play();
+        };
+
+        window.onbeforeunload = function() {
+            return true;
         };
         
     </script>

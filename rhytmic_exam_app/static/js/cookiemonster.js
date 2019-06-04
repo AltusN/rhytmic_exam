@@ -21,9 +21,9 @@ function getCookie(cname) {
     return "";
   }
 
-  function checkCookie(cname){
-      var coookie = getCookie("video_loaded");
-      if (coookie == "1"){
+  function checkCookie(cname, value){
+      var coookie = getCookie(cname);
+      if (coookie == value){
           return true;
       } else {
           return false;
