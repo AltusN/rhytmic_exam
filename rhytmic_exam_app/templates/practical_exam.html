@@ -2,10 +2,11 @@
 
 {% block app_content %}
     <h1>{{ q_dict["heading"][progress["q_id"]] }}</h1>
-    <div class="row" id="vid_loading">
-        <span>Video status: </span><span id="vid_text"></span>
-    </div>
-    <div class="row" id="video_row">
+    
+    <div class="row-fluid" id="video_row">
+        <div class="row-fluid" id="vid_loading">
+            <span>Video status: </span><img src="/static/nok.png" id="vid_status"></span>
+        </div>
         <button class="btn btn-primary btn-block" onclick="playVid()" type="button">Click here to play video number {{ progress["v_id"] + 1 }}</button>
         <video oncontextmenu="return false;" preload="auto" id="video" width="60%" height="auto">
             <source src="{{ q_dict['videos'][progress['v_id']] }}" type="video/mp4">
@@ -35,9 +36,10 @@
     <script src="{{ url_for('static', filename='js/exam_util.js') }}"></script>
 
     <script>
-        document.getElementById('video').addEventListener('canplaythrough',testme);
-        document.getElementById('video').addEventListener('canplay',testmeagain);
-        document.getElementById('video').addEventListener('ended',myHandler,false);
+        document.getElementById('video').addEventListener('canplaythrough', testme)
+        document.getElementById('video').addEventListener('canplay', testmeagain);
+        document.getElementById('video').addEventListener('pause', function() {console.log("paused");});
+        document.getElementById('video').addEventListener('ended',myHandler);
         function myHandler(e) {
         // What you want to do after the event
             $(this).parent().fadeOut();
@@ -56,11 +58,11 @@
 
         function testme(){
             console.log("can play through fired")
-            document.getElementById("vid_text").innerHTML = "Can play video through";
+            document.getElementById("vid_status").src="/static/ok.png";
         }
         function testmeagain(){
-            console.log("All video loaded")
-            document.getElementById("vid_text").innerHTML = "Can play some video";
+            console.log("Some video loaded")
+            document.getElementById("vid_status").src="/static/warn.png";
         }
 
     </script>
