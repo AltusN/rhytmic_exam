@@ -377,7 +377,7 @@ def practical_exam():
             progress["q_id"] += 1
         else:
             progress["v_id"] += 1
-        #Save the answers so long
+        #How many question have been answered
         progress["answered"] += 1
 
         practical_progress.practical_progress = json.dumps(progress)
@@ -451,7 +451,16 @@ def theory_exam():
     resp.set_cookie("theory_loaded", "1", expires=expire_date)
 
     return resp
-    
+
+@app.route("/results")
+def results():
+    """ Display a list of all the entrants results """
+
+     
+
+
+    return render_template("results.html", title="Exam Results", results=results)
+
 @app.route("/test")
 def test_html():
     """ quickly check something out """

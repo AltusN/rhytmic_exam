@@ -3,12 +3,12 @@
 {% block app_content %}
     <h1>{{ q_dict["heading"][progress["q_id"]] }}</h1>
     
-    <div class="row-fluid" id="video_row">
-        <div class="row-fluid" id="vid_loading">
-            <span>Video status: </span><img src="/static/nok.png" id="vid_status"></span>
+    <div class="row-fluid text-center" id="video_row">
+        <div class="row-fluid">
+            <strong><span class="bg-danger" id="vid_status_text">Fetching your video. Please be patient...</span></strong>
         </div>
-        <button class="btn btn-primary btn-block" onclick="playVid()" type="button">Click here to play video number {{ progress["v_id"] + 1 }}</button>
-        <video oncontextmenu="return false;" preload="auto" id="video" width="60%" height="auto">
+        <button class="btn btn-primary btn-block" onclick="playVid()" type="button" id="play_vid_button" disabled>Click here to play video number {{ progress["v_id"] + 1 }}</button>
+        <video oncontextmenu="return false;" preload="auto" id="video" width="auto" height="auto">
             <source src="{{ q_dict['videos'][progress['v_id']] }}" type="video/mp4">
             Your browser does not support the video tag.
         </video>
@@ -36,10 +36,14 @@
     <script src="{{ url_for('static', filename='js/exam_util.js') }}"></script>
 
     <script>
-        document.getElementById('video').addEventListener('canplaythrough', testme)
-        document.getElementById('video').addEventListener('canplay', testmeagain);
+        document.getElementById('video').addEventListener('canplaythrough', canPlayThrough)
+        document.getElementById('video').addEventListener('canplay', canPlay);
         document.getElementById('video').addEventListener('pause', function() {console.log("paused");});
         document.getElementById('video').addEventListener('ended',myHandler);
+
+        var vid = document.getElementById("video");
+        var clicked = false;
+
         function myHandler(e) {
         // What you want to do after the event
             $(this).parent().fadeOut();
@@ -47,22 +51,31 @@
             //Once the video is played, then the countdown must start
             startCountDown(0,2, true, "exam");
         };
-        var vid = document.getElementById("video");
         function playVid(){
             vid.play();
+            clicked = true;
         };
 
         window.onbeforeunload = function() {
             return true;
         };
 
-        function testme(){
+        function canPlayThrough(){
             console.log("can play through fired")
-            document.getElementById("vid_status").src="/static/ok.png";
+            document.getElementById("vid_status_text").innerHTML="Ready..."
+            $("#vid_status_text").removeClass().addClass("bg-success");
+            document.getElementById("play_vid_button").removeAttribute("disabled");
+            if(vid.paused){
+                if (clicked){
+                    vid.play();
+                }
+            }
         }
-        function testmeagain(){
+        function canPlay(){
             console.log("Some video loaded")
-            document.getElementById("vid_status").src="/static/warn.png";
+            document.getElementById("vid_status_text").innerHTML="Busy fetching video. Please be patient...";
+            $("#vid_status_text").removeClass().addClass("bg-warning");
+            vid.pause();
         }
 
     </script>
