@@ -11,6 +11,9 @@ from rhytmic_exam_app.main.forms import (
     Disclaimer,
     UserEditForm
 )
+
+from rhytmic_exam_app.email import send_email
+
 from rhytmic_exam_app.main.exam_utils import make_question_for_exam
 
 from rhytmic_exam_app.models import User, ExamQuestions, ExamResult
@@ -52,14 +55,29 @@ def update_user(id):
     form = UserEditForm()
 
     if form.validate_on_submit(): 
+        notify_user = False
+        
+        user.username = form.username.data
         user.name = form.name.data
         user.surname = form.surname.data
         user.email = form.email.data
+        if not user.enabled and form.enabled.data:
+            #then the user was not enabled previously but is now
+            notify_user = True
         user.enabled = form.enabled.data
         user.admin = form.admin.data
 
         db.session.add(user)
         db.session.commit()
+        
+        if notify_user:
+            send_email(
+                "Rhytmic Exam - New User Registration",
+                sender="no-reply.rhytmic_exam.co.za",
+                recipients=[user.email],
+                text_body=render_template("email/registration_complete.txt", user=user),
+                html_body=render_template("email/registration_complete.html", user=user)
+            )
 
         flash("User updated successfully", "success")
 

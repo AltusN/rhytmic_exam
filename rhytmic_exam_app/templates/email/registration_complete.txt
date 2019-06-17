@@ -1,0 +1,11 @@
+Dear {{ user.name }},
+
+Your resgistration for the Online National Rhytmic Exam is now complete Follow this link to login:
+
+{{ url_for('auth.login', _external=True) }}
+
+Remember, your username is: {{ user.usernam }}
+
+Sincerely,
+
+Rhtymic Exam
