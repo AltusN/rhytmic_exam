@@ -1,12 +1,11 @@
 <html>
     <p>Dear {{ user.name }}</p>
-    <br>
     <p>
-        You registration for the Online National Rhytmic Exam is now complete.<br>
-        Remember to user your username (which is <strong>{{ user.username }}</strong>) to login.
+        Your registration for the Online National Rhytmic Exam is now complete.<br>
+        Remember to use your username (which is <strong>{{ user.username }}</strong>) to login.
     </p>
     <p>
-        Click <a href="{{ url_for('main.index', _external=True) }}">here</a> to login
+        Click <a href="{{ url_for('auth.login', _external=True) }}">here</a> to login
     </p>
     <p>
         Regards,<br>

@@ -8,7 +8,7 @@ from rhytmic_exam_app import mail
 def send_async_email(app, msg):
     with app.app_context():
         with mail.connect():
-        	mail.send(msg)
+            mail.send(msg)
 
 def send_email(subject, sender, recipients, text_body, html_body):
     msg = Message(subject=subject, sender=sender, recipients=recipients)

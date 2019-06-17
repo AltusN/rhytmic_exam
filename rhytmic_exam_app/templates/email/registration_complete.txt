@@ -4,7 +4,7 @@ Your resgistration for the Online National Rhytmic Exam is now complete Follow t
 
 {{ url_for('auth.login', _external=True) }}
 
-Remember, your username is: {{ user.usernam }}
+Remember, your username is: {{ user.username }}
 
 Sincerely,
 

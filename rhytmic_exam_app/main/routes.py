@@ -56,8 +56,7 @@ def update_user(id):
 
     if form.validate_on_submit(): 
         notify_user = False
-        
-        user.username = form.username.data
+        #Don't update the username
         user.name = form.name.data
         user.surname = form.surname.data
         user.email = form.email.data
@@ -72,8 +71,8 @@ def update_user(id):
         
         if notify_user:
             send_email(
-                "Rhytmic Exam - New User Registration",
-                sender="no-reply.rhytmic_exam.co.za",
+                "Rhytmic Exam - User Registration Complete",
+                sender="no-reply@rhytmic_exam.co.za",
                 recipients=[user.email],
                 text_body=render_template("email/registration_complete.txt", user=user),
                 html_body=render_template("email/registration_complete.html", user=user)

@@ -6,7 +6,8 @@ def test_new_user(new_user):
     pwd = "cat"
 
     new_user.set_password(pwd)
-
+    
+    assert new_user.username == "jessy"
     assert new_user.email == "james@may.com"
     assert new_user.name == "James"
     assert new_user.surname == "May"
