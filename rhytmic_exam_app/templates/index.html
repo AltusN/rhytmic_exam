@@ -4,8 +4,8 @@
     <div class="jumbotron">
         <div class="container">
         <h1>Online Exam</h1>
-        <p>The first and totally awesome way to take your National Rhytmic Exam!</p>
-        <p><a class="btn btn-primary btn-lg" href="{{ url_for('dashboard') }}" role="button">Get Started &raquo;</a></p>
+        <p>Welcome to the National Rhytmic Exam 2019</p>
+        <p><a class="btn btn-primary btn-lg" href="{{ url_for('main.dashboard') }}" role="button">Get Started &raquo;</a></p>
         </div>
     </div>
     {% if user_agent in ["android", "ios"] %}
@@ -13,7 +13,6 @@
             <span class="bg-warning"><strong>Attemping the exam from a celular phones is not advisable</strong></span>
         </div>
     {% endif %}
-    
 {% endblock %}
 
 {% block app_scripts %}{% endblock %}

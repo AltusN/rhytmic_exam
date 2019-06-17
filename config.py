@@ -1,5 +1,8 @@
 import os
+from dotenv import load_dotenv
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, ".flaskenv"))
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "super duper secret key"
@@ -8,6 +11,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'sqlite:///' + os.path.join(basedir, 'rhytmic.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT')
 
     #Mail stuff
     MAIL_SERVER = os.environ.get("MAIL_SERVER")

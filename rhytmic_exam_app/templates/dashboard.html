@@ -4,22 +4,19 @@
     {% if current_user.is_admin %}
         <ul class="list-group">
             <li class="list-group-item">
-                <a href="{{ url_for('play') }}">play</a>
+                <a href="{{ url_for('main.theory_exam') }}">Theory Exam</a>
             </li>
             <li class="list-group-item">
-                <a href="{{ url_for('theory_exam') }}">Theory Exam</a>
+                <a href="{{ url_for('main.practical_exam') }}">Practical Exam</a>
             </li>
             <li class="list-group-item">
-                <a href="{{ url_for('practical_exam') }}">Practical Exam</a>
+                <a href="{{ url_for('main.add_question') }}">Add exam question</a>
             </li>
             <li class="list-group-item">
-                <a href="{{ url_for('add_question') }}">add question</a>
+                <a href="{{ url_for('main.edit_questions') }}">Edit exam question</a>
             </li>
             <li class="list-group-item">
-                <a href="{{ url_for('edit_questions') }}">Edit questions</a>
-            </li>
-            <li class="list-group-item">
-                <a href="{{ url_for('user_admin') }}">Update users</a>
+                <a href="{{ url_for('main.user_admin') }}">Update users</a>
             </li>
         </ul>
     {% else %}
@@ -47,12 +44,12 @@
                         {% if exam_result %}
                             {% if exam_result.theory_answer is not none %}
                                 {#The user has already taken the exam #}
-                                <a class="btn btn-info disabled" href="{{ url_for('theory_exam') }}">Take Theory Exam</a>
+                                <a class="btn btn-info disabled" href="{{ url_for('main.theory_exam') }}">Take Theory Exam</a>
                             {% else %}
-                                <a class="btn btn-primary" href="{{ url_for('theory_exam') }}">Take Theory Exam</a>
+                                <a class="btn btn-primary" href="{{ url_for('main.theory_exam') }}">Take Theory Exam</a>
                             {% endif %}
                         {% else %}
-                            <a class="btn btn-primary" href="{{ url_for('theory_exam') }}">Take Theory Exam</a>
+                            <a class="btn btn-primary" href="{{ url_for('main.theory_exam') }}">Take Theory Exam</a>
                         {% endif %}
                     </td>
                 </tr>
@@ -73,12 +70,12 @@
                         {% if exam_result %}
                             {% if exam_result.practical_taken %}
                                 {#The user has already taken the exam #}
-                                <a class="btn btn-info disabled" href="{{ url_for('practical_exam') }}">Take Practical Exam</a>
+                                <a class="btn btn-info disabled" href="{{ url_for('main.practical_exam') }}">Take Practical Exam</a>
                             {% else %}
-                                <a class="btn btn-primary" href="{{ url_for('practical_exam') }}">Take Practical Exam</a>
+                                <a class="btn btn-primary" href="{{ url_for('main.practical_exam') }}">Take Practical Exam</a>
                             {% endif %}
                         {% else %}
-                            <a class="btn btn-primary" href="{{ url_for('practical_exam') }}">Take Practical Exam</a>
+                            <a class="btn btn-primary" href="{{ url_for('main.practical_exam') }}">Take Practical Exam</a>
                         {% endif %}
                     </td>
                 </tr>
