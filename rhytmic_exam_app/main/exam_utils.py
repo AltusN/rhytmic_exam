@@ -103,7 +103,8 @@ def make_type_five_question(question):
     #if there is nothing to replace... then we'll just return the string later
     if "<q_1>" in question_string:
         question_string = question_string.replace("<q_1>","<img src='{}'>".format(replace_with_image[0]))
-    elif "<q_2>" in question_string:
+        
+    if "<q_2>" in question_string:
         question_string = question_string.replace("<q_2>","<img src='{}'>".format(replace_with_image[1]))
 
     q["q_string"] = question_string
