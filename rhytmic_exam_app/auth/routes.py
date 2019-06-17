@@ -1,5 +1,6 @@
 from flask import render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, current_user, logout_user
+from sqlalchemy.exc import IntegrityError
 
 from werkzeug.urls import url_parse
 
@@ -66,7 +67,12 @@ def register():
                     email=form.email.data)
         user.set_password(form.password.data)
         db.session.add(user)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            flash(f"An user with {form.name.data} {form.name.surname} already exists", "danger")
+            db.session.rollback()
+            return redirect(url_for("auth.register"))
         #Now the user is in the database, send an email to admin to request activation
         send_email(
             "Rhytmic Exam - New User Registration",
@@ -77,7 +83,7 @@ def register():
         )
 
         flash("Registration requested. You will receive an email once activated", "info")
-        return redirect(url_for("auth.index"))
+        return redirect(url_for("main.index"))
     
     return render_template("auth/register.html", title="Regisgter", form=form)
 
