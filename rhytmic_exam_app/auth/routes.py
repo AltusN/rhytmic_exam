@@ -70,7 +70,7 @@ def register():
         try:
             db.session.commit()
         except IntegrityError:
-            flash(f"An user with {form.name.data} {form.name.surname} already exists", "danger")
+            flash(f"An user with {form.name.data} {form.surname.data} already exists", "danger")
             db.session.rollback()
             return redirect(url_for("auth.register"))
         #Now the user is in the database, send an email to admin to request activation

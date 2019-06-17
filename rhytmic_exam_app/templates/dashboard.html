@@ -42,9 +42,10 @@
                     </td>
                     <td>
                         {% if exam_result %}
+                        {# There is a record for this user #}
                             {% if exam_result.theory_answer is not none %}
                                 {#The user has already taken the exam #}
-                                <a class="btn btn-info disabled" href="{{ url_for('main.theory_exam') }}">Take Theory Exam</a>
+                                <a class="btn btn-outline-primary disabled" href="{{ url_for('main.theory_exam') }}">Take Theory Exam</a>
                             {% else %}
                                 <a class="btn btn-primary" href="{{ url_for('main.theory_exam') }}">Take Theory Exam</a>
                             {% endif %}
