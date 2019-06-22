@@ -41,9 +41,11 @@
           <div class="col-md-6"><span class="pull-right">Time left: <span id="countdown"></span></span></div>
         </div>
       </div>
-    <h2 class="h2">
-        Theory Exam
-    </h2>
+    <h1 class="h1">
+        <img src="{{ url_for('static', filename='sagf.png') }}"> 
+        <p class="text-center">National Judges Course – Theory Examination</p>
+        <hr>
+    </h1>
     <form id="exam" action="" method="POST">
         {% for q in questions %}
         <div>
@@ -55,10 +57,10 @@
         {% if q["type"] == "1" %}
             <div>
                 <p>
-                A <input type="radio" name="{{ q['q'] }}" value="A"> &nbsp;&nbsp;{{ q['option_a'] }}<br>
-                B <input type="radio" name="{{ q['q'] }}" value="B"> &nbsp;&nbsp;{{ q['option_b'] }}<br>
-                C <input type="radio" name="{{ q['q'] }}" value="C"> &nbsp;&nbsp;{{ q['option_c'] }}<br>
-                D <input type="radio" name="{{ q['q'] }}" value="D"> &nbsp;&nbsp;{{ q['option_d'] }}<br>
+                A <input type="radio" name="{{ q['q'] }}" value="A"> &nbsp;&nbsp;{{ q['option_a']|safe }}<br>
+                B <input type="radio" name="{{ q['q'] }}" value="B"> &nbsp;&nbsp;{{ q['option_b']|safe }}<br>
+                C <input type="radio" name="{{ q['q'] }}" value="C"> &nbsp;&nbsp;{{ q['option_c']|safe }}<br>
+                D <input type="radio" name="{{ q['q'] }}" value="D"> &nbsp;&nbsp;{{ q['option_d']|safe }}<br>
                 </p>
             </div>
             <br>

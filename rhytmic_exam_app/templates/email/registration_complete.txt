@@ -1,6 +1,6 @@
 Dear {{ user.name }},
 
-Your resgistration for the Online National Rhytmic Exam is now complete Follow this link to login:
+Your resgistration for the Online National Rhytmic Exam (preview) is now complete Follow this link to login:
 
 {{ url_for('auth.login', _external=True) }}
 

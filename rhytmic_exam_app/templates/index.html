@@ -9,10 +9,11 @@
         </div>
     </div>
     {% if user_agent in ["android", "ios"] %}
-        <div class="row-fluid">
-            <span class="bg-danger"><strong>Attemping the exam from a cellular phone is not advisable</strong></span>
+        <div class="alert alert-success" role="alert">
+            <strong>You should not attempt this from a cellphone. A laptop is recomended</strong>
         </div>
     {% endif %}
+    
 {% endblock %}
 
 {% block app_scripts %}{% endblock %}

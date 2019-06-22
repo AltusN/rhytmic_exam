@@ -32,6 +32,7 @@ class AddExamQuestionsForm(FlaskForm):
 
 class Disclaimer(FlaskForm):
     agree = BooleanField("Agree", validators=[DataRequired()])
+    
     submit = SubmitField()
 
 class UserEditForm(FlaskForm):

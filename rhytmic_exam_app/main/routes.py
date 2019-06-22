@@ -204,8 +204,9 @@ def delete_question(question_id):
 
 @bp.route("/disclaimer", methods=("GET", "POST"))
 def disclaimer():
-    """ the user must agree (and mostly be aware) that they will have a limited
-    time to complete the theory and practical exam
+    """ 
+        The user must agree (and mostly be aware) that they will have a limited
+        time to complete the theory and practical exam
     """
     prev_page = request.cookies.get("previous_page")
     form = Disclaimer()
@@ -239,6 +240,7 @@ def practical_exam():
         return(redirect(url_for("main.dashboard")))
 
     x = 1
+
     q_dict = {
         "questions":[],
         "videos":[],
@@ -274,6 +276,7 @@ def practical_exam():
         else:
             answered_sofar = json.loads(practical_progress.practical_answer)
             answered_sofar[f"answer_{progress['answered']}"] = form_result.get("answer")
+            #update the databse value
             practical_progress.practical_answer = json.dumps(answered_sofar)
 
         if progress["answered"] == 20:
@@ -296,11 +299,11 @@ def practical_exam():
 @login_required
 def theory_exam():
     #set a cookie in the browser that will disable rendering the page in case a 
-    #user deciceds to reload the page - which he shouldn't
+    #user deciceds to reload the page - which they shouldn't
     theory_exam_started = int(request.cookies.get("theory_loaded", 0))
     if theory_exam_started == 1:
         flash("You have already attempted the theory exam", "danger")
-        current_app.logger.error(f"{current_user.username} attempted re-entry into theory exam")
+        current_app.logger.warn(f"{current_user.username} attempted re-entry into theory exam")
         return redirect(url_for("main.dashboard"))
 
     user = User.query.filter_by(id = current_user.id).first_or_404()
@@ -317,7 +320,7 @@ def theory_exam():
             theory_answer=json.dumps(answers), 
             theory_taken=True,
             exam_start_date = datetime.datetime.today(),
-            result=user)
+            linked_user=user)
 
         db.session.add(result)
         db.session.commit()
@@ -343,7 +346,9 @@ def theory_exam():
 def results():
     """ Display a list of all the entrants results """
 
-     
+    results = ExamResult.query.all()
+
+
 
 
     return render_template("exam/results.html", title="Exam Results", results=results)

@@ -1,8 +1,11 @@
 {% extends "base.html" %}
 
 {% block app_content %}
-    <h1>{{ q_dict["heading"][progress["q_id"]] }}</h1>
-    
+    <h1 class="h1">
+        <img src="{{ url_for('static', filename='sagf.png') }}"> 
+        <p class="text-left">{{ q_dict["heading"][progress["q_id"]] }}</p>
+    </h1>
+    <hr>
     <div class="row-fluid text-center" id="video_row">
         <div class="row-fluid">
             <strong><span class="bg-danger" id="vid_status_text">Fetching your video. Please be patient...</span></strong>
@@ -42,6 +45,7 @@
         document.getElementById('video').addEventListener('ended',myHandler);
 
         var vid = document.getElementById("video");
+        var vid_button = document.getElementById("play_vid_button");
         var clicked = false;
 
         function myHandler(e) {
@@ -55,6 +59,7 @@
         function playVid(){
             vid.play();
             clicked = true;
+            vid_button.innerText="Playing...";
         };
 
         window.onbeforeunload = function() {

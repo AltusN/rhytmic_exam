@@ -20,7 +20,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(128))
     enabled = db.Column(db.Boolean(), default=False)
     admin = db.Column(db.Boolean, default=False)
-    answers = db.relationship("ExamResult", backref=backref("result", uselist=False))
+    answers = db.relationship("ExamResult", backref=backref("linked_user", uselist=False))
     
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
