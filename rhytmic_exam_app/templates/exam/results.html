@@ -4,17 +4,24 @@
     <p class="lead">
         <h2 class="h2">User results<br><small>Select a user to see detailed result</small></h2>
     </p>
-    <table class="table-fluid table-striped table-sm">
+    <table class="table table-fluid table-hover table-sm">
         <thead>
             <th>User</th>
-            <th></th>
+            <th>SAGF-ID</th>
+            <th>Theory</th>
+            <th>Practical</th>
         </thead>
         <tbody>
-            {% for exam_result in exam_results %}
-                
+            {% for result in results %}
+                <tr>
+                    <td>{{ result.get("name") }}</td>
+                    <td>{{ result.get("sagf_id") }}</td>
+                    <td>{{ result.get("theory", 0) }} %</td>
+                    <td>{{ result.get("practical", 0) }} %</td>
+                </tr>
             {% endfor %}
         </tbody>
-    </table>>
+    </table>
 
     </table>
 {% endblock %}

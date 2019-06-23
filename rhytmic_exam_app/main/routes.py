@@ -14,7 +14,7 @@ from rhytmic_exam_app.main.forms import (
 
 from rhytmic_exam_app.email import send_email
 
-from rhytmic_exam_app.main.exam_utils import make_question_for_exam
+from rhytmic_exam_app.main.exam_utils import make_question_for_exam, calculate_score
 
 from rhytmic_exam_app.models import User, ExamQuestions, ExamResult
 
@@ -346,15 +346,27 @@ def theory_exam():
     return resp
 
 @bp.route("/results")
+@login_required
+@admin_required
 def results():
     """ Display a list of all the entrants results """
+    #answers shouldn't really be part of the exam_result table. fix this
+    exam_answers = {}
+    theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
+    for theory_answer in theory_answers:
+        exam_answers[f"{theory_answer.question_id}"] = theory_answer.answer
 
+
+    exam_result = []
     results = ExamResult.query.all()
+    for result in results:
+        r = {}
+        r["name"] = f"{result.linked_user.name} {result.linked_user.surname}"
+        r["sagf_id"] = result.linked_user.sagf_id
+        r["theory"] = calculate_score(json.loads(result.theory_answer), exam_answers)
+        exam_result.append(r)
 
-
-
-
-    return render_template("exam/results.html", title="Exam Results", results=results)
+    return render_template("exam/results.html", title="Exam Results", results=exam_result)
 
 def redirect_url(default='main.index'):
     return request.args.get('next') or \

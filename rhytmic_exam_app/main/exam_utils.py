@@ -120,3 +120,14 @@ def make_type_five_question(question):
     q["attributes"]["radio4_text"] = json.loads(question.option_d)["text"]
 
     return q
+
+def calculate_score(user_answers, actual_answers):
+    """ Takes 2 dictionaries and compares them for 
+    differences. The result is a percentage
+    """
+
+    difference = [k for k in user_answers if user_answers[k] != actual_answers[k]]
+
+    percentage = 100-(len(difference) / len(user_answers) * 100)
+
+    return percentage
