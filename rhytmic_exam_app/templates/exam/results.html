@@ -1,5 +1,20 @@
 {% extends "base.html" %}
 
 {% block app_content %}
+    <p class="lead">
+        <h2 class="h2">User results<br><small>Select a user to see detailed result</small></h2>
+    </p>
+    <table class="table-fluid table-striped table-sm">
+        <thead>
+            <th>User</th>
+            <th></th>
+        </thead>
+        <tbody>
+            {% for exam_result in exam_results %}
+                
+            {% endfor %}
+        </tbody>
+    </table>>
 
+    </table>
 {% endblock %}

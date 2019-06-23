@@ -353,6 +353,10 @@ def results():
 
     return render_template("exam/results.html", title="Exam Results", results=results)
 
+@bp.route("coming")
+def coming_soon():
+    return render_template("coming.html")
+
 def redirect_url(default='main.index'):
     return request.args.get('next') or \
            request.referrer or \

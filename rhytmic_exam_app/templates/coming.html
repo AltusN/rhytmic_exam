@@ -1,0 +1,28 @@
+{% extends "bootstrap/base.html" %}
+
+{% block head %}
+    {{ super() }}
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/coming_soon.css') }}">
+
+{% endblock %}
+
+{% block body %}
+<div class="bgimg">
+    <div class="topleft">
+      <p>Rhytmic Exam</p>
+    </div>
+    <div class="middle">
+      <h1>COMING SOON</h1>
+      <hr style="margin:auto;width:40%">
+      <p id="demo" style="font-weigth:bold;font-size:30px"></p>
+    </div>
+    <div class="bottomleft">
+      <p>Preview User? <a href="{{ url_for('auth.login') }}" style="color: greenyellow">Click here</a></p>
+    </div>
+  </div>
+
+  {% block scripts %}
+    <script src="{{ url_for('static', filename='js/coming_soon.js') }}"></script>
+  {% endblock %}
+{% endblock %}
