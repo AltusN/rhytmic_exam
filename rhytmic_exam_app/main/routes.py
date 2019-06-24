@@ -14,7 +14,7 @@ from rhytmic_exam_app.main.forms import (
 
 from rhytmic_exam_app.email import send_email
 
-from rhytmic_exam_app.main.exam_utils import make_question_for_exam, calculate_score
+from rhytmic_exam_app.main.exam_utils import make_question_for_exam, calculate_theory_score
 
 from rhytmic_exam_app.models import User, ExamQuestions, ExamResult
 
@@ -363,7 +363,11 @@ def results():
         r = {}
         r["name"] = f"{result.linked_user.name} {result.linked_user.surname}"
         r["sagf_id"] = result.linked_user.sagf_id
-        r["theory"] = calculate_score(json.loads(result.theory_answer), exam_answers)
+        percent, missed = calculate_theory_score(json.loads(result.theory_answer), exam_answers)
+        r["theory"] = percent
+        r["theory_missed"] = missed
+        r["practical"] = "xyz"
+        r["practical_answers"] = result.practical_answer
         exam_result.append(r)
 
     return render_template("exam/results.html", title="Exam Results", results=exam_result)

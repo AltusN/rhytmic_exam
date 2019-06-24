@@ -121,13 +121,20 @@ def make_type_five_question(question):
 
     return q
 
-def calculate_score(user_answers, actual_answers):
+def calculate_theory_score(user_answers, actual_answers):
     """ Takes 2 dictionaries and compares them for 
     differences. The result is a percentage
     """
+    total = len(actual_answers)
+    correct = 0
+    incorrect_answers = {}
 
-    difference = [k for k in user_answers if user_answers[k] != actual_answers[k]]
+    for k, v in actual_answers.items():
+        if actual_answers[k] == user_answers.get(k, "E"):
+            correct +=1
+        else:
+            incorrect_answers[k] = [actual_answers[k], user_answers.get(k)]
 
-    percentage = 100-(len(difference) / len(user_answers) * 100)
+    percentage = round(correct / total * 100, 1)
 
-    return percentage
+    return percentage, incorrect_answers
