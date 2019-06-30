@@ -67,8 +67,8 @@
         };
 
         function canPlayThrough(){
-            console.log("can play through fired")
-            document.getElementById("vid_status_text").innerHTML="Ready..."
+            console.log("can play through fired");
+            document.getElementById("vid_status_text").innerHTML="Ready...";
             $("#vid_status_text").removeClass().addClass("bg-success");
             document.getElementById("play_vid_button").removeAttribute("disabled");
             if(vid.paused){

@@ -38,6 +38,7 @@ nosetests.xml
 
 #project specific
 venv
+.vscode
 rhytmic.db
 rhytmic.log*
 

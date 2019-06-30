@@ -129,7 +129,7 @@ def calculate_theory_score(user_answers, actual_answers):
     correct = 0
     incorrect_answers = {}
 
-    for k, v in actual_answers.items():
+    for k in actual_answers.keys():
         if actual_answers[k] == user_answers.get(k, "E"):
             correct +=1
         else:
@@ -138,3 +138,6 @@ def calculate_theory_score(user_answers, actual_answers):
     percentage = round(correct / total * 100, 1)
 
     return percentage, incorrect_answers
+
+def calculate_practical_score():
+    pass

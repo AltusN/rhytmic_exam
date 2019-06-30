@@ -13,12 +13,14 @@
       <p>Rhytmic Exam</p>
     </div>
     <div class="middle">
-      <h1>COMING SOON</h1>
+      <h1>GET READY</h1>
       <hr style="margin:auto;width:40%">
-      <p id="demo" style="font-weigth:bold;font-size:30px"></p>
+      <p id="countdown" style="font-size:30px"></p>
     </div>
     <div class="bottomleft">
-      <p style="color: black">Preview User? <a href="{{ url_for('auth.login') }}" style="color: greenyellow">Click here</a></p>
+      <form action="{{ url_for('auth.register') }}">
+          <input type="submit" value="Registration" class="btn btn-primary">
+      </form>
     </div>
   </div>
 
