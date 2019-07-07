@@ -2,8 +2,10 @@
 
 {% block app_content %}
     <h1 class="h1">
-        <img src="{{ url_for('static', filename='sagf.png') }}"> 
-        <p class="text-left">{{ q_dict["heading"][progress["q_id"]] }}</p>
+        <p class="text-left">
+            <img src="{{ url_for('static', filename='sagf.png') }}">
+            {{ q_dict["heading"][progress["q_id"]] }}
+        </p>
     </h1>
     <hr>
     <div class="row-fluid text-center" id="video_row">

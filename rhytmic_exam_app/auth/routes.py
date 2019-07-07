@@ -32,7 +32,7 @@ def login():
             flash("Invalid username or password", "danger")
             return redirect(url_for("auth.login"))
         if not user.is_enabled():
-            flash("Registration is still in progress", "info")
+            flash("Your login has not been enabled yet by an administrator.", "warning")
             return redirect(url_for("auth.login"))
 
         login_user(user, remember = form.remember_me.data)
