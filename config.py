@@ -1,4 +1,5 @@
 import os
+import datetime
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -25,3 +26,5 @@ class Config:
         ADMINS=os.environ.get("ADMINS").split()
     except:
         ADMINS=[]
+    #Exam specific
+    EXAM_DATE=datetime.date.fromisoformat(os.environ.get("EXAM_DATE", "1995-01-01"))

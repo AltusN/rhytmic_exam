@@ -93,7 +93,7 @@ def update_user(id):
     form.enabled.data = user.enabled
     form.admin.data = user.admin
     
-    return render_template("exam/update_user.html", title="Edit User", form=form, the_user=user.username)
+    return render_template("exam/update_user.html", title="Edit User", form=form, the_user=user.name)
 
 @bp.route("/delete_user/<int:id>", methods=("POST",))
 @login_required
@@ -228,15 +228,14 @@ def disclaimer():
 @bp.route("/practical_exam", methods=("GET", "POST"))
 @login_required
 def practical_exam():
-    user = User.query.filter_by(id = current_user.id).first_or_404()
 
-    if user.answers and user.answers[0].practical_taken:
+    if current_user.answers and current_user.answers[0].practical_taken:
         flash("You have already taken the practical exam", "info")
         return redirect(url_for("main.dashboard"))
 
     practical_questions = ExamQuestions.query.filter_by(question_category="practical")
     
-    practical_progress = ExamResult.query.filter_by(sagf_id=user.sagf_id).first()
+    practical_progress = ExamResult.query.filter_by(sagf_id=current_user.sagf_id).first()
     if not practical_progress:
         #The user has not taken the theory yet
         flash("The Theory Exam must be taken first", "info")
@@ -258,8 +257,8 @@ def practical_exam():
         x += 1
 
     progress = {"q_id":0, "v_id":0, "answered":0}
-    if user.answers and user.answers[0].practical_progress is not None:
-        progress = json.loads(user.answers[0].practical_progress)
+    if current_user.answers and current_user.answers[0].practical_progress is not None:
+        progress = json.loads(current_user.answers[0].practical_progress)
 
     if request.method == "POST":
         form_result = request.form.to_dict()
@@ -331,13 +330,13 @@ def theory_exam():
         flash("Theory Exam completed. Good luck!", "success")
         return(redirect(url_for("main.dashboard")))
 
-    q_list = []
+    question_list = []
     exam_questions = ExamQuestions.query.filter_by(question_category="theory")
 
     for exam_question in exam_questions:
-        q_list.append(make_question_for_exam(exam_question,exam_question.question_type))
+        question_list.append(make_question_for_exam(exam_question,exam_question.question_type))
 
-    resp = make_response(render_template("exam/theory_exam.html", title="National Theory Exam", questions=q_list))
+    resp = make_response(render_template("exam/theory_exam.html", title="National Theory Exam", questions=question_list))
 
     #set the cookie that will expire
     expire_date = datetime.datetime.utcnow() + datetime.timedelta(hours=2)

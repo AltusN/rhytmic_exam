@@ -1,3 +1,5 @@
+import datetime
+
 from flask import render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, current_user, logout_user
 from sqlalchemy.exc import IntegrityError
@@ -34,6 +36,11 @@ def login():
         if not user.is_enabled():
             flash("Your login has not been enabled yet by an administrator.", "warning")
             return redirect(url_for("auth.login"))
+ 
+        #The exam will only run for 1 day
+        if current_app.config["EXAM_DATE"] != datetime.date.today():
+            flash(f"The exam date {current_app.config['EXAM_DATE']} is not today", "danger")
+            return redirect(url_for("main.index"))
 
         login_user(user, remember = form.remember_me.data)
         next_page = request.args.get("next")

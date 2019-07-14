@@ -3,6 +3,13 @@ import csv
 from rhytmic_exam_app import db
 from rhytmic_exam_app.models import ExamQuestions
 
+
+#Delete all the records
+ExamQuestions.query.delete()
+
+db.session.commit()
+print("Records deleted")
+
 with open(r"c:\temp\exam_questions.csv","r") as csv_file:
     csv_records = csv.reader(csv_file, delimiter=",")
     for record in csv_records:
@@ -22,3 +29,4 @@ with open(r"c:\temp\exam_questions.csv","r") as csv_file:
         db.session.add(new_rec)
 
 db.session.commit()
+print("Records imported")
