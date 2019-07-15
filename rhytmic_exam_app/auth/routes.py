@@ -38,7 +38,7 @@ def login():
             return redirect(url_for("auth.login"))
  
         #The exam will only run for 1 day
-        if current_app.config["EXAM_DATE"] != datetime.date.today():
+        if not user.is_admin and current_app.config["EXAM_DATE"] != datetime.date.today():
             flash(f"The exam date {current_app.config['EXAM_DATE']} is not today", "danger")
             return redirect(url_for("main.index"))
 

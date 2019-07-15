@@ -103,13 +103,13 @@ def delete_user(id):
 
     if user.username == current_user.username:
         flash("You cannot delete yourself", "danger")
-        return redirect(url_for("main.index"))
+        return redirect(url_for("main.user_admin"))
     else:
         db.session.delete(user)
         db.session.commit()
         
         flash(f"{user.username} has been deleted", "success")
-        return redirect(url_for("main.dashboard"))
+        return redirect(url_for("main.user_admin"))
 
 @bp.route("/dashboard")
 @login_required
