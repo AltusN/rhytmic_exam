@@ -90,6 +90,13 @@ class ExamQuestions(db.Model):
     def __repr__(self):
         return f"Question <{self.id}>"
 
+class ExamPractialAnswers(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    decipline = db.Column(db.String(64))
+    internal_question_value = db.Column(db.String(64))
+    result_question_value = db.Column(db.String(64))
+    control_score = db.Column(db.String(64))
+
 @login.user_loader
 def load_user(id):
     return User.query.get(int(id))

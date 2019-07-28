@@ -27,4 +27,6 @@ class Config:
     except:
         ADMINS=[]
     #Exam specific
+    DISABLE_EXAM_DATE=int(os.environ.get("DISABLE_EXAM_DATE") or 0) # if enabled (1) then below doesn't matter
     EXAM_DATE=datetime.date.fromisoformat(os.environ.get("EXAM_DATE", "1995-01-01"))
+    EXAM_DURATION=int(os.environ.get("EXAM_DURATION") or 1)

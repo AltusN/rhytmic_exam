@@ -139,5 +139,9 @@ def calculate_theory_score(user_answers, actual_answers):
 
     return percentage, incorrect_answers
 
-def calculate_practical_score():
-    pass
+def calculate_practical_score(user_answers, actual_answers):
+    print(user_answers)
+    for answer in actual_answers:
+        print(answer.internal_question_value, answer.result_question_value, answer.control_score)
+
+    return "some value"

@@ -36,12 +36,11 @@ def login():
         if not user.is_enabled():
             flash("Your login has not been enabled yet by an administrator.", "warning")
             return redirect(url_for("auth.login"))
- 
-        #The exam will only run for 1 day
-        if not user.is_admin and current_app.config["EXAM_DATE"] != datetime.date.today():
-            flash(f"The exam date {current_app.config['EXAM_DATE']} is not today", "danger")
-            return redirect(url_for("main.index"))
 
+        if not user.is_admin and not is_exam_active():
+            flash("Today's date does not fall in the exam date range. Please try again later", "danger")
+            return redirect(url_for("main.index"))
+                
         login_user(user, remember = form.remember_me.data)
         next_page = request.args.get("next")
 
@@ -135,3 +134,16 @@ def reset_password(token):
 @bp.route("/profile/<string:username>")
 def profile(username):
     return render_template("auth/profile.html")
+
+def is_exam_active():
+    ''' Simply checks if today's date is an active exam date '''
+
+    if current_app.config["DISABLE_EXAM_DATE"]:
+        return True
+
+    today = datetime.date.today()
+    exam_start_date = current_app.config["EXAM_DATE"]
+    exam_end_date = exam_start_date + datetime.timedelta(current_app.config["EXAM_DURATION"])
+
+    return today >= exam_start_date and today <= exam_end_date
+

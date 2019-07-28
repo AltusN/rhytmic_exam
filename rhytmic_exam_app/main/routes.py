@@ -14,9 +14,9 @@ from rhytmic_exam_app.main.forms import (
 
 from rhytmic_exam_app.email import send_email
 
-from rhytmic_exam_app.main.exam_utils import make_question_for_exam, calculate_theory_score
+from rhytmic_exam_app.main.exam_utils import make_question_for_exam, calculate_theory_score, calculate_practical_score
 
-from rhytmic_exam_app.models import User, ExamQuestions, ExamResult
+from rhytmic_exam_app.models import User, ExamQuestions, ExamResult, ExamPractialAnswers
 
 from rhytmic_exam_app.main import bp
 
@@ -352,26 +352,33 @@ def results():
     #answers shouldn't really be part of the exam_result table. fix this
     exam_answers = {}
     theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
+    practical_answers = ExamPractialAnswers.query.all()
+    
     for theory_answer in theory_answers:
         exam_answers[f"{theory_answer.question_id}"] = theory_answer.answer
 
 
-    exam_result = []
+    theory_exam_result = []
     results = ExamResult.query.all()
     for result in results:
         r = {}
         r["name"] = f"{result.linked_user.name} {result.linked_user.surname}"
         r["sagf_id"] = result.linked_user.sagf_id
+        #calculate the theory result
         percent, missed = calculate_theory_score(json.loads(result.theory_answer), exam_answers)
         r["theory"] = percent
         r["theory_missed"] = missed
+        #calculate the practical resucalculate_practical_score
         r["practical"] = "xyz"
         r["practical_answers"] = result.practical_answer
-        exam_result.append(r)
+        theory_exam_result.append(r)
 
-    return render_template("exam/results.html", title="Exam Results", results=exam_result)
+    #implement the practical result
+    #practical_exam_result = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
 
-def redirect_url(default='main.index'):
-    return request.args.get('next') or \
-           request.referrer or \
-           url_for(default)
+    return render_template("exam/results.html", title="Exam Results", theory_results=theory_exam_result)
+
+# def redirect_url(default='main.index'):
+#     return request.args.get('next') or \
+#            request.referrer or \
+#            url_for(default)
