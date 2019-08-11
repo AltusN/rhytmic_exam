@@ -28,7 +28,7 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def get_reset_password_token(self, expires_in=600):
+    def get_reset_password_token(self, expires_in=1800):
         return jwt.encode(
             {"reset_password": self.id,"exp": time() + expires_in},
             current_app.config["SECRET_KEY"],
@@ -70,6 +70,7 @@ class ExamResult(db.Model):
     exam_start_date = db.Column(db.DateTime, default=datetime.today)
     theory_taken = db.Column(db.Boolean)
     practical_taken = db.Column(db.Boolean)
+    exam_end_date = db.Column(db.DateTime)
 
     def __repr__(self):
         return f"Result <{self.id}>"

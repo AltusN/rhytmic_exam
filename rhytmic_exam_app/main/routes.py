@@ -31,14 +31,16 @@ def admin_required(f):
             return redirect(url_for("main.index"))
     return wrap
 
-@bp.route("/")
-def coming_soon():
-    return render_template("coming.html")
+# @bp.route("/")
+# def coming_soon():
+#     return render_template("coming.html")
 
+@bp.route("/")
 @bp.route("/index")
 def index():
     user_agent = request.user_agent.platform
-    return render_template("index.html", title="Home", user_agent=user_agent)
+    exam_start_date = current_app.config["EXAM_DATE"]
+    return render_template("index.html", title="Home", user_agent=user_agent, exam_date=exam_start_date)
 
 @bp.route("/user_admin", methods=("GET", "POST"))
 @login_required
@@ -74,8 +76,8 @@ def update_user(id):
         
         if notify_user:
             send_email(
-                "Rhytmic Exam - User Registration Complete",
-                sender="no-reply@rhytmic_exam.co.za",
+                "Rhytmic Exam - User Registration Confirmed",
+                sender="rhytmic.exam@gmail.com",
                 recipients=[user.email],
                 text_body=render_template("email/registration_complete.txt", user=user),
                 html_body=render_template("email/registration_complete.html", user=user)
@@ -283,6 +285,7 @@ def practical_exam():
 
         if progress["answered"] == 20:
             practical_progress.practical_taken = True
+            practical_progress.exam_end_date = datetime.datetime.today()
 
             db.session.add(practical_progress)
             db.session.commit()
@@ -351,14 +354,19 @@ def results():
     """ Display a list of all the entrants results """
     #answers shouldn't really be part of the exam_result table. fix this
     exam_answers = {}
+    exam_practical_answers = {}
     theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
     practical_answers = ExamPractialAnswers.query.all()
     
     for theory_answer in theory_answers:
         exam_answers[f"{theory_answer.question_id}"] = theory_answer.answer
 
+    for practical_answer in practical_answers:
+        exam_practical_answers[f"{practical_answer.id}"] = practical_answer.control_score
 
-    theory_exam_result = []
+
+
+    exam_result = []
     results = ExamResult.query.all()
     for result in results:
         r = {}
@@ -368,15 +376,14 @@ def results():
         percent, missed = calculate_theory_score(json.loads(result.theory_answer), exam_answers)
         r["theory"] = percent
         r["theory_missed"] = missed
-        #calculate the practical resucalculate_practical_score
-        r["practical"] = "xyz"
-        r["practical_answers"] = result.practical_answer
-        theory_exam_result.append(r)
+        practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
+        r["practical"] = practical_percent
+        r["practical_answers"] = practical_calculated_answer
+        exam_result.append(r)
 
     #implement the practical result
-    #practical_exam_result = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
 
-    return render_template("exam/results.html", title="Exam Results", theory_results=theory_exam_result)
+    return render_template("exam/results.html", title="Exam Results", exam_result=exam_result)
 
 # def redirect_url(default='main.index'):
 #     return request.args.get('next') or \

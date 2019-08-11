@@ -37,7 +37,7 @@ def login():
             flash("Your login has not been enabled yet by an administrator.", "warning")
             return redirect(url_for("auth.login"))
 
-        if not user.is_admin and not is_exam_active():
+        if not is_exam_active() and not user.is_admin:
             flash("Today's date does not fall in the exam date range. Please try again later", "danger")
             return redirect(url_for("main.index"))
                 
@@ -139,7 +139,7 @@ def is_exam_active():
     ''' Simply checks if today's date is an active exam date '''
 
     if current_app.config["DISABLE_EXAM_DATE"]:
-        return True
+        return False
 
     today = datetime.date.today()
     exam_start_date = current_app.config["EXAM_DATE"]

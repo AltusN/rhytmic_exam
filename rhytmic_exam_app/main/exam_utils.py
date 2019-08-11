@@ -1,5 +1,8 @@
 import json
 import os
+import math
+
+#Move this practical score variance
 
 def make_question_for_exam(question, type):
     """ the question types that are rendered on the theory form
@@ -140,8 +143,70 @@ def calculate_theory_score(user_answers, actual_answers):
     return percentage, incorrect_answers
 
 def calculate_practical_score(user_answers, actual_answers):
-    print(user_answers)
+    user_result = {}
+ 
+    total_score = 0
+        
     for answer in actual_answers:
-        print(answer.internal_question_value, answer.result_question_value, answer.control_score)
+        user_result[answer.internal_question_value] = {}
 
-    return "some value"
+        user_answer = user_answers.get(answer.internal_question_value)
+        user_answer = None if user_answer == "" else user_answer
+
+        #keep a tally of the practical scores
+        if user_answer:
+            mark = get_practical_mark(answer.control_score, user_answer)
+        else:
+            mark = 0
+
+        user_result[answer.internal_question_value] = [
+            answer.decipline,
+            answer.result_question_value,
+            answer.control_score,
+            user_answer if user_answer is not None else "-1",
+            mark
+            ]
+
+        total_score += mark
+        #print(answer.internal_question_value, answer.result_question_value, answer.control_score)
+    percentage = _round_half((total_score/100) *100, decimal=2)
+
+    user_result = _sort_practical_result(user_result)
+
+    return percentage, user_result
+
+def get_practical_mark(control_score, user_score):
+    """ the further away the user score is from the control score,
+        the lesss marks are rewarded. the maximum is 1 and decrements in 0.05
+    """
+    
+    if control_score == user_score:
+        return 5
+
+    difference = _round_half(abs(float(control_score) - float(user_score)))
+
+    point_allocation = [x * 0.25 for x in range(1,20)][::-1] # revers the row
+    diff_arr = [_round_half(x * 0.05, decimal=2) for x in range(1,20)]
+
+    if difference >= 1 or difference <= 0:
+        return 0
+    else:
+        return point_allocation[diff_arr.index(difference)]
+
+def _round_half(n, decimal=1):
+    mutiplier = 10 ** decimal
+    return math.floor(n*mutiplier  + 0.5) / mutiplier
+
+def _sort_practical_result(result):
+    """Sort by appartus"""
+    practical_answers = {}
+
+    app = ""
+    for answer in result.values():
+        if app != answer[0]:
+            app = answer[0]
+            if not practical_answers.get(app):
+                practical_answers[answer[0]] = {}
+        practical_answers[app][answer[1]] = [answer[2], answer[3], answer[4]]
+
+    return practical_answers

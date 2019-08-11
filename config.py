@@ -6,7 +6,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, ".flaskenv"))
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY") or "super duper secret key"
+    SECRET_KEY = os.environ.get("SECRET_KEY") or "super duper secret keys"
 
     #Database stuff
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \

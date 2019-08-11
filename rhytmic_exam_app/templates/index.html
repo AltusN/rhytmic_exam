@@ -6,6 +6,7 @@
         <h1>Online Exam</h1>
         <p>Welcome to the National Rhytmic Exam 2019</p>
         <p><a class="btn btn-primary btn-lg" href="{{ url_for('main.dashboard') }}" role="button">Get Started &raquo;</a></p>
+        <span>Exam start date: {{ exam_date }}</span>
         </div>
     </div>
     {% if user_agent in ["android", "ios"] %}

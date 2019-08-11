@@ -2,7 +2,7 @@
 
 {% block app_content %}
     <p class="lead">
-        <h2 class="h2">User results<br><small>Select a user to see detailed result</small></h2>
+        <h2 class="h2">User results<br><small>Select a user to see detailed results</small></h2>
     </p>
     <table class="table table-fluid table-hover table-sm">
         <thead>
@@ -12,7 +12,7 @@
             <th>Practical</th>
         </thead>
         <tbody>
-            {% for result in theory_results %}
+            {% for result in exam_result %}
                 <tr data-toggle="collapse" data-target>
                     <td>{{ result.get("name") }}</td>
                     <td>{{ result.get("sagf_id") }}</td>
@@ -24,7 +24,7 @@
     </table>
 
     <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-        {% for result in theory_results %}
+        {% for result in exam_result %}
         <div class="panel panel-default">
             <div class="panel-heading" role="tab" id="headingOne">
                 <h4 class="panel-title">
@@ -42,13 +42,42 @@
                         Missed theory: {{ result.get("theory_missed") }}
                     </p>
                     <p>
-                        Pratical result: <strong>{{ result.get("practical") }}</strong>
+                        Pratical result: <strong>{{ result.get("practical", 0) }}%</strong>
                         <br>
-                        Practical Answers: {{ result.get("practical_answers") }}
+                        <table class="table table-striped table-sm">
+                            <tr>
+                                <th>Apparatus</th>
+                                <th>D1 + D2</th>
+                                <th>Mark</th>
+                                <th>D3 + D4</th>
+                                <th>Mark</th>
+                                <th>AV</th>
+                                <th>Mark</th>
+                                <th>EX</th>
+                                <th>Mark</th>
+                            </tr>
+                            {% for k, v in result.practical_answers.items() %}
+                            <tr>
+                                <td>{{ k }}</td>
+                                <td>{{ "("+ v.get("D1 + D2")[0] + ") " + v.get("D1 + D2")[1] }}</td>
+                                <td>{{ v.get("D1 + D2")[2] }}</td>
+                                <td>{{ "(" + v.get("D3 + D4")[0] + ") " + v.get("D3 + D4")[1] }}</td>
+                                <td>{{ v.get("D3 + D4")[2] }}</td>
+                                <td>{{ "(" + v.get("AV")[0] + ") " + v.get("AV")[1] }}</td>
+                                <td>{{ v.get("AV")[2] }}</td>
+                                <td>{{ "(" + v.get("EX")[0] + ") " + v.get("EX")[1] }}</td>
+                                <td>{{ v.get("EX")[2] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </table>
+                        <!-- Practical Answers: {{ result.get("practical_answers") }} -->
                     </p>
                 </div>
             </div>
         </div>
         {% endfor %}
+    </div>
+    <div>
+        <button class="btn btn-primary" value="download" disabled>Download Result</button>
     </div>
 {% endblock %}
