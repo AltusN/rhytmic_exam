@@ -115,9 +115,10 @@ def delete_user(id):
 
 @bp.route("/dashboard")
 @login_required
-def dashboard():
+def dashboard():        
+
     exam_results = ExamResult.query.filter_by(sagf_id=current_user.sagf_id).first()
-     
+
     return render_template("dashboard.html", title="Dashboard", exam_result=exam_results)
 
 @bp.route("/edit_questions")
@@ -212,6 +213,8 @@ def disclaimer():
     """ 
         The user must agree (and mostly be aware) that they will have a limited
         time to complete the theory and practical exam
+
+        THIS DOES NOT WORK YET
     """
     prev_page = request.cookies.get("previous_page")
     form = Disclaimer()
@@ -220,7 +223,7 @@ def disclaimer():
         flash("redirected")
         #go back to the caller
         agreed = request.get["invalidCheck"]
-        return redirect(redirect_url())
+        return redirect("main.index")
 
     resp = make_response(render_template("exam/disclaimer.html", form=form))
     resp.set_cookie("previous_page", request.referrer)
@@ -330,7 +333,7 @@ def theory_exam():
         db.session.add(result)
         db.session.commit()
 
-        flash("Theory Exam completed. Good luck!", "success")
+        flash("Theory Exam completed. You may have a 30 minute break before attempting the practical", "success")
         return(redirect(url_for("main.dashboard")))
 
     question_list = []
@@ -364,8 +367,6 @@ def results():
     for practical_answer in practical_answers:
         exam_practical_answers[f"{practical_answer.id}"] = practical_answer.control_score
 
-
-
     exam_result = []
     results = ExamResult.query.all()
     for result in results:
@@ -381,9 +382,11 @@ def results():
         r["practical_answers"] = practical_calculated_answer
         exam_result.append(r)
 
-    #implement the practical result
-
     return render_template("exam/results.html", title="Exam Results", exam_result=exam_result)
+
+@bp.route('/download_results', methods=("GET",))
+def download_results():
+    return "This will work in a future itteration. Hit the back button of your browser to return"
 
 # def redirect_url(default='main.index'):
 #     return request.args.get('next') or \

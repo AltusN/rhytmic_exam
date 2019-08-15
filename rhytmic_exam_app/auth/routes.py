@@ -65,18 +65,19 @@ def register():
 
     form = RegistrationForm()
 
+    #email is required and is stopped on the frontend.. if there is no email, this wil break anyway
     if form.validate_on_submit():
         user = User(username=form.username.data,
                     sagf_id=form.sagf_id.data,
                     name=form.name.data,
                     surname=form.surname.data,
-                    email=form.email.data)
+                    email=form.email.data.lower())
         user.set_password(form.password.data)
         db.session.add(user)
         try:
             db.session.commit()
         except IntegrityError:
-            flash(f"An user with {form.name.data} {form.surname.data} already exists", "danger")
+            flash(f"An user combination with {form.name.data} {form.surname.data} and email {form.email.data} already exists", "danger")
             db.session.rollback()
             return redirect(url_for("auth.register"))
         #Now the user is in the database, send an email to admin to request activation
@@ -138,12 +139,14 @@ def profile(username):
 def is_exam_active():
     ''' Simply checks if today's date is an active exam date '''
 
+    #if the exam is disabled, then return false 
     if current_app.config["DISABLE_EXAM_DATE"]:
-        return False
+        return True
 
     today = datetime.date.today()
     exam_start_date = current_app.config["EXAM_DATE"]
     exam_end_date = exam_start_date + datetime.timedelta(current_app.config["EXAM_DURATION"])
-
+    
+    #return if the exam 
     return today >= exam_start_date and today <= exam_end_date
 

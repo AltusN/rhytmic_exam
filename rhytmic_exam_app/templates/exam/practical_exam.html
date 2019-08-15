@@ -82,7 +82,7 @@
 
         function canPlay(){
             console.log("Some video loaded")
-            document.getElementById("vid_status_text").innerHTML="Busy fetching video. Please be patient...";
+            document.getElementById("vid_status_text").innerHTML="Busy buffering video. Please be patient...";
             $("#vid_status_text").removeClass().addClass("bg-warning");
             vid.pause();
         }

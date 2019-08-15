@@ -155,6 +155,7 @@ def calculate_practical_score(user_answers, actual_answers):
 
         #keep a tally of the practical scores
         if user_answer:
+            user_answer = _sanatize_user_answer(user_answer)
             mark = get_practical_mark(answer.control_score, user_answer)
         else:
             mark = 0
@@ -169,7 +170,7 @@ def calculate_practical_score(user_answers, actual_answers):
 
         total_score += mark
         #print(answer.internal_question_value, answer.result_question_value, answer.control_score)
-    percentage = _round_half((total_score/100) *100, decimal=2)
+    percentage = _round_half((total_score/100) *100)
 
     user_result = _sort_practical_result(user_result)
 
@@ -183,17 +184,17 @@ def get_practical_mark(control_score, user_score):
     if control_score == user_score:
         return 5
 
-    difference = _round_half(abs(float(control_score) - float(user_score)))
+    difference = _round_half(abs(float(control_score) - float(user_score)),decimal=2)
 
     point_allocation = [x * 0.25 for x in range(1,20)][::-1] # revers the row
-    diff_arr = [_round_half(x * 0.05, decimal=2) for x in range(1,20)]
+    diff_arr = [_round_half(x * 0.05) for x in range(1,20)]
 
     if difference >= 1 or difference <= 0:
         return 0
     else:
         return point_allocation[diff_arr.index(difference)]
 
-def _round_half(n, decimal=1):
+def _round_half(n, decimal=2):
     mutiplier = 10 ** decimal
     return math.floor(n*mutiplier  + 0.5) / mutiplier
 
@@ -207,6 +208,14 @@ def _sort_practical_result(result):
             app = answer[0]
             if not practical_answers.get(app):
                 practical_answers[answer[0]] = {}
+                #[application][decipline] = control score, user answer, mark
         practical_answers[app][answer[1]] = [answer[2], answer[3], answer[4]]
 
     return practical_answers
+
+def _sanatize_user_answer(answer):
+    """ replace weird chard in the string and convert to float """
+    try:
+        return answer.replace("/",".").replace(",",".")
+    except Exception:
+        return -2

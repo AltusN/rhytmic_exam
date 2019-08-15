@@ -277,6 +277,7 @@
             window.onbeforeunload = null;
             //expire the cookie so that we don't get an exception on POST
             setCookie("theory_loaded", "0", 0);
+            //setCookie("theory_taken",true) //session cookie
             document.getElementById("exam").submit();
         };
         
