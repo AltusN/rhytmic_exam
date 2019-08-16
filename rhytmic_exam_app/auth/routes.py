@@ -42,6 +42,7 @@ def login():
             return redirect(url_for("main.index"))
                 
         login_user(user, remember = form.remember_me.data)
+        current_app.logger.info("%s has logged in", user.name)
         next_page = request.args.get("next")
 
         if not next_page or url_parse(next_page).netloc:
@@ -105,6 +106,7 @@ def reset_password_request():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user:
+            current_app.logger.info("%s requested password reset", user.name)
             send_password_reset_email(user)
         #flash even if there isn't a valid user
         flash("Password request has been sent. Check your email for instructions", "info")

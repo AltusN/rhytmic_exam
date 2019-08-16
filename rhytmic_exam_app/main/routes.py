@@ -278,6 +278,8 @@ def practical_exam():
 
         practical_progress.practical_progress = json.dumps(progress)
 
+        current_app.logger.info("%s has progressed in practical to %s", current_user.name, progress)
+
         if practical_progress.practical_answer is None:
             practical_progress.practical_answer = json.dumps({f"answer_{progress['answered']}": form_result.get("answer")})
         else:
@@ -311,7 +313,7 @@ def theory_exam():
     theory_exam_started = int(request.cookies.get("theory_loaded", 0))
     if theory_exam_started == 1:
         flash("You have already attempted the theory exam", "danger")
-        current_app.logger.warn(f"{current_user.username} attempted re-entry into theory exam")
+        current_app.logger.warn("%s attempted re-entry into theory exam", current_user.name)
         return redirect(url_for("main.dashboard"))
 
     user = User.query.filter_by(id = current_user.id).first_or_404()
@@ -319,6 +321,8 @@ def theory_exam():
     if user.answers and user.answers[0].theory_taken:
             flash("You have already completed the theory exam", "info")
             return redirect(url_for("main.dashboard"))
+    
+    current_app.logger.info("%s has started the theory exam", current_user.name)
 
     if request.method == "POST" and request.endpoint == "main.theory_exam":
         answers = request.form.to_dict()
