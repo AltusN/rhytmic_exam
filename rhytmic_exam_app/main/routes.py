@@ -381,6 +381,8 @@ def results():
         percent, missed = calculate_theory_score(json.loads(result.theory_answer), exam_answers)
         r["theory"] = percent
         r["theory_missed"] = missed
+        #practical answer cannot be None 
+        if not result.practical_answer: result.practical_answer = '{"answer_1":"0"}'
         practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
         r["practical"] = practical_percent
         r["practical_answers"] = practical_calculated_answer
