@@ -13,7 +13,7 @@
             <strong><span class="bg-danger" id="vid_status_text">Fetching your video. Please be patient...</span></strong>
         </div>
         <button class="btn btn-lg btn-primary btn-block" onclick="playVid()" type="button" id="play_vid_button" disabled>Click here to play video number {{ progress["v_id"] + 1 }}</button>
-        <video oncontextmenu="return false;" preload="auto" id="video" width="auto" height="auto" controls>
+        <video oncontextmenu="return false;" preload="auto" id="video" width="auto" height="auto">
             <source src="{{ q_dict['videos'][progress['v_id']] }}" type="video/mp4">
             Your browser does not support the video tag.
         </video>
