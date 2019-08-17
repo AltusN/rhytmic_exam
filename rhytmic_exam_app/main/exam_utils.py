@@ -214,8 +214,8 @@ def _sort_practical_result(result):
     return practical_answers
 
 def _sanatize_user_answer(answer):
-    """ replace weird chard in the string and convert to float """
+    """ replace chars that shouldn't be in the answer """
     try:
-        return answer.replace("/",".").replace(",",".")
+        return answer.replace("/",".").replace(",",".").replace("-","")
     except Exception:
         return -2
