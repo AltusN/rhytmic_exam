@@ -1,6 +1,8 @@
 import json
 import datetime
+import csv
 from functools import wraps
+from io import StringIO
 
 from flask import render_template, redirect, url_for, flash, request, make_response, current_app
 from flask_login import current_user, login_required
@@ -319,10 +321,10 @@ def theory_exam():
     user = User.query.filter_by(id = current_user.id).first_or_404()
     #check if the current user has already taken the theory exam
     if user.answers and user.answers[0].theory_taken:
-            flash("You have already completed the theory exam", "info")
-            return redirect(url_for("main.dashboard"))
+        flash("You have already completed the theory exam", "info")
+        return redirect(url_for("main.dashboard"))
     
-    current_app.logger.info("%s has started the theory exam", current_user.name)
+    current_app.logger.info("%s Theory called", current_user.name)
 
     if request.method == "POST" and request.endpoint == "main.theory_exam":
         answers = request.form.to_dict()
@@ -392,9 +394,28 @@ def results():
 
 @bp.route('/download_results', methods=("GET",))
 def download_results():
-    return "This will work in a future itteration. Hit the back button of your browser to return"
 
-# def redirect_url(default='main.index'):
-#     return request.args.get('next') or \
-#            request.referrer or \
-#            url_for(default)
+    csv_out = []
+
+    results = ExamResult.query.all()
+
+    for result in results:
+        csv_out.append([result.linked_user.name, result.linked_user.surname, result.linked_user.sagf_id])
+
+
+
+
+
+
+
+    
+    si = StringIO()
+
+    cw = csv.writer(si)
+    cw.writerows(csv_out)
+
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=export.csv"
+    output.headers["Content-type"] = "text/csv"
+
+    return output

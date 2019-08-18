@@ -181,6 +181,7 @@ def get_practical_mark(control_score, user_score):
         the lesss marks are rewarded. the maximum is 1 and decrements in 0.05
     """
     
+    #This is a string comparison... perhaps make it a float comparison?
     if control_score == user_score:
         return 5
 
@@ -215,7 +216,13 @@ def _sort_practical_result(result):
 
 def _sanatize_user_answer(answer):
     """ replace chars that shouldn't be in the answer """
+
+    #The user may have forgotten to enter a 0
+    if answer[0] == ".":
+        answer = "0" + answer
+
     try:
         return answer.replace("/",".").replace(",",".").replace("-","")
     except Exception:
+        #then we have no idea what the user intended to write down
         return -2
