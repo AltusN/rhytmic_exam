@@ -420,11 +420,10 @@ def download_results():
 
             app_scores = [app, f"({d12[0]}) {d12[1]}", d12[2], f"({d34[0]}) {d34[1]}", d34[2], f"({av[0]}) {av[1]}", av[2], f"({ex[0]}) {ex[1]}", ex[2]] 
             csv_out.append(app_scores)
-
+        
         csv_out.append(["",""])
-
-
-
+        csv_out.append(["Missed Theory", theory_missed])
+        csv_out.append(["",""])
     
     si = StringIO()
 
