@@ -126,13 +126,14 @@ def make_type_five_question(question):
 
 def calculate_theory_score(user_answers, actual_answers):
     """ Takes 2 dictionaries and compares them for 
-    differences. The result is a percentage
+    differences. The result is a percentage and the incorrect answers
     """
     total = len(actual_answers)
     correct = 0
     incorrect_answers = {}
 
     for k in actual_answers.keys():
+        #If there isn't an answer, set it to someting that will not be correct
         if actual_answers[k] == user_answers.get(k, "E"):
             correct +=1
         else:
@@ -221,6 +222,7 @@ def _sanatize_user_answer(answer):
     if answer[0] == ".":
         answer = "0" + answer
 
+    #values such as / , and - will not work so replace them
     try:
         return answer.replace("/",".").replace(",",".").replace("-","")
     except Exception:

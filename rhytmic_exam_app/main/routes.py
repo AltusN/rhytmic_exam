@@ -434,4 +434,5 @@ def download_results():
     output.headers["Content-Disposition"] = "attachment; filename=export.csv"
     output.headers["Content-type"] = "text/csv"
 
+    current_app.logger.info("%s requested file download", current_user.name)
     return output
