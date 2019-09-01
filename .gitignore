@@ -43,7 +43,7 @@ rhytmic.db
 rhytmic.log*
 
 #Environment
-.flaskenv
+.*env
 
 #local only
 quick_test.py
