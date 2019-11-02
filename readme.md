@@ -1,4 +1,4 @@
-# Online rhytmic exam
+# Online rhytmic exam [![Build Status](https://travis-ci.com/AltusN/rhytmic_exam.svg?branch=master)](https://travis-ci.com/AltusN/rhytmic_exam)
 
 **This app is pupouse built for an online version of the national rhytmic gymnastics exam**
 *It can however be used for whatever you like :)*
