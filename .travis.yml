@@ -1,1 +1,9 @@
 language: python
+#my python version
+python:
+  - "3.7"
+#install dependincies
+install: pip install -r requirements.txt
+#run the tests
+script:
+  - pytest
