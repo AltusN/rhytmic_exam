@@ -3,7 +3,16 @@
 {% block app_content %}
     <h1>Profile for {{ current_user.username }}</h1>
     <div class="row-fluid">
-        <h4>You cannot make updates to your profile at this time</h4>
-        <p><a class="btn btn-primary" href="{{ url_for('main.dashboard') }}" role="button">Back to my dashboard</a></p>
+        <h4>You can only update your password at this time</h4>
+        <p>
+            <div class="row">
+                <a class="btn btn-warning" href="{{ url_for('auth.reset') }}" role="button">Reset Password</a>
+            </div>
+            <p></p>
+            <div class="row">
+                <a class="btn btn-primary" href="{{ url_for('main.dashboard') }}" role="button">Back to my dashboard</a>
+            </div>
+        </p>
+        
     </div>
 {% endblock %}

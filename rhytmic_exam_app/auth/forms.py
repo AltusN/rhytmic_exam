@@ -17,6 +17,7 @@ class RegistrationForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired()])
     surname = StringField("Surname", validators=[DataRequired()])
     email = StringField("Email", validators=[DataRequired(), Email()])
+    level = SelectField("Level", choices=[("1","1"),("2","2")], validators=[DataRequired()])
     password = PasswordField("Password", validators=[DataRequired(), Length(min=5)])
     password2 = PasswordField("Repeat Password", validators=[DataRequired(), EqualTo("password")])
 

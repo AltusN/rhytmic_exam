@@ -1,7 +1,7 @@
 import datetime
 
 from flask import render_template, redirect, url_for, flash, request, current_app
-from flask_login import login_user, current_user, logout_user
+from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy.exc import IntegrityError
 
 from werkzeug.urls import url_parse
@@ -21,7 +21,6 @@ from ..auth.email import send_password_reset_email, send_email
 @bp.route("/login", methods=("GET","POST"))
 def login():
     if current_user.is_authenticated:
-        flash("You are already logged in", "info")
         return redirect(url_for("main.dashboard"))
 
     form = LoginForm()
@@ -54,6 +53,7 @@ def login():
     return render_template("auth/login.html", title="Sign In", form=form)
 
 @bp.route("/logout")
+@login_required
 def logout():
     logout_user()
     return redirect(url_for("main.index"))
@@ -72,7 +72,9 @@ def register():
                     sagf_id=form.sagf_id.data,
                     name=form.name.data,
                     surname=form.surname.data,
-                    email=form.email.data.lower())
+                    email=form.email.data.lower(),
+                    level = form.level.data,
+        )
         user.set_password(form.password.data)
         db.session.add(user)
         try:
@@ -116,8 +118,8 @@ def reset_password_request():
 
 @bp.route("/reset_password/<token>", methods=("GET","POST"))
 def reset_password(token):
-    if current_user.is_authenticated:
-        return redirect(url_for("index"))
+    # if current_user.is_authenticated:
+    #     return redirect(url_for("index"))
 
     user = User.verify_reset_password_token(token)
 
@@ -134,7 +136,17 @@ def reset_password(token):
 
     return render_template("auth/reset_password.html", title="Reset Password", form=form)
 
+@bp.route("/reset")
+@login_required
+def reset():
+    u = User.query.filter_by(id=current_user.id).first_or_404()
+
+    token = u.get_reset_password_token()
+
+    return redirect(url_for('auth.reset_password', token=token))
+
 @bp.route("/profile/<string:username>")
+@login_required
 def profile(username):
     return render_template("auth/profile.html")
 

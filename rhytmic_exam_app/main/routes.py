@@ -72,6 +72,7 @@ def update_user(id):
             notify_user = True
         user.enabled = form.enabled.data
         user.admin = form.admin.data
+        
 
         db.session.add(user)
         db.session.commit()
@@ -339,7 +340,7 @@ def theory_exam():
         db.session.add(result)
         db.session.commit()
 
-        flash("Theory Exam completed. You may have a 30 minute break before attempting the practical", "success")
+        flash("Theory Exam completed. Good Luck!", "success")
         return(redirect(url_for("main.dashboard")))
 
     question_list = []
