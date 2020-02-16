@@ -37,7 +37,8 @@ with open(csv_to_import, 'r', encoding='utf-8') as fin:
         i['option_c'],
         i['option_d'],
         i['answer'],
-        i['question_category']
+        i['question_category'],
+        i['exam_level']
     ) for i in records]
 
 #remove the header record
@@ -54,11 +55,13 @@ INSERT INTO exam_questions(
     option_c,
     option_d,
     answer,
-    question_category) VALUES (?,?,?,?,?,?,?,?,?,?,?);
+    question_category,
+    exam_level) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);
 '''
 
 print(f"[i] Insert {len(to_db)} records into table...", end=' ')
 cur.executemany(insert_sql, to_db)
+con.commit()
 print("done")
 con.close()
 print("[i] Exit")

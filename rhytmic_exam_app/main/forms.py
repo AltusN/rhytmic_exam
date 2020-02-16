@@ -24,6 +24,11 @@ class AddExamQuestionsForm(FlaskForm):
         ("C", "C"),
         ("D", "D"),
     ])
+    exam_level = SelectField("Exam Level", choices=[
+        ("1","1"),
+        ("2","2"),
+        ("3","3"),
+    ])
     question_category = SelectField("Question Category", choices=[
         ("theory", "Theory"),
         ("practical", "Practical"),

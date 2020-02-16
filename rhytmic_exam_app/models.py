@@ -87,6 +87,7 @@ class ExamQuestions(db.Model):
     option_c = db.Column(db.String(256))
     option_d = db.Column(db.String(256))
     answer = db.Column(db.String(1))
+    exam_level = db.Column(db.String(20))
     question_category = db.Column(db.String(64))
 
     def __repr__(self):
