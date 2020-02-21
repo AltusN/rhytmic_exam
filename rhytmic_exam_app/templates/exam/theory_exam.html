@@ -48,6 +48,19 @@
     </h1>
     <form id="exam" action="" method="POST">
         {% for q in questions %}
+        {% if q["q"] == 1 %}
+            <div>
+                <h3>Section 1: Generalities</h3>
+            </div>
+        {% elif q["q"] == 16 %}
+            <div>
+                <h3>Section 2: Execution</h3>
+            </div>
+        {% elif q["q"] == 41 %}
+            <div>
+                <h3>Section 3: Difficulty</h3>
+            </div>
+        {% endif %}
         <div>
             <strong>Question {{ q["q"] }}</strong><br>
             <p>

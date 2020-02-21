@@ -7,6 +7,8 @@ from io import StringIO
 from flask import render_template, redirect, url_for, flash, request, make_response, current_app
 from flask_login import current_user, login_required
 
+from sqlalchemy import and_
+
 from rhytmic_exam_app import db
 from rhytmic_exam_app.main.forms import (
     AddExamQuestionsForm,
@@ -152,7 +154,7 @@ def edit_exam_question(question_id):
         exam_question.option_b = form.option_b.data
         exam_question.option_c = form.option_c.data
         exam_question.option_d = form.option_d.data
-        exam_question.answer = form.answer.data
+        #exam_question.answer = form.answer.data
         exam_question.question_category = form.question_category.data
 
         db.session.add(exam_question)
@@ -314,16 +316,22 @@ def theory_exam():
     #set a cookie in the browser that will disable rendering the page in case a 
     #user deciceds to reload the page - which they shouldn't
     theory_exam_started = int(request.cookies.get("theory_loaded", 0))
+
+    if current_user.is_admin:
+        #bypas check for admin
+        theory_exam_started = 0
+
     if theory_exam_started == 1:
-        flash("You have already attempted the theory exam", "danger")
+        flash("You have already attempted the theory exam but did not complete it. You cannot retry the exam", "danger")
         current_app.logger.warn("%s attempted re-entry into theory exam", current_user.name)
         return redirect(url_for("main.dashboard"))
 
     user = User.query.filter_by(id = current_user.id).first_or_404()
-    #check if the current user has already taken the theory exam
-    if user.answers and user.answers[0].theory_taken:
-        flash("You have already completed the theory exam", "info")
-        return redirect(url_for("main.dashboard"))
+    if not current_user.is_admin:
+        #check if the current user has already taken the theory exam
+        if user.answers and user.answers[0].theory_taken:
+            flash("You have already completed the theory exam", "info")
+            return redirect(url_for("main.dashboard"))
     
     current_app.logger.info("%s Theory called", current_user.name)
 
@@ -336,15 +344,27 @@ def theory_exam():
             theory_taken=True,
             exam_start_date = datetime.datetime.today(),
             linked_user=user)
-
-        db.session.add(result)
-        db.session.commit()
+        
+        if not current_user.is_admin:
+            db.session.add(result)
+            db.session.commit()
+        else:
+            flash("You are an admin user. Results will not be saved to the database", "info")
 
         flash("Theory Exam completed. Good Luck!", "success")
         return(redirect(url_for("main.dashboard")))
 
     question_list = []
-    exam_questions = ExamQuestions.query.filter_by(question_category="theory")
+    if current_user.is_admin or not level:
+        #Get everything
+        exam_questions = ExamQuestions.query.filter_by(question_category="theory")
+    else:
+        exam_questions = ExamQuestions.query.filter(
+            and_(
+                ExamQuestions.question_category=="theory",
+                ExamQuestions.exam_level==current_user.level
+                )
+            )
 
     for exam_question in exam_questions:
         question_list.append(make_question_for_exam(exam_question,exam_question.question_type))
