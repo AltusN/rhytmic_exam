@@ -111,7 +111,7 @@ def reset_password_request():
             current_app.logger.info("%s requested password reset", user.name)
             send_password_reset_email(user)
         #flash even if there isn't a valid user
-        flash("Password request has been sent. Check your email for instructions", "info")
+        flash("Password reset request has been queued. You will revceive an email soon with instructions.", "info")
         return redirect(url_for("auth.login"))
 
     return render_template("auth/reset_password_request.html", title="Reset Password", form=form)
@@ -124,6 +124,7 @@ def reset_password(token):
     user = User.verify_reset_password_token(token)
 
     if not user:
+        flash("Reset token could not be validated or has expired", "danger")
         return redirect(url_for("main.index"))
     
     form = ResetPasswordForm()
