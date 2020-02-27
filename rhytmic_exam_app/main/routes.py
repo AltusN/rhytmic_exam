@@ -336,16 +336,16 @@ def theory_exam():
     current_app.logger.info("%s Theory called", current_user.name)
 
     if request.method == "POST" and request.endpoint == "main.theory_exam":
-        answers = request.form.to_dict()
-        if "btnsubmit" in answers: 
-            del answers["btnsubmit"]
-        result = ExamResult(
-            theory_answer=json.dumps(answers), 
-            theory_taken=True,
-            exam_start_date = datetime.datetime.today(),
-            linked_user=user)
-        
         if not current_user.is_admin:
+            answers = request.form.to_dict()
+            if "btnsubmit" in answers: 
+                del answers["btnsubmit"]
+            result = ExamResult(
+                theory_answer=json.dumps(answers), 
+                theory_taken=True,
+                exam_start_date = datetime.datetime.today(),
+                linked_user=user)
+            
             db.session.add(result)
             db.session.commit()
         else:
@@ -355,7 +355,7 @@ def theory_exam():
         return(redirect(url_for("main.dashboard")))
 
     question_list = []
-    if current_user.is_admin or not level:
+    if current_user.is_admin or not current_user.level:
         #Get everything
         exam_questions = ExamQuestions.query.filter_by(question_category="theory")
     else:
@@ -372,8 +372,11 @@ def theory_exam():
     resp = make_response(render_template("exam/theory_exam.html", title="National Theory Exam", questions=question_list))
 
     #set the cookie that will expire
-    expire_date = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
-    resp.set_cookie("theory_loaded", "1", expires=expire_date)
+    resp.set_cookie(
+        "theory_loaded",
+        "1",
+        expires=datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+        )
 
     return resp
 
