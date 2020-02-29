@@ -41,6 +41,7 @@
                         <br>
                         Missed theory: {{ result.get("theory_missed") }}
                     </p>
+                    {% if not current_user.level in ("1", "2") %}
                     <p>
                         Pratical result: <strong>{{ result.get("practical", 0) }}%</strong>
                         <br>
@@ -72,6 +73,7 @@
                         </table>
                         <!-- Practical Answers: {{ result.get("practical_answers") }} -->
                     </p>
+                    {% endif %}
                 </div>
             </div>
         </div>

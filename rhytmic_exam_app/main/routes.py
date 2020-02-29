@@ -388,7 +388,21 @@ def results():
     #answers shouldn't really be part of the exam_result table. fix this
     exam_answers = {}
     exam_practical_answers = {}
-    theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
+
+    #  exam_questions = ExamQuestions.query.filter(
+    #         and_(
+    #             ExamQuestions.question_category=="theory",
+    #             ExamQuestions.exam_level==current_user.level
+    #             )
+    #         )
+    
+    theory_answers = ExamQuestions.query.filter(
+        and_(
+            ExamQuestions.question_category=="theory",
+            ExamQuestions.exam_level=="1"
+        )
+    )
+    # theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
     practical_answers = ExamPractialAnswers.query.all()
     
     for theory_answer in theory_answers:
@@ -398,7 +412,8 @@ def results():
         exam_practical_answers[f"{practical_answer.id}"] = practical_answer.control_score
 
     exam_result = []
-    results = ExamResult.query.all()
+    participants = [x.sagf_id for x in User.query.filter_by(level="1")]
+    results = ExamResult.query.filter(ExamResult.sagf_id.in_(participants))
     for result in results:
         r = {}
         r["name"] = f"{result.linked_user.name} {result.linked_user.surname}"
@@ -421,7 +436,9 @@ def download_results():
 
     csv_out = []
 
-    results = ExamResult.query.all()
+    participants = [x.sagf_id for x in User.query.filter_by(level="1")]
+    results = ExamResult.query.filter(ExamResult.sagf_id.in_(participants))
+    # results = ExamResult.query.all()
     practical_answers = ExamPractialAnswers.query.all()
     theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
 
@@ -432,18 +449,18 @@ def download_results():
     for result in results:
         csv_out.append([result.linked_user.name, result.linked_user.surname, result.linked_user.sagf_id])
         theory_percent, theory_missed = calculate_theory_score(json.loads(result.theory_answer), t_answers)
-        practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
-        csv_out.append(["Practical",f"{practical_percent}%", "Theory", f"{theory_percent}%"])
-        csv_out.append(["Apparatus", "D12", "Mark", "D34", "Mark", "AV", "Mark", "EX", "Mark"])
-        for app in practical_calculated_answer.keys():
-            app_scores = []
-            d12 = practical_calculated_answer.get(app).get("D1 + D2")
-            d34 = practical_calculated_answer.get(app).get("D3 + D4")
-            av = practical_calculated_answer.get(app).get("AV")
-            ex = practical_calculated_answer.get(app).get("EX")
+        # practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
+        csv_out.append(["Theory", f"{theory_percent}%"])
+        # csv_out.append(["Apparatus", "D12", "Mark", "D34", "Mark", "AV", "Mark", "EX", "Mark"])
+        # for app in practical_calculated_answer.keys():
+        #     app_scores = []
+        #     d12 = practical_calculated_answer.get(app).get("D1 + D2")
+        #     d34 = practical_calculated_answer.get(app).get("D3 + D4")
+        #     av = practical_calculated_answer.get(app).get("AV")
+        #     ex = practical_calculated_answer.get(app).get("EX")
 
-            app_scores = [app, f"({d12[0]}) {d12[1]}", d12[2], f"({d34[0]}) {d34[1]}", d34[2], f"({av[0]}) {av[1]}", av[2], f"({ex[0]}) {ex[1]}", ex[2]] 
-            csv_out.append(app_scores)
+        #     app_scores = [app, f"({d12[0]}) {d12[1]}", d12[2], f"({d34[0]}) {d34[1]}", d34[2], f"({av[0]}) {av[1]}", av[2], f"({ex[0]}) {ex[1]}", ex[2]] 
+        #     csv_out.append(app_scores)
         
         csv_out.append(["",""])
         csv_out.append(["Missed Theory", theory_missed])
