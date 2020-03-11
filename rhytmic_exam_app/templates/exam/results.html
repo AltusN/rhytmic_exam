@@ -7,17 +7,25 @@
     <table class="table table-fluid table-hover table-sm">
         <thead>
             <th>User</th>
+            <th>Level</th>
             <th>SAGF-ID</th>
             <th>Theory</th>
             <th>Practical</th>
+            <th></th>
         </thead>
         <tbody>
             {% for result in exam_result %}
                 <tr data-toggle="collapse" data-target>
                     <td>{{ result.get("name") }}</td>
+                    <td>{{ result.get("level") }}</td>
                     <td>{{ result.get("sagf_id") }}</td>
                     <td>{{ result.get("theory", 0) }} %</td>
                     <td>{{ result.get("practical", 0) }} %</td>
+                    <td>
+                        {% if result.get("recent", -1) == "1" %}
+                            <span class="label label-success">New!</span>
+                        {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
         </tbody>
@@ -80,6 +88,6 @@
         {% endfor %}
     </div>
     <div>
-        <a class="btn btn-primary" href="{{ url_for('main.download_results') }}" role="button">Download Results</a>
+        <a class="btn btn-primary" href="{{ url_for('main.download_results') }}" role="button" disabled>Download Results</a>
     </div>
 {% endblock %}

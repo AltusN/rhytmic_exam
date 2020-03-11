@@ -359,12 +359,20 @@ def theory_exam():
         #Get everything
         exam_questions = ExamQuestions.query.filter_by(question_category="theory")
     else:
-        exam_questions = ExamQuestions.query.filter(
-            and_(
-                ExamQuestions.question_category=="theory",
-                ExamQuestions.exam_level==current_user.level
+        if current_user.level == "2":
+            exam_questions = ExamQuestions.query.filter(
+                and_(
+                    ExamQuestions.question_category=="theory",
+                    ExamQuestions.exam_level.in_(["1","2"])
                 )
             )
+        else:
+            exam_questions = ExamQuestions.query.filter(
+                and_(
+                    ExamQuestions.question_category=="theory",
+                    ExamQuestions.exam_level==current_user.level
+                    )
+                )
 
     for exam_question in exam_questions:
         question_list.append(make_question_for_exam(exam_question,exam_question.question_type))
@@ -396,30 +404,33 @@ def results():
     #             )
     #         )
     
-    theory_answers = ExamQuestions.query.filter(
-        and_(
-            ExamQuestions.question_category=="theory",
-            ExamQuestions.exam_level=="1"
-        )
-    )
+    theory_answers = ExamQuestions.query.filter_by(question_category="theory")
     # theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
     practical_answers = ExamPractialAnswers.query.all()
     
     for theory_answer in theory_answers:
-        exam_answers[f"{theory_answer.question_id}"] = theory_answer.answer
+        exam_answers[f"{theory_answer.question_id}"] = {
+            "answer":theory_answer.answer,
+            "level":theory_answer.exam_level
+        }
 
     for practical_answer in practical_answers:
         exam_practical_answers[f"{practical_answer.id}"] = practical_answer.control_score
 
     exam_result = []
-    participants = [x.sagf_id for x in User.query.filter_by(level="1")]
+    participants = [x.sagf_id for x in User.query.filter(User.level.in_(["1","2"]))]
     results = ExamResult.query.filter(ExamResult.sagf_id.in_(participants))
     for result in results:
         r = {}
         r["name"] = f"{result.linked_user.name} {result.linked_user.surname}"
         r["sagf_id"] = result.linked_user.sagf_id
+        #Filter bases on level
+        exam_answer_copy = {}
+        for k,v in exam_answers.items():
+            if v["level"] == result.linked_user.level:
+                exam_answer_copy[k] = v["answer"]
         #calculate the theory result
-        percent, missed = calculate_theory_score(json.loads(result.theory_answer), exam_answers)
+        percent, missed = calculate_theory_score(json.loads(result.theory_answer), exam_answer_copy)
         r["theory"] = percent
         r["theory_missed"] = missed
         #practical answer cannot be None 
@@ -427,6 +438,14 @@ def results():
         practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
         r["practical"] = practical_percent
         r["practical_answers"] = practical_calculated_answer
+        r["level"] = result.linked_user.level
+        date_taken = result.exam_start_date
+        date_diff = datetime.datetime.today()-date_taken
+        if date_diff.days <= 2:
+            r["recent"] = "1"
+        else:
+            r["recent"] = "-1"
+
         exam_result.append(r)
 
     return render_template("exam/results.html", title="Exam Results", exam_result=exam_result)
@@ -440,7 +459,12 @@ def download_results():
     results = ExamResult.query.filter(ExamResult.sagf_id.in_(participants))
     # results = ExamResult.query.all()
     practical_answers = ExamPractialAnswers.query.all()
-    theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
+    theory_answers = ExamQuestions.query.filter(
+        and_(
+            ExamQuestions.question_category=="theory",
+            ExamQuestions.exam_level=="1"
+        )
+    )
 
     t_answers = {}
     for theory_answer in theory_answers:
