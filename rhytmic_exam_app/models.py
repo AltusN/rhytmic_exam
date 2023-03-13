@@ -34,7 +34,7 @@ class User(UserMixin, db.Model):
             {"reset_password": self.id,"exp": time() + expires_in},
             current_app.config["SECRET_KEY"],
             algorithm="HS256"
-        ).decode("utf-8")
+        )
 
     def is_enabled(self):
         """ a 2 step proccess to actually authenticate on the website.
