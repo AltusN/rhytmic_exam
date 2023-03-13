@@ -1,32 +1,67 @@
-import csv
+import csv, sqlite3, os
 
-from rhytmic_exam_app import db
-from rhytmic_exam_app.models import ExamQuestions
+print("** Exam question importer **")
+database = input("[q] Location of database: ")
+csv_to_import = input("[q] Location of csv: ")
+
+if not os.path.isfile(database):
+    print(f"[x] {database} is not valid")
+    exit()
+
+if not os.path.isfile(csv_to_import):
+    print(f"[x] {csv_to_import} is not valid")
+    exit()
+
+print(f"[i] Open connection to [{database}]...", end=' ')
+con = sqlite3.connect(database)
+cur = con.cursor()
+print("done")
+
+print("[i] Deleting records...", end=' ')
+cur.execute("DELETE FROM exam_questions")
+con.commit()
+print("done")
 
 
-#Delete all the records
-ExamQuestions.query.delete()
+print(f"[i] Reading in csv data from [{csv_to_import}]")
+with open(csv_to_import, 'r', encoding='utf-8') as fin:
+    records = csv.DictReader(fin)
+    to_db = [(
+        i['id'],
+        i['question_id'],
+        i['question'],
+        i['question_type'],
+        i['question_images'],
+        i['option_a'],
+        i['option_b'],
+        i['option_c'],
+        i['option_d'],
+        i['answer'],
+        i['question_category'],
+        i['exam_level']
+    ) for i in records]
 
-db.session.commit()
-print("Records deleted")
+#remove the header record
 
-with open(r"c:\temp\exam_questions.csv","r") as csv_file:
-    csv_records = csv.reader(csv_file, delimiter=",")
-    for record in csv_records:
-        new_rec = ExamQuestions(
-            question_id=record[1],
-            question=record[2],
-            question_type=record[3],
-            question_images=record[4],
-            option_a=record[5],
-            option_b=record[6],
-            option_c=record[7],
-            option_d=record[8],
-            answer=record[9],
-            question_category=record[10]
-        )
+insert_sql = '''
+INSERT INTO exam_questions(
+    id,
+    question_id, 
+    question,
+    question_type, 
+    question_images,
+    option_a,
+    option_b,
+    option_c,
+    option_d,
+    answer,
+    question_category,
+    exam_level) VALUES (?,?,?,?,?,?,?,?,?,?,?,?);
+'''
 
-        db.session.add(new_rec)
-
-db.session.commit()
-print("Records imported")
+print(f"[i] Insert {len(to_db)} records into table...", end=' ')
+cur.executemany(insert_sql, to_db)
+con.commit()
+print("done")
+con.close()
+print("[i] Exit")

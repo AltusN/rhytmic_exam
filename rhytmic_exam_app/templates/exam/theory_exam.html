@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block page_head %}
 <script>
-    window.addEventListener("load", function(){
+    window.addEventListener("load", function() {
         var load_screen = document.getElementById("load_screen");
         document.getElementById("load_div").removeChild(load_screen);
     });
+
+    window.onbeforeunload = function() {
+            return "Are you sure? you will loose your work.";
+        };
+
 </script>
 {% endblock %}
 {% block page_style %}
@@ -48,6 +53,19 @@
     </h1>
     <form id="exam" action="" method="POST">
         {% for q in questions %}
+        {% if q["q"] == 1 %}
+            <div>
+                <h3>Section 1: Generalities</h3>
+            </div>
+        {% elif q["q"] == 16 %}
+            <div>
+                <h3>Section 2: Execution</h3>
+            </div>
+        {% elif q["q"] == 41 %}
+            <div>
+                <h3>Section 3: Difficulty</h3>
+            </div>
+        {% endif %}
         <div>
             <strong>Question {{ q["q"] }}</strong><br>
             <p>
@@ -241,8 +259,8 @@
 
     // Set the date we're counting down to	
     var stop_at = new Date();
-    stop_at.setHours(stop_at.getHours() + 2);
-    stop_at.setMinutes(stop_at.getMinutes() + 1);
+    stop_at.setHours(stop_at.getHours() + 1);
+    stop_at.setMinutes(stop_at.getMinutes() + 31);
 
     // Update the count down every 5 second
     var x = setInterval(function() {
@@ -268,10 +286,6 @@
             submitOnExpire();
             }
         }, 5000);
-
-        window.onbeforeunload = function() {
-            return true;
-        };
 
         function submitForm(){
             window.onbeforeunload = null;

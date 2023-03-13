@@ -24,6 +24,11 @@ class AddExamQuestionsForm(FlaskForm):
         ("C", "C"),
         ("D", "D"),
     ])
+    exam_level = SelectField("Exam Level", choices=[
+        ("1","1"),
+        ("2","2"),
+        ("3","3"),
+    ])
     question_category = SelectField("Question Category", choices=[
         ("theory", "Theory"),
         ("practical", "Practical"),
@@ -40,7 +45,7 @@ class UserEditForm(FlaskForm):
     name = StringField("Name", validators=[DataRequired()])
     surname = StringField("Surname", validators=[DataRequired()])
     sagf_id = StringField("SAGF ID", validators=[DataRequired()])
-    email = StringField("Email Adrress", validators=[DataRequired(), Email()])
+    email = StringField("Email Address", validators=[DataRequired(), Email()])
     password = PasswordField("Password")
     password2 = PasswordField("Repear Password", validators=[EqualTo("password")])
     enabled = BooleanField("Enabled")

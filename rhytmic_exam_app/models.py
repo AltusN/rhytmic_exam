@@ -14,6 +14,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     sagf_id = db.Column(db.String(64), index=True, unique=True)
+    level = db.Column(db.String(64), nullable=True)
     name = db.Column(db.String(128))
     surname = db.Column(db.String(128))
     email = db.Column(db.String(128), index=True, unique=True)
@@ -28,12 +29,12 @@ class User(UserMixin, db.Model):
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
-    def get_reset_password_token(self, expires_in=1800):
+    def get_reset_password_token(self, expires_in=5400):
         return jwt.encode(
             {"reset_password": self.id,"exp": time() + expires_in},
             current_app.config["SECRET_KEY"],
             algorithm="HS256"
-        ).decode("utf-8")
+        )
 
     def is_enabled(self):
         """ a 2 step proccess to actually authenticate on the website.
@@ -86,6 +87,7 @@ class ExamQuestions(db.Model):
     option_c = db.Column(db.String(256))
     option_d = db.Column(db.String(256))
     answer = db.Column(db.String(1))
+    exam_level = db.Column(db.String(20))
     question_category = db.Column(db.String(64))
 
     def __repr__(self):

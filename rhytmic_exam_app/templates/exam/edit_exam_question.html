@@ -32,6 +32,9 @@
         <div class="form-group" hidden>
             {{ render_field( form.answer, class_="form-control") }}
         </div>
+        <div class="form-group" hidden>
+            {{ render_field( form.exam_level, class_="form-control") }}
+        </div>
         <div class="form-group">
             {{ form.submit(class_="btn btn-success", value="Update") }}
             <a href="{{ url_for('main.edit_questions') }}" class="btn btn-danger">Cancel</a>

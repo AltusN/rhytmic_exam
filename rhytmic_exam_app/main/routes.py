@@ -7,6 +7,8 @@ from io import StringIO
 from flask import render_template, redirect, url_for, flash, request, make_response, current_app
 from flask_login import current_user, login_required
 
+from sqlalchemy import and_
+
 from rhytmic_exam_app import db
 from rhytmic_exam_app.main.forms import (
     AddExamQuestionsForm,
@@ -72,6 +74,7 @@ def update_user(id):
             notify_user = True
         user.enabled = form.enabled.data
         user.admin = form.admin.data
+        
 
         db.session.add(user)
         db.session.commit()
@@ -151,7 +154,7 @@ def edit_exam_question(question_id):
         exam_question.option_b = form.option_b.data
         exam_question.option_c = form.option_c.data
         exam_question.option_d = form.option_d.data
-        exam_question.answer = form.answer.data
+        #exam_question.answer = form.answer.data
         exam_question.question_category = form.question_category.data
 
         db.session.add(exam_question)
@@ -313,37 +316,63 @@ def theory_exam():
     #set a cookie in the browser that will disable rendering the page in case a 
     #user deciceds to reload the page - which they shouldn't
     theory_exam_started = int(request.cookies.get("theory_loaded", 0))
+
+    if current_user.is_admin:
+        #bypas check for admin
+        theory_exam_started = 0
+
     if theory_exam_started == 1:
-        flash("You have already attempted the theory exam", "danger")
+        flash("You have already attempted the theory exam but did not complete it. You cannot retry the exam", "danger")
         current_app.logger.warn("%s attempted re-entry into theory exam", current_user.name)
         return redirect(url_for("main.dashboard"))
 
     user = User.query.filter_by(id = current_user.id).first_or_404()
-    #check if the current user has already taken the theory exam
-    if user.answers and user.answers[0].theory_taken:
-        flash("You have already completed the theory exam", "info")
-        return redirect(url_for("main.dashboard"))
+    if not current_user.is_admin:
+        #check if the current user has already taken the theory exam
+        if user.answers and user.answers[0].theory_taken:
+            flash("You have already completed the theory exam", "info")
+            return redirect(url_for("main.dashboard"))
     
     current_app.logger.info("%s Theory called", current_user.name)
 
     if request.method == "POST" and request.endpoint == "main.theory_exam":
-        answers = request.form.to_dict()
-        if "btnsubmit" in answers: 
-            del answers["btnsubmit"]
-        result = ExamResult(
-            theory_answer=json.dumps(answers), 
-            theory_taken=True,
-            exam_start_date = datetime.datetime.today(),
-            linked_user=user)
+        if not current_user.is_admin:
+            answers = request.form.to_dict()
+            if "btnsubmit" in answers: 
+                del answers["btnsubmit"]
+            result = ExamResult(
+                theory_answer=json.dumps(answers), 
+                theory_taken=True,
+                exam_start_date = datetime.datetime.today(),
+                linked_user=user)
+            
+            db.session.add(result)
+            db.session.commit()
+        else:
+            flash("You are an admin user. Results will not be saved to the database", "info")
 
-        db.session.add(result)
-        db.session.commit()
-
-        flash("Theory Exam completed. You may have a 30 minute break before attempting the practical", "success")
+        flash("Theory Exam completed. Good Luck!", "success")
         return(redirect(url_for("main.dashboard")))
 
     question_list = []
-    exam_questions = ExamQuestions.query.filter_by(question_category="theory")
+    if current_user.is_admin or not current_user.level:
+        #Get everything
+        exam_questions = ExamQuestions.query.filter_by(question_category="theory")
+    else:
+        if current_user.level == "2":
+            exam_questions = ExamQuestions.query.filter(
+                and_(
+                    ExamQuestions.question_category=="theory",
+                    ExamQuestions.exam_level.in_(["1","2"])
+                )
+            )
+        else:
+            exam_questions = ExamQuestions.query.filter(
+                and_(
+                    ExamQuestions.question_category=="theory",
+                    ExamQuestions.exam_level==current_user.level
+                    )
+                )
 
     for exam_question in exam_questions:
         question_list.append(make_question_for_exam(exam_question,exam_question.question_type))
@@ -351,8 +380,11 @@ def theory_exam():
     resp = make_response(render_template("exam/theory_exam.html", title="National Theory Exam", questions=question_list))
 
     #set the cookie that will expire
-    expire_date = datetime.datetime.utcnow() + datetime.timedelta(hours=2)
-    resp.set_cookie("theory_loaded", "1", expires=expire_date)
+    resp.set_cookie(
+        "theory_loaded",
+        "1",
+        expires=datetime.datetime.utcnow() + datetime.timedelta(hours=2)
+        )
 
     return resp
 
@@ -364,23 +396,41 @@ def results():
     #answers shouldn't really be part of the exam_result table. fix this
     exam_answers = {}
     exam_practical_answers = {}
-    theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
+
+    #  exam_questions = ExamQuestions.query.filter(
+    #         and_(
+    #             ExamQuestions.question_category=="theory",
+    #             ExamQuestions.exam_level==current_user.level
+    #             )
+    #         )
+    
+    theory_answers = ExamQuestions.query.filter_by(question_category="theory")
+    # theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
     practical_answers = ExamPractialAnswers.query.all()
     
     for theory_answer in theory_answers:
-        exam_answers[f"{theory_answer.question_id}"] = theory_answer.answer
+        exam_answers[f"{theory_answer.question_id}"] = {
+            "answer":theory_answer.answer,
+            "level":theory_answer.exam_level
+        }
 
     for practical_answer in practical_answers:
         exam_practical_answers[f"{practical_answer.id}"] = practical_answer.control_score
 
     exam_result = []
-    results = ExamResult.query.all()
+    participants = [x.sagf_id for x in User.query.filter(User.level.in_(["1","2"]))]
+    results = ExamResult.query.filter(ExamResult.sagf_id.in_(participants))
     for result in results:
         r = {}
         r["name"] = f"{result.linked_user.name} {result.linked_user.surname}"
         r["sagf_id"] = result.linked_user.sagf_id
+        #Filter bases on level
+        exam_answer_copy = {}
+        for k,v in exam_answers.items():
+            if v["level"] == result.linked_user.level:
+                exam_answer_copy[k] = v["answer"]
         #calculate the theory result
-        percent, missed = calculate_theory_score(json.loads(result.theory_answer), exam_answers)
+        percent, missed = calculate_theory_score(json.loads(result.theory_answer), exam_answer_copy)
         r["theory"] = percent
         r["theory_missed"] = missed
         #practical answer cannot be None 
@@ -388,6 +438,14 @@ def results():
         practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
         r["practical"] = practical_percent
         r["practical_answers"] = practical_calculated_answer
+        r["level"] = result.linked_user.level
+        date_taken = result.exam_start_date
+        date_diff = datetime.datetime.today()-date_taken
+        if date_diff.days <= 2:
+            r["recent"] = "1"
+        else:
+            r["recent"] = "-1"
+
         exam_result.append(r)
 
     return render_template("exam/results.html", title="Exam Results", exam_result=exam_result)
@@ -397,9 +455,16 @@ def download_results():
 
     csv_out = []
 
-    results = ExamResult.query.all()
+    participants = [x.sagf_id for x in User.query.filter_by(level="1")]
+    results = ExamResult.query.filter(ExamResult.sagf_id.in_(participants))
+    # results = ExamResult.query.all()
     practical_answers = ExamPractialAnswers.query.all()
-    theory_answers = ExamQuestions.query.filter_by(question_category="theory").all()
+    theory_answers = ExamQuestions.query.filter(
+        and_(
+            ExamQuestions.question_category=="theory",
+            ExamQuestions.exam_level=="1"
+        )
+    )
 
     t_answers = {}
     for theory_answer in theory_answers:
@@ -408,18 +473,18 @@ def download_results():
     for result in results:
         csv_out.append([result.linked_user.name, result.linked_user.surname, result.linked_user.sagf_id])
         theory_percent, theory_missed = calculate_theory_score(json.loads(result.theory_answer), t_answers)
-        practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
-        csv_out.append(["Practical",f"{practical_percent}%", "Theory", f"{theory_percent}%"])
-        csv_out.append(["Apparatus", "D12", "Mark", "D34", "Mark", "AV", "Mark", "EX", "Mark"])
-        for app in practical_calculated_answer.keys():
-            app_scores = []
-            d12 = practical_calculated_answer.get(app).get("D1 + D2")
-            d34 = practical_calculated_answer.get(app).get("D3 + D4")
-            av = practical_calculated_answer.get(app).get("AV")
-            ex = practical_calculated_answer.get(app).get("EX")
+        # practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
+        csv_out.append(["Theory", f"{theory_percent}%"])
+        # csv_out.append(["Apparatus", "D12", "Mark", "D34", "Mark", "AV", "Mark", "EX", "Mark"])
+        # for app in practical_calculated_answer.keys():
+        #     app_scores = []
+        #     d12 = practical_calculated_answer.get(app).get("D1 + D2")
+        #     d34 = practical_calculated_answer.get(app).get("D3 + D4")
+        #     av = practical_calculated_answer.get(app).get("AV")
+        #     ex = practical_calculated_answer.get(app).get("EX")
 
-            app_scores = [app, f"({d12[0]}) {d12[1]}", d12[2], f"({d34[0]}) {d34[1]}", d34[2], f"({av[0]}) {av[1]}", av[2], f"({ex[0]}) {ex[1]}", ex[2]] 
-            csv_out.append(app_scores)
+        #     app_scores = [app, f"({d12[0]}) {d12[1]}", d12[2], f"({d34[0]}) {d34[1]}", d34[2], f"({av[0]}) {av[1]}", av[2], f"({ex[0]}) {ex[1]}", ex[2]] 
+        #     csv_out.append(app_scores)
         
         csv_out.append(["",""])
         csv_out.append(["Missed Theory", theory_missed])

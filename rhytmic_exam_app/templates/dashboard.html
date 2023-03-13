@@ -57,6 +57,7 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% if current_user.level not in ["1","2"] %}
                 <tr>
                     <td>Practical Exam</td>
                     <td> 
@@ -83,6 +84,7 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% endif %}
             </table>
             {% if exam_result.practical_taken and exam_result.theory_taken %}
                 <div class="row">
@@ -100,9 +102,10 @@
                         Theory Exam
                         <dd>- Do not reload the page.</dd>
                         <dd>- Do not use the back button of the browser.</dd>
-                        <dd>- You will not have an option to go back into the exam. Ensure you answer <strong>all</strong> the questions.</dd>
+                        <dd>- You will <strong>not</strong> have an option to go back into the exam. Ensure you answer <strong>all</strong> the questions.</dd>
                         <dd>- Only use the "Submit" button on the page.</dd>
                     </dt>
+                    {% if current_user.level not in ["1","2"] %}
                     <dt>
                         Practical Exam
                         <dd>- Do not reload the page. You will be forwarded to the next quesiton with no chance to go back.</dd>
@@ -110,6 +113,7 @@
                         <dd>- You cannot pause or reload the video. Make sure you are ready when you play the video.</dd>
                         <dd>- Only use the "Submit" button on the page.</dd>
                     </dt>
+                    {% endif %}
                 </dl>
             </p>
         </div>
