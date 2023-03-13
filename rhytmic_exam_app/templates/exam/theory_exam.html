@@ -1,10 +1,15 @@
 {% extends "base.html" %}
 {% block page_head %}
 <script>
-    window.addEventListener("load", function(){
+    window.addEventListener("load", function() {
         var load_screen = document.getElementById("load_screen");
         document.getElementById("load_div").removeChild(load_screen);
     });
+
+    window.onbeforeunload = function() {
+            return "Are you sure? you will loose your work.";
+        };
+
 </script>
 {% endblock %}
 {% block page_style %}
@@ -281,10 +286,6 @@
             submitOnExpire();
             }
         }, 5000);
-
-        window.onbeforeunload = function() {
-            return true;
-        };
 
         function submitForm(){
             window.onbeforeunload = null;
