@@ -128,6 +128,7 @@ def dashboard():
 
 @bp.route("/edit_questions")
 @login_required
+@admin_required
 def edit_questions():
     page = request.args.get("page", 1, type=int)
 
@@ -142,6 +143,9 @@ def edit_questions():
 @login_required
 @admin_required
 def edit_exam_question(question_id):
+    # This is still super sketchy. I'm allowing html tags as input, but there
+    # is nothing stopping the user to input malicious scripts as well
+    # Obviously, don't use this in production
     exam_question = ExamQuestions.query.filter_by(question_id=question_id).first_or_404()
 
     form = AddExamQuestionsForm()
@@ -154,7 +158,8 @@ def edit_exam_question(question_id):
         exam_question.option_b = form.option_b.data
         exam_question.option_c = form.option_c.data
         exam_question.option_d = form.option_d.data
-        #exam_question.answer = form.answer.data
+        exam_question.answer = form.answer.data
+        exam_question.level = form.exam_level
         exam_question.question_category = form.question_category.data
 
         db.session.add(exam_question)
@@ -455,7 +460,8 @@ def download_results():
 
     csv_out = []
 
-    participants = [x.sagf_id for x in User.query.filter_by(level="1")]
+    # This isn't right. we should rather filter on recent results   
+    participants = [x.sagf_id for x in User.query.filter(User.level.in_(["1","2"]))]
     results = ExamResult.query.filter(ExamResult.sagf_id.in_(participants))
     # results = ExamResult.query.all()
     practical_answers = ExamPractialAnswers.query.all()
@@ -496,7 +502,7 @@ def download_results():
     cw.writerows(csv_out)
 
     output = make_response(si.getvalue())
-    output.headers["Content-Disposition"] = "attachment; filename=export.csv"
+    output.headers["Content-Disposition"] = "attachment; filename=exam_result.csv"
     output.headers["Content-type"] = "text/csv"
 
     current_app.logger.info("%s requested file download", current_user.name)

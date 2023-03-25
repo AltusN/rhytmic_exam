@@ -6,6 +6,7 @@
             <tr>
                 <th>ID</th>
                 <th>Question</th>
+                <th>Answer</th>
                 <th></th>
                 <th></th>
             </tr>
@@ -15,6 +16,7 @@
             <tr>
                 <td>{{ question.id }}</td>
                 <td>{{ question.question }}</td>
+                <td align="center">{{ question.answer }}</td>
                 <td><a href="{{ url_for('main.edit_exam_question',  question_id=question.id) }}" class="btn btn-primary pull-right">Edit</a></td>
                 <td>
                     <form action="{{ url_for('main.delete_question', question_id=question.id) }}" method="POST">

@@ -6,6 +6,14 @@ The second optional parameter should be where the db is (default is to look for 
 in current dir named 'rhytmic.db'). 
 """
 
+def export_all(db:str) -> None:
+    #export the entire database to csv files
+    sql = "SELECT name FROM sqlite_master WHERE type='table';"
+    con = sqlite3.connect(db)
+    cur = con.cursor().execute(sql).fetchall()
+    
+    print(cur)
+    
 def import_questions(database:str, csv_to_import:str) -> None:
 
     temp_table = "temp_questions"
@@ -68,13 +76,15 @@ def import_questions(database:str, csv_to_import:str) -> None:
     print(f"[i] Insert {len(to_db)} records into table...", end=" ") 
     try:
         cur.executemany(INSERT_SQL, to_db)
+        # if the above succeeds, then we don't need the temp table anymore
+        cur.execute(f"DROP TABLE IF EXISTS {temp_table}")
         con.commit()
         print("done")
     except Exception as e:
-        print(["[x] Somehting went wrong with the questions insert. rolling back", e])
+        print(["[x] Something went wrong with the questions insert. rolling back", e])
         cur.execute(f"DELETE FROM {exam_questions_table}")
         cur.execute(f"INSERT INTO {exam_questions_table} SELECT * from {temp_table}")
-        cur.execute(f"DROP TABLE {temp_table}")
+        cur.execute(f"DROP TABLE IF EXISTS {temp_table}")
         con.commit()
     finally:
         con.close()
@@ -109,11 +119,13 @@ def export_questions(database:str, csv_out:str) -> None:
     con.close()
 
 if __name__=="__main__":
-    print(len(sys.argv))
+    
     mode = None
     db = None
     csv_file = None
 
+    # if you know how to read this, you already know this is a shortcut intended
+    # for the developer
     if len(sys.argv) == 4:
         # only check the mode.. the rest is up to the user to have correct
         print(f"[i] All parameters specified: {sys.argv[1:]}")
@@ -126,19 +138,22 @@ if __name__=="__main__":
                 import_questions(db, csv_file)
             case "e":
                 export_questions(db, csv_file)
+            case "ee":
+                export_all(db)
             case _:
                 print("[x] Could not determine the mode.")
     else:
         print("** Exam question import / export **")
         
-        mode = input("[q] (i)mport or (e)xport? ")
+        mode = input("[q] (i)mport or (e)xport ('ee' to export everything)? ")
         
-        if mode.lower() not in ('i', 'e'):
-            print(f'[x] Expected either i or e, not {mode}')
+        if mode.lower() not in ('i', 'e', 'ee'):
+            print(f"[x] Expected 'i', 'e' or 'ee', not {mode}")
             exit()
         else:
             mode = mode.lower()
 
+        # Get the database location
         db = input("[q] Location of database: ")
 
         if db is None or db == "":
@@ -147,15 +162,24 @@ if __name__=="__main__":
         elif not os.path.isfile(db):
             print("[x] Database location is not valid")
             exit()
-
-        csv_file = input("[q] Location of csv: ")
-
-        if mode == 'i' and not os.path.isfile(csv_file):
-            print(f"[x] Invalid file location specided {csv_file}")
-            exit()
+        # don't need a csv file if we're exporting everything
+        if not mode == 'ee':
+            csv_file = input("[q] Location of csv: ")
+            if csv_file == "" and mode == 'e':
+                csv_file = "exported_questions.csv"
+                print(f"[i] Defaulting to {csv_file}")
+            elif mode == 'i' and not os.path.isfile(csv_file):
+                print(f"[x] Invalid file location specided {csv_file}")
+                exit()
         
-
-        if mode == "e":
-            export_questions(db, csv_file)
-        else:
-            import_questions(db, csv_file)
+        # Go do the work
+        match mode:
+            case "e":
+                export_questions(db, csv_file)
+            case 'i':
+                import_questions(db, csv_file)
+            case 'ee':
+                export_all(db)
+            case _:
+                print(f"[x] Somehow we got here with mode '{mode}' but should not have.")
+                exit()
