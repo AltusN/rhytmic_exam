@@ -64,14 +64,10 @@ def make_type_three_question(question):
     q["type"] = "3"
     q["images"] = [os.path.join(path, x) for x in json.loads(
         question.question_images)["path"]["filename"]]
-    q["option_a"] = [x for x in json.loads(
-        question.option_a)["q_a"]]
-    q["option_b"] = [x for x in json.loads(
-        question.option_b)["q_a"]]
-    q["option_c"] = [x for x in json.loads(
-        question.option_c)["q_a"]]
-    q["option_d"] = [x for x in json.loads(
-        question.option_d)["q_a"]]
+    q["option_a"] = [x for x in json.loads(question.option_a)["q_a"]]
+    q["option_b"] = [x for x in json.loads(question.option_b)["q_a"]]
+    q["option_c"] = [x for x in json.loads(question.option_c)["q_a"]]
+    q["option_d"] = [x for x in json.loads(question.option_d)["q_a"]]
 
     return q
 

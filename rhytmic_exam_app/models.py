@@ -74,7 +74,7 @@ class ExamResult(db.Model):
     exam_end_date = db.Column(db.DateTime)
 
     def __repr__(self):
-        return f"Result <{self.id}>"
+        return f"Result <{self.id}>, <{self.sagf_id}>"
 
 class ExamQuestions(db.Model):
     id = db.Column(db.Integer, primary_key=True)

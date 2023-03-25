@@ -76,6 +76,7 @@ def register():
                     level = form.level.data,
         )
         user.set_password(form.password.data)
+        user.enabled = True
         db.session.add(user)
         try:
             db.session.commit()
@@ -92,10 +93,10 @@ def register():
             html_body=render_template("email/new_user.html")
         )
 
-        flash("Registration requested. You will receive an email once activated", "info")
+        flash("Account created. Please login to continue", "info")
         return redirect(url_for("main.index"))
     
-    return render_template("auth/register.html", title="Regisgter", form=form)
+    return render_template("auth/register.html", title="Register", form=form)
 
 @bp.route("/reset_password_request", methods=("GET", "POST"))
 def reset_password_request():
