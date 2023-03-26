@@ -152,6 +152,8 @@ def edit_exam_question(question_id):
 
     if form.validate_on_submit():
         exam_question.question = form.question.data
+        if "<block>" in exam_question.question:
+            exam_question.question = _formatblock(exam_question.question)
         exam_question.question_images = form.question_images.data
         exam_question.question_type = form.question_type.data
         exam_question.option_a = form.option_a.data
@@ -507,3 +509,21 @@ def download_results():
 
     current_app.logger.info("%s requested file download", current_user.name)
     return output
+
+def _formatblock(s:str) -> str:
+    # if we encounter '<block>' in the text
+    # then remove it and replace it
+    # making it pretty
+    block_start = "<block>"
+    tag_len = len(block_start)
+    end_of_block = "</block>"
+    replacement_string = """<div class="panel panel-default">
+                                <div class="panel-body">
+                                    *
+                                </div>
+                            </div>"""
+    # find where the block begins
+    from_here = s.index(block_start) + tag_len
+    modified = s[from_here:].replace("</block>","")
+    s = s[:s.index(block_start)] + replacement_string.replace("*", modified)
+    return s
