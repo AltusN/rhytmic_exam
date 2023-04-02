@@ -253,7 +253,7 @@ def practical_exam():
     practical_questions = ExamQuestions.query.filter_by(question_category="practical")
     
     practical_progress = ExamResult.query.filter_by(sagf_id=current_user.sagf_id).first()
-    if not practical_progress:
+    if not practical_progress and not current_user.is_admin:
         #The user has not taken the theory yet
         flash("The Theory Exam must be taken first", "info")
         return(redirect(url_for("main.dashboard")))
@@ -470,16 +470,17 @@ def download_results():
     theory_answers = ExamQuestions.query.filter(
         and_(
             ExamQuestions.question_category=="theory",
-            ExamQuestions.exam_level=="1"
+            ExamQuestions.exam_level.in_(["1", "2"])
         )
     )
 
-    t_answers = {}
-    for theory_answer in theory_answers:
-        t_answers[f"{theory_answer.question_id}"] = theory_answer.answer
-
     for result in results:
+        t_answers = {}
         csv_out.append([result.linked_user.name, result.linked_user.surname, result.linked_user.sagf_id])
+        for theory_answer in theory_answers:
+            if theory_answer.exam_level == result.linked_user.level:
+                t_answers[f"{theory_answer.question_id}"] = theory_answer.answer
+                
         theory_percent, theory_missed = calculate_theory_score(json.loads(result.theory_answer), t_answers)
         # practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
         csv_out.append(["Theory", f"{theory_percent}%"])
@@ -524,6 +525,8 @@ def _formatblock(s:str) -> str:
                             </div>"""
     # find where the block begins
     from_here = s.index(block_start) + tag_len
-    modified = s[from_here:].replace("</block>","")
+    modified = s[from_here:].replace(end_of_block,"")
+
     s = s[:s.index(block_start)] + replacement_string.replace("*", modified)
+
     return s

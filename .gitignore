@@ -41,6 +41,7 @@ venv
 .vscode
 *.db
 *.csv
+*.sqlite
 rhytmic.log*
 
 #Environment
