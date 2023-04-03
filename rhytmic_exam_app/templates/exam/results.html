@@ -11,6 +11,7 @@
             <th>SAGF-ID</th>
             <th>Theory</th>
             <th>Practical</th>
+            <th>Overall</th>
             <th></th>
         </thead>
         <tbody>
@@ -21,6 +22,7 @@
                     <td>{{ result.get("sagf_id") }}</td>
                     <td>{{ result.get("theory", 0) }} %</td>
                     <td>{{ result.get("practical", 0) }} %</td>
+                    <td>{{ result.get("overall", 0) }} %</td>
                     <td>
                         {% if result.get("recent", -1) == "1" %}
                             <span class="label label-success">New!</span>

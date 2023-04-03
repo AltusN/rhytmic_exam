@@ -442,9 +442,13 @@ def results():
         r["theory_missed"] = missed
         #practical answer cannot be None 
         if not result.practical_answer: result.practical_answer = '{"answer_1":"0"}'
-        practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
+        #practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
+        # overide the above here for 1 case where the practical is injected into the db
+        # for which we have no idea that it actually was injected
+        practical_percent = result.practical_answer
         r["practical"] = practical_percent
-        r["practical_answers"] = practical_calculated_answer
+        r["overall"] = (float(percent) + float(practical_percent)) / 2
+        #r["practical_answers"] = practical_calculated_answer
         r["level"] = result.linked_user.level
         date_taken = result.exam_start_date
         date_diff = datetime.datetime.today()-date_taken
@@ -483,7 +487,11 @@ def download_results():
                 
         theory_percent, theory_missed = calculate_theory_score(json.loads(result.theory_answer), t_answers)
         # practical_percent, practical_calculated_answer = calculate_practical_score(json.loads(result.practical_answer), practical_answers)
-        csv_out.append(["Theory", f"{theory_percent}%"])
+        csv_out.append([
+            "Theory", f"{theory_percent}%",
+             "Practical", f"{result.practical_answer}%",
+             f"Overall", f"{(theory_percent + int(result.practical_answer)) / 2}%"
+             ])
         # csv_out.append(["Apparatus", "D12", "Mark", "D34", "Mark", "AV", "Mark", "EX", "Mark"])
         # for app in practical_calculated_answer.keys():
         #     app_scores = []
