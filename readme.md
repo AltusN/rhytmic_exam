@@ -13,3 +13,16 @@ Allows a video to be played only once and expects an answer.
 Allows results to be downloaded to csv
 
 **No localisation support yet**
+
+////
+Accessing the db:
+you will start with an empty database. You must first run:
+* flask --app rhytmic db upgrade 
+* flask --app rhytmic shell
+* create a new user:
+    u1 = User(username='pies', enabled=True, admin=True)
+    u1.set_password('password')
+    db.session.add(u1)
+    db.session.commit()
+
+You can now login by running the flask builtin or some other webserver

@@ -10,6 +10,8 @@ from sqlalchemy.orm import backref
 
 from rhytmic_exam_app import db, login
 
+from sqlalchemy import event
+
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)

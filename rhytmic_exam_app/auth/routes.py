@@ -1,10 +1,9 @@
 import datetime
+from urllib.parse import urlparse
 
 from flask import render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, current_user, logout_user, login_required
 from sqlalchemy.exc import IntegrityError
-
-from werkzeug.urls import url_parse
 
 from rhytmic_exam_app import db
 from rhytmic_exam_app.models import User
@@ -44,7 +43,7 @@ def login():
         current_app.logger.info("%s has logged in", user.name)
         next_page = request.args.get("next")
 
-        if not next_page or url_parse(next_page).netloc:
+        if not next_page or urlparse(next_page).netloc:
             flash("Logged in successfully", "success")
             next_page = url_for("main.dashboard")
         
