@@ -67,14 +67,22 @@ def register():
 
     #email is required and is stopped on the frontend.. if there is no email, this wil break anyway
     if form.validate_on_submit():
-        user = User(username=form.username.data,
-                    sagf_id=form.sagf_id.data,
-                    name=form.name.data,
-                    surname=form.surname.data,
-                    email=form.email.data.lower(),
-                    level = form.level.data,
-        )
-        user.set_password(form.password.data)
+        username = (form.username.data or "").strip()
+        sagf_id = (form.sagf_id.data or "").strip()
+        name = (form.name.data or "").strip()
+        surname = (form.surname.data or "").strip()
+        email = (form.email.data or "").strip().lower()
+        level = (form.level.data or "").strip()
+        password = form.password.data or ""
+
+        user = User()
+        user.username = username
+        user.sagf_id = sagf_id
+        user.name = name
+        user.surname = surname
+        user.email = email
+        user.level = level
+        user.set_password(password)
         user.enabled = True
         db.session.add(user)
         try:

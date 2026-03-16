@@ -3,7 +3,9 @@ import datetime
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+# Prefer the local flask_backend env file, but also support a repo-root fallback.
 load_dotenv(os.path.join(basedir, ".flaskenv"))
+load_dotenv(os.path.join(os.path.dirname(basedir), ".flaskenv"))
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY") or "super duper secret keys"

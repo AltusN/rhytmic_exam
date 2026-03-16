@@ -1,9 +1,11 @@
 import csv, sqlite3, os, sys
 
+DEFAULT_DB_PATH = os.path.join(os.path.dirname(__file__), "rhytmic.db")
+
 USAGE = """
 The first paramters should be whether to [i]mport or [e]xport the exam questions
 The second optional parameter should be where the db is (default is to look for it
-in current dir named 'rhytmic.db'). 
+next to this script as 'rhytmic.db'). 
 """
 
 def export_all(db:str) -> None:
@@ -157,8 +159,8 @@ if __name__=="__main__":
         db = input("[q] Location of database: ")
 
         if db is None or db == "":
-            print("[i] No database location specified, using default .\\rhytmic.db")
-            db = "rhytmic.db"
+            print(f"[i] No database location specified, using default {DEFAULT_DB_PATH}")
+            db = DEFAULT_DB_PATH
         elif not os.path.isfile(db):
             print("[x] Database location is not valid")
             exit()

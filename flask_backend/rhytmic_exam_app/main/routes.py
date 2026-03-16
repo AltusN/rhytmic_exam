@@ -28,7 +28,7 @@ def admin_required(f):
     @wraps(f)
     def wrap(*args, **kwargs):
         user = User.query.filter_by(id=current_user.id).first()
-        if user.is_admin:
+        if user and user.is_admin:
             return f(*args, **kwargs)
         else:
             flash("You must be logged in as an admininstrative user to perform this action", "danger")
@@ -151,9 +151,10 @@ def edit_exam_question(question_id):
     form = AddExamQuestionsForm()
 
     if form.validate_on_submit():
-        exam_question.question = form.question.data
-        if "<block>" in exam_question.question:
-            exam_question.question = _formatblock(exam_question.question)
+        question_text = form.question.data or ""
+        exam_question.question = question_text
+        if "<block>" in question_text:
+            exam_question.question = _formatblock(question_text)
         exam_question.question_images = form.question_images.data
         exam_question.question_type = form.question_type.data
         exam_question.option_a = form.option_a.data
@@ -161,7 +162,7 @@ def edit_exam_question(question_id):
         exam_question.option_c = form.option_c.data
         exam_question.option_d = form.option_d.data
         exam_question.answer = form.answer.data
-        exam_question.level = form.exam_level
+        exam_question.exam_level = form.exam_level.data
         exam_question.question_category = form.question_category.data
 
         db.session.add(exam_question)
@@ -188,18 +189,21 @@ def add_question():
     form = AddExamQuestionsForm()
 
     if form.validate_on_submit():
-        q = ExamQuestions(
-            question_id = db.session.query(db.func.max(ExamQuestions.question_id)).scalar() + 1,
-            question=form.question.data,
-            question_type=form.question_type.data,
-            question_images=form.question_images.data,
-            option_a=form.option_a.data,
-            option_b=form.option_b.data,
-            option_c=form.option_c.data,
-            option_d=form.option_d.data,
-            answer=form.answer.data,
-            question_category=form.question_category.data
-        )
+        next_question_id = (db.session.query(db.func.max(ExamQuestions.question_id)).scalar() or 0) + 1
+
+        q = ExamQuestions()
+        q.question_id = next_question_id
+        q.question = form.question.data
+        q.question_type = form.question_type.data
+        q.question_images = form.question_images.data
+        q.option_a = form.option_a.data
+        q.option_b = form.option_b.data
+        q.option_c = form.option_c.data
+        q.option_d = form.option_d.data
+        q.answer = form.answer.data
+        q.exam_level = form.exam_level.data
+        q.question_category = form.question_category.data
+
         db.session.add(q)
         db.session.commit()
 
@@ -234,7 +238,7 @@ def disclaimer():
     if request.method == "POST":
         flash("redirected")
         #go back to the caller
-        agreed = request.get["invalidCheck"]
+        agreed = request.form.get("invalidCheck")
         return redirect("main.index")
 
     resp = make_response(render_template("exam/disclaimer.html", form=form))
@@ -257,6 +261,14 @@ def practical_exam():
         #The user has not taken the theory yet
         flash("The Theory Exam must be taken first", "info")
         return(redirect(url_for("main.dashboard")))
+
+    # Admins can preview practical flow without persisted progress.
+    if not practical_progress and current_user.is_admin:
+        practical_progress = ExamResult()
+
+    if practical_progress is None:
+        flash("Unable to initialize practical exam progress", "danger")
+        return redirect(url_for("main.dashboard"))
 
     x = 1
 
@@ -304,14 +316,16 @@ def practical_exam():
             practical_progress.practical_taken = True
             practical_progress.exam_end_date = datetime.datetime.today()
 
-            db.session.add(practical_progress)
-            db.session.commit()
+            if not current_user.is_admin:
+                db.session.add(practical_progress)
+                db.session.commit()
 
             flash("Practical Exam completed. Good luck!", "success")
             return redirect(url_for("main.dashboard"))
 
-        db.session.add(practical_progress)
-        db.session.commit()
+        if not current_user.is_admin:
+            db.session.add(practical_progress)
+            db.session.commit()
 
         return render_template("exam/practical_exam.html", title="National Practical Exam", q_dict=q_dict, progress=progress)
        
@@ -347,11 +361,11 @@ def theory_exam():
             answers = request.form.to_dict()
             if "btnsubmit" in answers: 
                 del answers["btnsubmit"]
-            result = ExamResult(
-                theory_answer=json.dumps(answers), 
-                theory_taken=True,
-                exam_start_date = datetime.datetime.today(),
-                linked_user=user)
+            result = ExamResult()
+            result.theory_answer = json.dumps(answers)
+            result.theory_taken = True
+            result.exam_start_date = datetime.datetime.today()
+            result.sagf_id = user.sagf_id
             
             db.session.add(result)
             db.session.commit()
