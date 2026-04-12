@@ -1,42 +1,22 @@
-from fastapi import FastAPI, Depends, HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
-from .db.database import get_db, Base, engine
-from .db import models
-from .schemas import UserCreate, UserRead
-import bcrypt
+from contextlib import asynccontextmanager
 
-app = FastAPI()
-BCRYPT_MAX_PASSWORD_BYTES = 72
+from fastapi import FastAPI
 
-@app.on_event("startup")
-async def on_startup():
+from .db.database import Base, engine
+from .routers.admin import router as admin_router
+from .routers.auth_routes import router as auth_router
+from .routers.exams import router as exams_router
+from .routers.users import router as users_router
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     async with engine.begin() as db:
-        await db.run_sync(models.Base.metadata.create_all)
+        await db.run_sync(Base.metadata.create_all)
+    yield
 
-def get_password_hash(password):
-    password_bytes = password.encode("utf-8")
-    if len(password_bytes) > BCRYPT_MAX_PASSWORD_BYTES:
-        raise ValueError(
-            f"Password is too long for bcrypt (max {BCRYPT_MAX_PASSWORD_BYTES} bytes in UTF-8)."
-        )
-    return bcrypt.hashpw(password_bytes, bcrypt.gensalt()).decode("utf-8")
+app = FastAPI(title="Rhytmic Exam API", lifespan=lifespan)
 
-@app.post("/users/", response_model=UserRead)
-async def create_user(user: UserCreate, db: AsyncSession = Depends(get_db)):
-    try:
-        hashed_password = get_password_hash(user.password)
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-
-    db_user = models.User(
-        username=user.username,
-        name=user.name,
-        surname=user.surname,
-        sagf_id=user.sagf_id,
-        email=user.email,
-        hashed_password=hashed_password
-    )
-    db.add(db_user)
-    await db.commit()
-    await db.refresh(db_user)
-    return db_user
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(exams_router)
+app.include_router(admin_router)
