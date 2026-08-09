@@ -194,9 +194,9 @@ says nothing whatever about commit messages; don't mistake one for the other.
 
 ## Current state
 
-**The scoring plan is finished — all seven tasks.** As of 2026-08-05, **81 tests
-pass** and both `ruff check .` and `ruff format --check .` are clean. Run all three
-from `rhythmic/`.
+**Two plans finished: the scoring package (seven tasks) and the Django skeleton
+(five).** As of 2026-08-08, **83 tests pass** and both `ruff check .` and
+`ruff format --check .` are clean. Run all three from `rhythmic/`.
 
 | file | tests |
 |---|---|
@@ -206,7 +206,12 @@ from `rhythmic/`.
 | `test_marking.py` | 12 |
 | `test_public_api.py` | 10 |
 | `test_legacy_parity.py` | 9 |
+| `test_django_smoke.py` | 2 |
 | `test_smoke.py` | 1 |
+
+**Postgres must be running for the full suite to pass.** `docker compose up -d` from
+the repository root. Only `test_django_smoke.py::test_database_is_reachable` needs
+it; the other 82 do not.
 
 **The plan's own test-count estimates are stale** — it predicts 54 by Task 6. Tasks
 4 and 5 both grew cases beyond its table. Don't chase the plan's numbers; they were
@@ -306,15 +311,89 @@ written before the tests were.
   copied verbatim into a scratch script rather than imported, so nothing under
   `legacy/` was run — do the same for any future parity work.
 
+### The Django skeleton, 2026-08-08
+
+Plan: `docs/superpowers/plans/2026-08-05-django-skeleton.md`. Five tasks, all done.
+`13262c1`, `5773a44`, `43092ff`, `5da607e`, `37500f1`.
+
+- **The framework ban moved to `rhythmic/scoring/ruff.toml`.** It had been in
+  `rhythmic/pyproject.toml`, so it applied to *everything* under `rhythmic/` despite
+  its message naming `scoring/` — the first Django file would have been blocked by
+  the pre-commit hook. `extend = "../pyproject.toml"` keeps the parent rule set;
+  without it `scoring/` would silently drop to ruff's defaults and lose `RET` and
+  `BLE`. Verified both directions, because the failure mode is a ban that stops
+  firing while everything still looks green.
+
+- **`config/` is the Django project; Django is a `web` extra, not a dependency.**
+  `[tool.setuptools] packages = ["scoring"]` still declares only the scoring package,
+  so `config/` is outside the `rhythmic-scoring` distribution entirely. Install with
+  `pip install -e "rhythmic[dev,web]"`.
+
+- **One `.env` and one `.env.example`, both at the repository root.** Compose reads
+  `.env` from its own directory; Django reaches up with
+  `load_dotenv(BASE_DIR.parent / ".env")`. Two copies of the same Postgres password
+  is a bug waiting to happen.
+
+- **`SECRET_KEY` and the Postgres credentials use `os.environ[...]`; `DEBUG`,
+  `ALLOWED_HOSTS`, `POSTGRES_HOST` and `POSTGRES_PORT` use `.get` with defaults.**
+  The asymmetry is deliberate: a missing secret must halt, because a fallback would
+  sign every session cookie with a readable value. `DEBUG` defaults to **false** so
+  forgetting it fails closed. Verified by hiding `.env` and confirming a `KeyError`
+  and a non-zero exit — not a working site. No generated key ever reached a commit.
+
+- **`compose.yaml` runs Postgres only** — not the application, deviating from the
+  spec's Operations section deliberately. Containerising an app with no views means
+  a Dockerfile and a WSGI server for nothing; it belongs with the first thing worth
+  deploying.
+
+- **`postgres:17`, not `postgres:17-alpine`.** Alpine ships musl, which has no real
+  locale support, so the cluster initialises with C collation — byte order. The same
+  seven names sort `Ácker äpple Botha de Beer van der Merwe Van Wyk Zulu` on Debian
+  and `Botha Van Wyk Zulu de Beer van der Merwe Ácker äpple` on Alpine. Afrikaans
+  surnames with lowercase particles and any accented name sort wrongly, and a
+  `UNIQUE` index built under one collation is invalid under the other. Verified by
+  running both images.
+
+- **Port binding is `"127.0.0.1:${POSTGRES_PORT}:5432"`.** Docker publishes ports by
+  writing firewall rules, so an unrestricted binding is reachable from the network.
+  **This regressed twice in one session**, the second time via a `POSTGRESS_HOST`
+  typo: Compose substitutes a *blank string* for an unset variable and only warns,
+  and a blank host means all interfaces. Any Compose warning about an unset variable
+  means something is being substituted with nothing — check `docker compose ps` for
+  `0.0.0.0`.
+
+  The same mechanism bites `.env` values: a Django `SECRET_KEY` containing `$cat`
+  made Compose warn and truncate. **Single-quote values in `.env`** — verified that
+  Compose then treats them literally and `python-dotenv` still strips the quotes.
+  Regenerating the key is not a fix: 42% of generated keys contain a `$` followed by
+  a letter.
+
+- **`pytest-django`, one runner.** `DJANGO_SETTINGS_MODULE` and `pythonpath = ["."]`
+  live in `[tool.pytest.ini_options]`. `pythonpath` is required because the editable
+  install declares only `scoring`, so `config` is otherwise unimportable — and the
+  failure is a collection error that takes the whole suite down. Unmarked tests are
+  *blocked* from database access, which is what keeps the 81 scoring tests honest
+  about needing no database.
+
+  `pytest-django` supplies a `client` fixture. It was not obvious that it did, and
+  a hand-rolled one silently shadowed it — say when a fixture comes from a plugin
+  rather than assuming it is known.
+
 **`ruff check` and `ruff format` are separate commands** — a clean `check` says
 nothing about formatting. That gap cost review rounds on Tasks 3 and 5, which is
 why the pre-commit hook exists.
 
-**Next action: the scoring plan is done, so the next thing is a new plan.** The
-scoring plan lists what follows, in order — the Django project and questions app,
-then exams/sittings/the freeze, then accounts and the roster, then the React island
-last. None of it is started and none of it is scheduled. Write the plan before
-writing code; that ordering is what the whole rebuild has run on.
+**Next action: write the questions-app plan.** The skeleton is done, so the next
+thing is the first real app — content blocks replacing the legacy type 1–5 shapes,
+papers owning questions (decided 2026-08-05, see What this is), media upload, admin,
+and a preview action. **F9 lands here**; F10 lands in the exams/sittings plan after
+it. Then accounts and the roster, then the React island last.
+
+Write the plan before writing code; that ordering is what the whole rebuild has run
+on. Note the design already exists — the spec's Questions section specifies
+`Question`, `QuestionBlock`, `Option` and `OptionBlock` in detail, so this is
+planning work, not design work. The one thing the spec does *not* cover is how a
+sitting's question set is chosen, which is exactly the hole F9 fell through.
 
 Each task in a plan ends at a **review gate**. He posts the code; you review it
 before he starts the next task.
