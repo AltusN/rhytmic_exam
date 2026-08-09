@@ -57,6 +57,10 @@ real; asserting it would have been a guess in the same words.
 chores (moving files, deleting things), generated migrations, and reviewing or
 debugging code he has already written.
 
+**This file is yours to commit** (agreed 2026-08-08). Update `CLAUDE.md` and commit
+it directly — no need to hand the commit back. Every other commit in the repository
+is his.
+
 ## What this is
 
 An online certification exam for SAGF rhythmic gymnastics judges. Real candidates,
@@ -66,10 +70,26 @@ as of 2026-07-28.
 Nothing is scheduled, so there is **no production pressure** — build in the right
 order rather than racing a date.
 
-**Two components, and they are never combined** (confirmed 2026-08-08). Theory and
-practical are separate results, shown side by side on a dashboard. There is no
-average, no weighting and no single pass/fail across the two. Legacy never combined
-them either — that turns out to have been correct, not an omission.
+**Two components, never combined, and separately enrolled** (confirmed 2026-08-08).
+Theory and practical are independent results shown side by side. There is no average,
+no weighting and no single pass/fail across the two. Legacy never combined them
+either — that turns out to have been correct, not an omission.
+
+**A candidate enrols for each independently**; sitting theory is not a prerequisite
+for sitting the practical. Working assumption for the exams plan: that makes them
+**two exams, not two components of one** —
+
+```
+Exam(level, year, kind=THEORY)     → 1 component,  N choice questions
+Exam(level, year, kind=PRACTICAL)  → 4 components, 5 questions each
+```
+
+`Sitting: judge · exam` then stays exactly as the spec has it, enrolment is per exam,
+and **F10 stops being possible rather than being guarded against** — a candidate who
+did not sit the practical has no practical sitting, so there is no field for a
+spurious zero to occupy. Modelling it as one exam with optional components means
+every result must distinguish *not applicable* from *scored zero*, which is the
+distinction legacy got wrong.
 
 *Theory* is multiple choice. **It is no longer a real certification component** — it
 exists to exercise administering a multiple-choice paper across the different
@@ -77,31 +97,77 @@ question formats. `mark_choice` scores it and `score_component` over those marks
 reproduces the legacy theory percentage exactly. Still worth building well, because
 the questions app is what renders it, but it decides nothing.
 
-*Practical* is the real exam. **Five videos, each looped four times, a different
-aspect judged on each loop:**
+*Practical* is the real exam. **Five routines, one per apparatus. The whole set is
+shown four times, once per aspect** — every apparatus judged on `DA`, then all five
+again on `DB`, then `AV`, then `EX`. Aspect-major, not video-major: the candidate
+does not watch one routine four times in a row.
 
-| loop | aspect | grade bands |
+| aspect | was | grade bands |
 |---|---|---|
-| 1 | `DA` (was D1+D2) | Difficulty |
-| 2 | `DB` (was D3+D4) | Difficulty |
-| 3 | `AV` — artistry | Artistry/Execution |
-| 4 | `EX` — execution | Artistry/Execution |
+| `DA` | D1+D2 | Difficulty |
+| `DB` | D3+D4 | Difficulty |
+| `AV` — artistry | AV | Artistry/Execution |
+| `EX` — execution | EX | Artistry/Execution |
+
+**Apparatus is a table, not a choice field** (decided 2026-08-08). The set is stable
+— it changes only if FIG adds an apparatus — but per-apparatus reporting is a
+requirement, so an official must be able to rename or reorder them without a deploy.
+Note the domain distinction: **a gymnast competes on four apparatus, chosen by level;
+a judge is examined on all five.** What a gymnast performs is not what a judge is
+tested on, so the exam's apparatus set does not follow the competition's.
+
+**Apparatus and aspect are independent dimensions — a 4 × 5 grid**, and results are
+read *both* ways. Down a row gives the aspect's component score, which is what
+grades into a category. Across a column gives the candidate's marks for one
+apparatus, which is what they actually want to see, exactly as a competition score
+sheet works. **Apparatus is therefore a real field, never implied by position in a
+list** — ordering is the thing that drifts.
+
+Each score is entered against a timer; when it expires the candidate is moved on and
+cannot go back.
 
 Use the **current** FIG naming — `DA`, `DB`, `AV`, `EX` — not the old `D1+D2` /
 `D3+D4` labels the legacy answer key carries (decided 2026-08-08).
 
-So a candidate gives **4 marks per video, 20 in total**, each compared against the
-expert's with `mark_numeric`. **That is where F5's magic number came from**: legacy
-summed 20 marks worth 5 each and called the total a percentage, which was only ever
-correct because 5 videos × 4 aspects = exactly 20. Nothing in the code recorded that
-dependency; a sixth video would have scored everyone out of 125 while still printing
-"%".
+So a candidate gives **20 marks**, each compared against that cell's own expert score
+with `mark_numeric`. **That is where F5's magic number came from**: legacy summed 20
+marks worth 5 each and called the total a percentage, which was only ever correct
+because 5 apparatus × 4 aspects = exactly 20. Nothing in the code recorded that
+dependency; a sixth apparatus would have scored everyone out of 125 while still
+printing "%".
+
+**Decided 2026-08-08: a routine exists once and the four questions reference it.**
+The apparatus and its video belong to the routine; the aspect and the expert score
+belong to the question. Four question rows each owning a copy of the same video is
+the papers argument again — replace a video, miss one of the four copies, and a
+candidate judges `EX` against last year's routine with no error anywhere. It also
+matches the domain: a judge watches **one routine** and makes four judgements about
+it. Note this is a **deviation from the spec**, which has `Question → QuestionBlock`
+holding media and nothing in between; the exact shape is for the questions-app plan.
 
 The four aspects stay **separate** — `DA` and `DB` are not averaged into one
 Difficulty score. Each is `score_component` over its five videos, then `grade`
 against the band set for its type. Note the two band sets differ: Excellent is 80%
 for Difficulty but 90% for Artistry/Execution, which `grade(percentage, bands)`
 already supports because bands are an argument.
+
+**Decided 2026-08-08: `Difficulty = mean(DA, DB)` for the category rule, and it is
+the mean of the two *rounded* aspect scores.** `DA` and `DB` stay separate for
+scoring and reporting — a candidate sees both — but the category rule takes three
+values, Difficulty, Artistry and Execution, which is why the spec's two worked
+examples name Difficulty once.
+
+**The rounding order is not cosmetic.** Rounding each aspect and then averaging is
+not the same as averaging the raw values and rounding once: over a window 0.1 wide
+on each axis there are 2,750 disagreements, and **1,020 of them change the Difficulty
+grade** against the 80% floor. For example `DA 79.900`, `DB 80.085` gives `80.00`
+Excellent one way and `79.99` Very Good the other — same twenty marks, different
+category.
+
+Take the mean of the rounded scores, for the same reason `grade` consumes a rounded
+percentage: the candidate is shown `79.90` and `80.09`, and averaging those by hand
+must reproduce the result. A number that cannot be recomputed from the figures on
+the certificate is the one that loses an appeal.
 
 **The four grades then determine one overall category, and that piece is not built.**
 `score_component` and `grade` get you to four grades; nothing turns four grades into
@@ -121,10 +187,10 @@ shape as `GradeBand.minimum` and `floor_band_index`. Modelling it as
 candidate only the level 3 additions, sitting them a fraction of their exam. That is
 exactly what the old app did — see **F9**.
 
-**Decided 2026-08-05: a question exists once; a paper lists which questions it
-contains.** Each level's paper is explicit data — a many-to-many, not a scalar
+**Decided 2026-08-05: a question exists once, and something else lists which
+questions it contains.** Membership is explicit data — a many-to-many, not a scalar
 `level` column and not a `minimum_level <= candidate.level` query. Overlap between
-levels is the same question row referenced by two papers, never a copy of it.
+levels is the same question row referenced twice, never a copy of it.
 
 Two things this buys, and both were argued rather than assumed. Duplicating a
 question per level means an answer-key correction has to find every copy, and a
@@ -133,20 +199,38 @@ missed copy leaves two cohorts marked against different keys with no error anywh
 replaces an inherited question; the first time the syllabus does that you bolt on an
 exceptions table and arrive at the join table by a worse road.
 
-"Cumulative" therefore describes how a paper is **built** — seed level 2 from level
-1, then add — not how it is queried. Note the usual reason to duplicate does not
-apply here: keeping historical papers stable is F1's snapshot's job, so duplication
-buys nothing there. The exact schema is for the questions-app plan.
+"Cumulative" therefore describes how a question set is **built** — seed level 2 from
+level 1, then add — not how it is queried. Note the usual reason to duplicate does
+not apply here: keeping historical question sets stable is F1's snapshot's job, so
+duplication buys nothing there.
 
-**Not every level sits every component.** Some levels are theory-only — there is no
-practical paper for them at all. So the components a candidate sits are a property
-of their level, not a constant, and a result record must distinguish *not
-applicable* from *scored zero*. Carrying an absent practical as `0` turns a 90%
-theory-only candidate from Excellent into Fail on a straight average. This is the
-same distinction `to_decimal` already draws between a blank answer and an
-unreadable one (F3): absence is not a value. `score_component([])` raising rather
-than returning `0` is the existing half of that guard; the other half belongs in
-whatever combines components, which is not built yet.
+**Refined 2026-08-08: the owner is `ExamComponent`. There is no separate `Paper`
+model.** The spec already defines `ExamComponent` as "one per marked section of the
+exam", carrying its own grade bands and its own marking table — which is exactly the
+thing that should own a set of questions. Theory is one component holding choice
+questions; the practical is four components holding five numeric questions each. A
+level 2 theory component references the same question rows as level 1's, plus its
+own additions. **One mechanism for both halves of the exam**, rather than papers for
+theory and components for the practical.
+
+The consequence for planning: **the questions app is content only** — `Question`,
+`Routine`, `Apparatus`, blocks, media, admin, preview. Membership and selection live
+with `ExamComponent` in the exams app, and **F9 moves to the exams/sittings plan
+with them**, because F9 is about which questions a candidate is given, not about what
+a question is.
+
+**Absence is not a value — and the two-exam split is what enforces it.** Legacy
+fabricated a practical answer of `"0"` for candidates who sat no practical, so a
+component they never attempted scored roughly zero and was indistinguishable from
+failing it (**F10**). With theory and practical as separate exams and separate
+sittings, a candidate who did not sit the practical has no practical sitting at all,
+and there is no field for a spurious zero to occupy.
+
+Keep the principle anyway, because it recurs: this is the same distinction
+`to_decimal` draws between a blank answer and an unreadable one (F3), and
+`score_component([])` raising rather than returning `0` is the same guard inside the
+scoring package. Any future code that aggregates across components must treat
+absence as absence, never as a number.
 
 ## Read these before doing anything
 
@@ -422,17 +506,21 @@ Plan: `docs/superpowers/plans/2026-08-05-django-skeleton.md`. Five tasks, all do
 nothing about formatting. That gap cost review rounds on Tasks 3 and 5, which is
 why the pre-commit hook exists.
 
-**Next action: write the questions-app plan.** The skeleton is done, so the next
-thing is the first real app — content blocks replacing the legacy type 1–5 shapes,
-papers owning questions (decided 2026-08-05, see What this is), media upload, admin,
-and a preview action. **F9 lands here**; F10 lands in the exams/sittings plan after
-it. Then accounts and the roster, then the React island last.
+**Next action: write the questions-app plan.** Scope settled 2026-08-08 — it is
+**content only**: `Question`, `Routine`, `Apparatus`, the content blocks replacing
+the legacy type 1–5 shapes, media upload, admin, and a preview action. It knows
+nothing about levels, exams or who sits what.
+
+**F9 and F10 both land in the exams/sittings plan**, along with `ExamComponent`,
+membership, sittings and the freeze. Then accounts and the roster, then the React
+island last.
 
 Write the plan before writing code; that ordering is what the whole rebuild has run
-on. Note the design already exists — the spec's Questions section specifies
-`Question`, `QuestionBlock`, `Option` and `OptionBlock` in detail, so this is
-planning work, not design work. The one thing the spec does *not* cover is how a
-sitting's question set is chosen, which is exactly the hole F9 fell through.
+on. The spec's Questions section already specifies `Question`, `QuestionBlock`,
+`Option` and `OptionBlock` in detail, so this is planning work rather than design
+work — with one deviation to design deliberately: `Routine` and `Apparatus` are not
+in the spec, and they exist so that one video is referenced by four questions instead
+of copied into each.
 
 Each task in a plan ends at a **review gate**. He posts the code; you review it
 before he starts the next task.
@@ -506,7 +594,6 @@ content in the commit you never read.
    whose per-aspect minimums are all met" — **that is an inference from two examples,
    not something read off a source.** Do not build it until the table is in hand.
    Blocks the exams/sittings plan, not the questions plan.
-6. **Whether "Difficulty excellent" means both `DA` and `DB` at excellent.** The
-   evaluation scale gives Difficulty one column covering both, and the category rule
-   names Difficulty once, but the two aspects are scored separately. Same source
-   needed as question 5.
+6. **Resolved 2026-08-08.** "Difficulty" in the category rule is `mean(DA, DB)` —
+   the mean of the two rounded aspect scores — not a requirement that both reach the
+   grade independently. See What this is for the rounding-order argument.
