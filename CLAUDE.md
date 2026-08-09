@@ -66,12 +66,51 @@ as of 2026-07-28.
 Nothing is scheduled, so there is **no production pressure** — build in the right
 order rather than racing a date.
 
-**Two components.** *Theory* is multiple choice, testing the rules knowledge a judge
-is meant to have — `mark_choice` scores it, and `score_component` over those marks
-reproduces the legacy theory percentage exactly. *Practical* is numeric, the
-candidate's score against an expert's — `mark_numeric` scores it. Legacy got theory
-right and practical wrong: `calculate_theory_score` divided by the question count,
-`calculate_practical_score` summed marks and called the total a percentage (F5).
+**Two components, and they are never combined** (confirmed 2026-08-08). Theory and
+practical are separate results, shown side by side on a dashboard. There is no
+average, no weighting and no single pass/fail across the two. Legacy never combined
+them either — that turns out to have been correct, not an omission.
+
+*Theory* is multiple choice. **It is no longer a real certification component** — it
+exists to exercise administering a multiple-choice paper across the different
+question formats. `mark_choice` scores it and `score_component` over those marks
+reproduces the legacy theory percentage exactly. Still worth building well, because
+the questions app is what renders it, but it decides nothing.
+
+*Practical* is the real exam. **Five videos, each looped four times, a different
+aspect judged on each loop:**
+
+| loop | aspect | grade bands |
+|---|---|---|
+| 1 | `DA` (was D1+D2) | Difficulty |
+| 2 | `DB` (was D3+D4) | Difficulty |
+| 3 | `AV` — artistry | Artistry/Execution |
+| 4 | `EX` — execution | Artistry/Execution |
+
+Use the **current** FIG naming — `DA`, `DB`, `AV`, `EX` — not the old `D1+D2` /
+`D3+D4` labels the legacy answer key carries (decided 2026-08-08).
+
+So a candidate gives **4 marks per video, 20 in total**, each compared against the
+expert's with `mark_numeric`. **That is where F5's magic number came from**: legacy
+summed 20 marks worth 5 each and called the total a percentage, which was only ever
+correct because 5 videos × 4 aspects = exactly 20. Nothing in the code recorded that
+dependency; a sixth video would have scored everyone out of 125 while still printing
+"%".
+
+The four aspects stay **separate** — `DA` and `DB` are not averaged into one
+Difficulty score. Each is `score_component` over its five videos, then `grade`
+against the band set for its type. Note the two band sets differ: Excellent is 80%
+for Difficulty but 90% for Artistry/Execution, which `grade(percentage, bands)`
+already supports because bands are an argument.
+
+**The four grades then determine one overall category, and that piece is not built.**
+`score_component` and `grade` get you to four grades; nothing turns four grades into
+a category. From the two examples in the spec — Category 1 needs Difficulty
+excellent with Artistry and Execution very good, Category 4 needs all at pass — the
+rule looks like *the highest category whose per-aspect minimum grades are all met*,
+which is the same lower-bound shape as `GradeBand.minimum` and the F9 level rule. The
+weakest aspect caps the category. **The exact requirements per category are still
+unknown** — see Open questions.
 
 **Theory questions are banded by level, cumulatively.** A level 2 candidate sits
 every level 1 question plus the level 2 additions; level 3 sits all three bands, and
@@ -448,17 +487,26 @@ content in the commit you never read.
 
 ## Open questions, none blocking
 
-1. Which Code of Points cycle the SAGF national exam actually follows. The old
-   answer key uses `D1 + D2` / `D3 + D4` / `AV` / `EX`, which is 2017–2020
-   structure. Affects what table data gets loaded, not the design.
+1. **Partly resolved 2026-08-08.** Naming follows the **current** cycle — `DA`,
+   `DB`, `AV`, `EX` — not the legacy answer key's `D1+D2` / `D3+D4`. What is still
+   open is the *table data*: which marking table and which band boundaries SAGF
+   actually publishes. Affects data loaded at runtime, not the design.
 2. Candidates per sitting. Assumed tens.
 3. **Resolved 2026-08-05.** `mark_choice` is an SAGF national addition, not a FIG
-   one — the theory paper testing a judge's rules knowledge. See What this is for
-   the level structure it implies.
-4. How component percentages combine into one pass/fail. **Legacy is no help: it
-   never combined them.** `main/routes.py:453-460` carries `theory` and `practical`
-   side by side into the results template and the CSV, with no average, weighting or
-   combined grade anywhere — a human read two numbers. So this is a decision to
-   make, not a fact to recover. Whatever it is, it has to hold for levels that sit
-   only one component, without F10's absent-scored-as-zero. Blocks the
-   exams/sittings plan, not the questions plan.
+   one. **Superseded 2026-08-08:** theory is no longer a real certification
+   component at all — see What this is.
+4. **Resolved 2026-08-08.** Theory and practical are never combined. Two separate
+   results. Legacy's `main/routes.py:453-460` carried them side by side with no
+   average or combined grade anywhere, which was right.
+5. **What table 2.4 actually says.** The overall practical category is decided by
+   the four aspect grades together, and neither of us has found the table in
+   `en_1.3 — RG Specific Judges' Rules 2025–2028`. Two data points are recorded in
+   the spec: Category 1 needs Difficulty excellent with Artistry and Execution very
+   good; Category 4 needs all at pass. The rule *appears* to be "highest category
+   whose per-aspect minimums are all met" — **that is an inference from two examples,
+   not something read off a source.** Do not build it until the table is in hand.
+   Blocks the exams/sittings plan, not the questions plan.
+6. **Whether "Difficulty excellent" means both `DA` and `DB` at excellent.** The
+   evaluation scale gives Difficulty one column covering both, and the category rule
+   names Difficulty once, but the two aspects are scored separately. Same source
+   needed as question 5.
