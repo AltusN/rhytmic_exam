@@ -324,6 +324,11 @@ to match.
 - **The prefix does not excuse a vague subject.** `chore: project setup` is a bad
   message with a prefix on it. Say what changed.
 - **Body explains why**, not what — the diff already says what. Wrap at 72.
+- **When handing him a commit, say what the body should carry *before* giving the
+  command, and give bare `git commit` rather than `git commit -m`.** `-m` commits on
+  the spot, so body guidance that follows it arrives after the commit exists and
+  costs a rebase — this happened on 2026-08-10. Reserve `-m` for commits that need no
+  body at all, such as a pure formatting chore.
 - **Cite the finding** when a commit fixes one: `fix(scoring): compare answers as
   Decimal, not string (F3)`. The findings are the spine of the rebuild and the log
   should be searchable by them.
