@@ -267,16 +267,42 @@ what the stem is made of, and what each option is made of. Both are drawn from a
 vocabulary: text, image, image-grid, video.
 
 ```
-Question             marking_scheme: CHOICE | NUMERIC
+Question             the theory question
   QuestionBlock      ordered. kind + payload + optional media
-Option               ordered. exactly one flagged correct (CHOICE only)
+Option               ordered. exactly one flagged correct
   OptionBlock        ordered. kind + payload + optional media
+
+Apparatus            name + display order. A table, not a choice field.
+Routine              apparatus + video. Exists once.
+PracticalItem        routine + aspect (DA|DB|AV|EX) + expert score
 ```
 
 `QuestionBlock` and `OptionBlock` share an abstract base model.
 
-**Presentation is data; marking is behaviour.** There are two marking schemes, not five
-question types. A new layout is new data, not new code.
+**Presentation is data; marking is behaviour.** There are five layouts and one marking
+scheme for theory. A new layout is new data, not new code.
+
+**Revised 2026-08-10: theory and practical are separate models.** This section
+originally had a single `Question` with `marking_scheme: CHOICE | NUMERIC`. The
+collapse-into-one-shape argument is sound for the five *theory* layouts, which really
+do differ only in block content — it was extended to cover the practical before anyone
+had established what a practical item contains.
+
+**The practical asks nothing about the routine.** The candidate watches it and enters a
+number; there is no stem and there are no options. So a practical item holds a routine,
+an aspect and an expert score, and shares nothing with a theory question but a position
+in a component. One model spanning both means every row carries half its columns null,
+with a discriminator saying which half to ignore.
+
+Two things corroborate the split. `scoring/` already separates them —
+`mark_choice(response, correct_option)` and `mark_numeric(response, expert_score, table)`
+share no argument but the response. And `ExamComponent` already knows which kind it
+holds, per this spec's own description of it.
+
+One routine is referenced by four `PracticalItem` rows, one per aspect — never copied
+into each. Four rows each owning the same upload means replacing a video has to find
+all four, and a missed copy has a candidate judging `EX` against last year's routine
+with no error anywhere. Same argument as questions shared across levels.
 
 **Content blocks are relational rows, not JSON.** In Django the editing UI is generated from
 the models, so JSON content would mean building a custom editor — the expensive frontend

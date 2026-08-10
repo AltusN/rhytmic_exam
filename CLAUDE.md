@@ -136,7 +136,15 @@ because 5 apparatus × 4 aspects = exactly 20. Nothing in the code recorded that
 dependency; a sixth apparatus would have scored everyone out of 125 while still
 printing "%".
 
-**Decided 2026-08-08: a routine exists once and the four questions reference it.**
+**Decided 2026-08-10: theory and practical are separate models.** The practical asks
+nothing about the routine — the candidate watches and enters a number — so a practical
+item has no stem blocks and no options, only a routine, an aspect and an expert score.
+It shares nothing with a theory question but a position in a component. The spec's
+original single `Question` with `marking_scheme: CHOICE | NUMERIC` has been revised;
+the collapse-into-one-shape argument holds for the five theory *layouts*, not across
+theory and practical. See the spec's Questions section.
+
+**Decided 2026-08-08: a routine exists once and the four items reference it.**
 The apparatus and its video belong to the routine; the aspect and the expert score
 belong to the question. Four question rows each owning a copy of the same video is
 the papers argument again — replace a video, miss one of the four copies, and a
