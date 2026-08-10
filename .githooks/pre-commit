@@ -38,17 +38,38 @@ fi
 
 cd "$repo_root/rhythmic"
 
-# Unquoted on purpose: $files is a newline-separated list ruff takes as argv.
+# Check the STAGED CONTENT, not the working-tree file.
+#
+# `git show ":path"` prints the blob in the index -- exactly the bytes this commit
+# will contain. Checking the file on disk instead lets this slip through:
+#
+#     git add file      # stages a dirty version
+#     ruff format .     # cleans the working tree
+#     git commit        # hook sees a clean working tree, commits the dirty blob
+#
+# which is how the whitespace in 37500f1 was committed. `--stdin-filename` gives
+# ruff the path it would have had, so per-file config resolution still applies and
+# scoring/ still gets its framework ban.
+#
+# `git stash --keep-index` would also work and was rejected: a hook that stashes
+# can lose work if it exits badly.
 status=0
-"$ruff" format --check $files || status=1
-"$ruff" check $files || status=1
+for f in $files; do
+    if ! git show ":rhythmic/$f" | "$ruff" format --check --stdin-filename "$f"; then
+        status=1
+    fi
+    if ! git show ":rhythmic/$f" | "$ruff" check --stdin-filename "$f"; then
+        status=1
+    fi
+done
 
 if [ "$status" -ne 0 ]; then
     echo >&2
-    echo "pre-commit: rhythmic/ is not ruff-clean, commit aborted." >&2
+    echo "pre-commit: staged content is not ruff-clean, commit aborted." >&2
     echo "  formatting:  cd rhythmic && ../.venv/bin/ruff format ." >&2
     echo "  lint:        cd rhythmic && ../.venv/bin/ruff check ." >&2
-    echo "  then re-stage. Do not run 'check --fix' blind; read the findings." >&2
+    echo "  then RE-STAGE. This checks the staged blob, so fixing the file on" >&2
+    echo "  disk without a fresh 'git add' changes nothing." >&2
 fi
 
 exit $status
