@@ -57,9 +57,11 @@ real; asserting it would have been a guess in the same words.
 chores (moving files, deleting things), generated migrations, and reviewing or
 debugging code he has already written.
 
-**This file is yours to commit** (agreed 2026-08-08). Update `CLAUDE.md` and commit
-it directly — no need to hand the commit back. Every other commit in the repository
-is his.
+**`CLAUDE.md`, the specs and the plans are yours to commit** (agreed 2026-08-08,
+extended to plans 2026-08-10). Write and commit anything under
+`docs/superpowers/{specs,plans}/` and this file directly — no need to hand the commit
+back. **Every commit containing code or tests is his**, and that boundary is the
+point: the documents are yours to maintain, the implementation is his to write.
 
 ## What this is
 
