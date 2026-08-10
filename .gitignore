@@ -23,3 +23,6 @@ build/
 # Logs
 *.log
 rhytmic.log*
+
+# Uploaded media, Never committed
+rhythmic/media/

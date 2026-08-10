@@ -19,7 +19,8 @@ dev = [
 web = [
     "django >= 6.1",
     "psycopg[binary] >= 3.3",
-    "python-dotenv >= 1.2"
+    "python-dotenv >= 1.2",
+    "pillow >= 12.3"
 ]
 
 [tool.ruff]
