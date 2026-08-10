@@ -587,9 +587,19 @@ content in the commit you never read.
 - Unstaged work in progress does not block a commit — only staged files are checked.
 - It deliberately does **not** run pytest. A slow hook is a hook that gets
   `--no-verify`'d. Tests stay a separate gate.
-- It checks working-tree files by path, not staged blobs, so `git add -p` on half a
-  file validates content that isn't what's committed. Known and accepted; the
-  `git stash --keep-index` fix can lose work when a hook exits badly.
+- **It checks the staged blob, not the working-tree file** (fixed 2026-08-10). It
+  reads each file with `git show ":path"` and pipes it to ruff with
+  `--stdin-filename`, so what is checked is exactly what is committed, and per-file
+  config resolution still applies — `scoring/` still gets its framework ban.
+
+  It did check working-tree files until 2026-08-10, and that let a real defect
+  through: `git add` a dirty file, `ruff format` the working tree, `git commit`, and
+  the hook sees a clean tree while git commits the dirty blob. That is how the
+  whitespace in `37500f1` was committed. `git stash --keep-index` would also have
+  fixed it and was rejected — a hook that stashes can lose work if it exits badly.
+
+  **Consequence when it blocks you: re-stage.** Fixing the file on disk changes
+  nothing until `git add` puts the fix in the index.
 
 ## Open questions, none blocking
 
