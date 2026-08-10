@@ -169,6 +169,14 @@ percentage: the candidate is shown `79.90` and `80.09`, and averaging those by h
 must reproduce the result. A number that cannot be recomputed from the figures on
 the certificate is the one that loses an appeal.
 
+**The examination produces a category, but does not award one** (established
+2026-08-10 from General Judges' Rules §2.6; SAGF follows FIG). The awarded category
+is capped afterwards by judging experience, by a first-cycle maximum of Category 3,
+and by a limit of dropping at most two categories per cycle. **This system computes
+the examination result and stops there.** That is the concrete reason the spec keeps
+scoring and certification as separate events recorded against different people — the
+information that caps the award is history the exam has never seen.
+
 **The four grades then determine one overall category, and that piece is not built.**
 `score_component` and `grade` get you to four grades; nothing turns four grades into
 a category. From the two examples in the spec — Category 1 needs Difficulty
@@ -586,14 +594,13 @@ content in the commit you never read.
 4. **Resolved 2026-08-08.** Theory and practical are never combined. Two separate
    results. Legacy's `main/routes.py:453-460` carried them side by side with no
    average or combined grade anywhere, which was right.
-5. **What table 2.4 actually says.** The overall practical category is decided by
-   the four aspect grades together, and neither of us has found the table in
-   `en_1.3 — RG Specific Judges' Rules 2025–2028`. Two data points are recorded in
-   the spec: Category 1 needs Difficulty excellent with Artistry and Execution very
-   good; Category 4 needs all at pass. The rule *appears* to be "highest category
-   whose per-aspect minimums are all met" — **that is an inference from two examples,
-   not something read off a source.** Do not build it until the table is in hand.
-   Blocks the exams/sittings plan, not the questions plan.
+5. **Resolved 2026-08-10.** The table is **§2.6 of the General Judges' Rules**, not
+   table 2.4 of the RG-specific ones, and **SAGF follows FIG**. Full table and the
+   experience caps are in the spec. The inferred rule held: highest category whose
+   three minimums are all met, weakest aspect capping. Note Category 1 is the only
+   asymmetric row, and that **the examination result is an upper bound on the award,
+   not the award itself** — judging experience, a first-cycle cap and a two-category
+   drop limit all apply afterwards.
 6. **Resolved 2026-08-08.** "Difficulty" in the category rule is `mean(DA, DB)` —
    the mean of the two rounded aspect scores — not a requirement that both reach the
    grade independently. See What this is for the rounding-order argument.

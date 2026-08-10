@@ -460,8 +460,54 @@ for individual and 6 for group.
 | Pass | 50–59.99% | 50–64.99% |
 | Fail | < 50% | < 50% |
 
-Category 1 requires Difficulty excellent with Artistry and Execution very good;
-Category 4 requires all three at pass.
+### Categories — General Judges' Rules §2.6, read 2026-08-10
+
+**SAGF follows FIG** (confirmed by Altus, 2026-08-10), so this table is the rule, not
+a template.
+
+| | Category 1 | Category 2 | Category 3 | Category 4 |
+|---|---|---|---|---|
+| **Difficulty** | excellent | very good | good | pass |
+| **Execution** | very good | very good | good | pass |
+| **Artistry** | very good | very good | good | pass |
+
+The award is the highest category whose three minimums are *all* met — the weakest
+aspect caps it. **Category 1 is the only asymmetric row**: Difficulty must be
+excellent while Execution and Artistry need only very good. Categories 2–4 are
+uniform. Do not "correct" that asymmetry.
+
+Below Category 4 is **fail**, a fifth outcome rather than a category. The scale is
+explicitly five-valued — *"excellent, very good, good, pass, fail"* (§2.2.1) — and
+§2.7.2 gives failure its own retest path, requiring the entire course and examination
+again.
+
+`Difficulty` here is one value. Since the exam scores `DA` and `DB` separately, it is
+their mean — see `CLAUDE.md`, decided 2026-08-08.
+
+### The examination result is an upper bound, not the award
+
+This is the part that changes the design, and it is why scoring and certification are
+separate events in this system.
+
+> *"A judge who has not met the judging experience requirements for the Category
+> earned in the examinations will receive the category in accordance with the
+> competitions successfully judged."* — §2.6
+
+Three further caps, all from §2.6:
+
+- *"A first time Brevet can achieve a maximum of Category 3 in his/her first cycle."*
+- *"a judge can only drop 2 categories in one cycle: i.e. Category 1 can drop at
+  worst to Category 3, Category 2 can drop at worst to Category 4."*
+- Category 1 experience must be met **before** the Intercontinental Course; there is
+  no upgrade to Category 1 afterwards.
+
+So the awarded category is roughly
+`min(examination result, experience, first-cycle cap, previous − 2)`.
+
+The exam system computes the examination result and stops there. Awarding consumes
+that result alongside judging history the exam knows nothing about, which is exactly
+why an official produces the outcome at a different time and it is recorded against
+their name.
 
 ### Why none of these numbers are in the code
 
