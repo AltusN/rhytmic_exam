@@ -119,13 +119,13 @@ creates no table of its own, and each child gets its own with the inherited colu
 invisible to Django — no migrations, no admin, no models. That failure is silent, so
 it gets its own gate.
 
-- [ ] **Step 1: Generate the app**
+- [x] **Step 1: Generate the app**
 
 ```bash
 ../.venv/bin/python manage.py startapp questions
 ```
 
-- [ ] **Step 2: Add it to `INSTALLED_APPS`**
+- [x] **Step 2: Add it to `INSTALLED_APPS`**
 
 In `config/settings.py`, after the `django.contrib.*` entries:
 
@@ -133,7 +133,7 @@ In `config/settings.py`, after the `django.contrib.*` entries:
     "questions",
 ```
 
-- [ ] **Step 3: Write the failing test**
+- [x] **Step 3: Write the failing test**
 
 One test in `tests/test_questions_practical.py`. It asserts the app is installed and
 loadable — `django.apps.apps.get_app_config("questions")` returns a config whose
@@ -141,7 +141,7 @@ loadable — `django.apps.apps.get_app_config("questions")` returns a config who
 
 You write it. The construct you need is `from django.apps import apps`.
 
-- [ ] **Step 4: Run it**
+- [x] **Step 4: Run it**
 
 ```bash
 ../.venv/bin/python -m pytest tests/test_questions_practical.py -v
@@ -151,7 +151,7 @@ Expected: PASS once Step 2 is done, and `LookupError: No installed app with labe
 'questions'` if you skip Step 2. Try it both ways — that error is what the test
 exists to catch.
 
-- [ ] **Step 5: Full suite and lint**
+- [x] **Step 5: Full suite and lint**
 
 ```bash
 ../.venv/bin/python -m pytest -q && ../.venv/bin/ruff format . && ../.venv/bin/ruff check .
@@ -159,7 +159,7 @@ exists to catch.
 
 Expected: **84 passed**, clean, clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git status --short
@@ -191,7 +191,7 @@ and must not be in the repository. They are configured, served and deployed
 differently, and conflating them is how the legacy tree ended up with 117 exam images
 tracked in git.
 
-- [ ] **Step 1: Add `Pillow` and the media settings**
+- [x] **Step 1: Add `Pillow` and the media settings**
 
 `Pillow` goes in the `web` extra of `pyproject.toml` — Django's `ImageField`
 requires it, and Task 5 introduces one:
@@ -214,7 +214,7 @@ MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 ```
 
-- [ ] **Step 2: Serve media in development**
+- [x] **Step 2: Serve media in development**
 
 Django does not serve uploaded files in production — a real deployment puts them
 behind nginx or object storage. For development, add to `config/urls.py`:
@@ -234,7 +234,7 @@ if settings.DEBUG:
 The `if settings.DEBUG` guard is not decoration: `static()` returns an empty list
 when `DEBUG` is false, but writing it unguarded invites someone to "fix" it later.
 
-- [ ] **Step 3: Gitignore uploaded media**
+- [x] **Step 3: Gitignore uploaded media**
 
 Add to the root `.gitignore`:
 
@@ -243,7 +243,7 @@ Add to the root `.gitignore`:
 rhythmic/media/
 ```
 
-- [ ] **Step 4: Write `Apparatus` — this one is shown**
+- [x] **Step 4: Write `Apparatus` — this one is shown**
 
 Django model syntax needs seeing once. This is the whole model:
 
@@ -276,7 +276,7 @@ Four things worth understanding rather than copying:
 - `__str__` is what the admin shows in dropdowns. Without it you get
   `Apparatus object (3)`.
 
-- [ ] **Step 5: Write `Routine` — you write this one**
+- [x] **Step 5: Write `Routine` — you write this one**
 
 | field | type | notes |
 |---|---|---|
@@ -291,7 +291,7 @@ reference data.
 
 Give it a `__str__` and a sensible `Meta.ordering`.
 
-- [ ] **Step 6: Make and apply the migration**
+- [x] **Step 6: Make and apply the migration**
 
 ```bash
 ../.venv/bin/python manage.py makemigrations questions
@@ -301,7 +301,7 @@ Give it a `__str__` and a sensible `Meta.ordering`.
 Read the generated migration before applying it. Migrations are generated, so they
 are not yours to write — but they are yours to check.
 
-- [ ] **Step 7: Write the failing tests**
+- [x] **Step 7: Write the failing tests**
 
 In `tests/test_questions_practical.py`. All need `@pytest.mark.django_db`.
 
@@ -312,16 +312,25 @@ In `tests/test_questions_practical.py`. All need `@pytest.mark.django_db`.
 | `test_routine_belongs_to_an_apparatus` | a routine's `apparatus.name` round-trips |
 | `test_deleting_an_apparatus_in_use_is_refused` | `apparatus.delete()` with a routine attached raises `ProtectedError` |
 
-For the video, `django.core.files.uploadedfile.SimpleUploadedFile` gives you a fake
-file without touching the disk meaningfully. For the exception tests,
-`pytest.raises(IntegrityError)` and `pytest.raises(ProtectedError)`; import
-`ProtectedError` from `django.db.models`.
+**Assert on the bare `Apparatus.objects.all()`, with no `.order_by()` on it.** Adding
+`.order_by("position")` supplies the very ordering the test exists to check, so it
+passes with `Meta.ordering` deleted — verified by mutation on 2026-08-10, and it is
+how the test was first written. A test that specifies the behaviour it is checking
+tests the ORM, not the model. The same trap waits wherever ordering is asserted.
+
+For the video, **pass a plain string** — `video="routines/example.mp4"` — which sets
+the stored path and writes nothing. `SimpleUploadedFile` through `.create()` deposits
+real files into `rhythmic/media/` on every run; an earlier draft of this plan
+recommended it and was wrong.
+
+For the exception tests, `pytest.raises(IntegrityError)` and
+`pytest.raises(ProtectedError)`; import `ProtectedError` from `django.db.models`.
 
 `test_apparatus_name_is_unique` needs care: an `IntegrityError` breaks the
 transaction, so anything after it in the same test will fail confusingly. Keep the
 `pytest.raises` block the last thing in that test.
 
-- [ ] **Step 8: Run**
+- [x] **Step 8: Run**
 
 ```bash
 ../.venv/bin/python -m pytest tests/test_questions_practical.py -v
@@ -329,7 +338,7 @@ transaction, so anything after it in the same test will fail confusingly. Keep t
 
 Expected: 4 new tests pass, plus Task 1's.
 
-- [ ] **Step 9: Full suite, lint, commit**
+- [x] **Step 9: Full suite, lint, commit**
 
 ```bash
 ../.venv/bin/python -m pytest -q && ../.venv/bin/ruff format . && ../.venv/bin/ruff check .
