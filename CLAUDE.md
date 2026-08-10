@@ -341,8 +341,9 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Two plans finished: the scoring package (seven tasks) and the Django skeleton
-(five).** As of 2026-08-08, **83 tests pass** and both `ruff check .` and
-`ruff format --check .` are clean. Run all three from `rhythmic/`.
+(five). The questions app is in progress — Tasks 1 and 2 of eight are done.** As of
+2026-08-10, **88 tests pass** and both `ruff check .` and `ruff format --check .`
+are clean. Run all three from `rhythmic/`.
 
 | file | tests |
 |---|---|
@@ -352,12 +353,14 @@ says nothing whatever about commit messages; don't mistake one for the other.
 | `test_marking.py` | 12 |
 | `test_public_api.py` | 10 |
 | `test_legacy_parity.py` | 9 |
+| `test_questions_practical.py` | 5 |
 | `test_django_smoke.py` | 2 |
 | `test_smoke.py` | 1 |
 
 **Postgres must be running for the full suite to pass.** `docker compose up -d` from
-the repository root. Only `test_django_smoke.py::test_database_is_reachable` needs
-it; the other 82 do not.
+the repository root. `test_django_smoke.py::test_database_is_reachable` needs it, and
+so does every `@pytest.mark.django_db` test in the questions app; the 82 scoring
+tests do not.
 
 **The plan's own test-count estimates are stale** — it predicts 54 by Task 6. Tasks
 4 and 5 both grew cases beyond its table. Don't chase the plan's numbers; they were
@@ -529,10 +532,35 @@ Plan: `docs/superpowers/plans/2026-08-05-django-skeleton.md`. Five tasks, all do
 nothing about formatting. That gap cost review rounds on Tasks 3 and 5, which is
 why the pre-commit hook exists.
 
-**Next action: write the questions-app plan.** Scope settled 2026-08-08 — it is
-**content only**: `Question`, `Routine`, `Apparatus`, the content blocks replacing
-the legacy type 1–5 shapes, media upload, admin, and a preview action. It knows
-nothing about levels, exams or who sits what.
+**The questions-app plan is written** — `docs/superpowers/plans/2026-08-10-questions-app.md`,
+eight tasks. It is **content only**: `Question`, `Routine`, `Apparatus`, the content
+blocks replacing the legacy type 1–5 shapes, media upload, admin, and a preview
+action. It knows nothing about levels, exams or who sits what.
+
+**Next action: Task 3, `PracticalItem`.**
+
+- `d035ce8` — Task 1. The `questions` app, registered in `INSTALLED_APPS`.
+- `a472415` — Task 2. `Apparatus` and `Routine`, `MEDIA_ROOT`/`MEDIA_URL`, media
+  served under `DEBUG`, `rhythmic/media/` gitignored.
+
+  **Two review findings worth carrying forward.** `Routine.Meta.ordering` names
+  `apparatus__position` rather than `apparatus`. Both generate identical SQL today —
+  Django follows a bare FK to the related model's own `Meta.ordering` and falls back
+  to its primary key when there is none — so this is taste, but it survives someone
+  deleting `Apparatus.Meta.ordering`, which the implicit form does not.
+
+  The ordering *test* was the real finding, and it is general. As first written it
+  called `Apparatus.objects.all().order_by("position")` — supplying the very sort it
+  existed to check, so it passed with `Meta.ordering` deleted. Confirmed by mutating
+  `Apparatus._meta.ordering` to `[]` in a shell and printing the query: the model's
+  `ORDER BY` disappears while the test's does not. **A test that specifies the
+  behaviour it is checking tests the ORM, not the model.** Assert on the bare
+  queryset.
+
+  Also: test videos are set with a plain string, `video="routines/example.mp4"`, not
+  `SimpleUploadedFile` — the latter writes real files into `rhythmic/media/` through
+  `.create()` on every run. The plan recommended it and was wrong; corrected in
+  `042364b`.
 
 **F9 and F10 both land in the exams/sittings plan**, along with `ExamComponent`,
 membership, sittings and the freeze. Then accounts and the roster, then the React
