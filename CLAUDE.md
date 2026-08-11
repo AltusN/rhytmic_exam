@@ -341,8 +341,8 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Two plans finished: the scoring package (seven tasks) and the Django skeleton
-(five). The questions app is in progress — Tasks 1 and 2 of eight are done.** As of
-2026-08-10, **88 tests pass** and both `ruff check .` and `ruff format --check .`
+(five). The questions app is in progress — Tasks 1-3 of eight are done.** As of
+2026-08-12, **92 tests pass** and both `ruff check .` and `ruff format --check .`
 are clean. Run all three from `rhythmic/`.
 
 | file | tests |
@@ -353,7 +353,7 @@ are clean. Run all three from `rhythmic/`.
 | `test_marking.py` | 12 |
 | `test_public_api.py` | 10 |
 | `test_legacy_parity.py` | 9 |
-| `test_questions_practical.py` | 5 |
+| `test_questions_practical.py` | 9 |
 | `test_django_smoke.py` | 2 |
 | `test_smoke.py` | 1 |
 
@@ -537,7 +537,7 @@ eight tasks. It is **content only**: `Question`, `Routine`, `Apparatus`, the con
 blocks replacing the legacy type 1–5 shapes, media upload, admin, and a preview
 action. It knows nothing about levels, exams or who sits what.
 
-**Next action: Task 3, `PracticalItem`.**
+**Next action: Task 4, `Question` and `Option`.**
 
 - `d035ce8` — Task 1. The `questions` app, registered in `INSTALLED_APPS`.
 - `a472415` — Task 2. `Apparatus` and `Routine`, `MEDIA_ROOT`/`MEDIA_URL`, media
@@ -561,6 +561,32 @@ action. It knows nothing about levels, exams or who sits what.
   `SimpleUploadedFile` — the latter writes real files into `rhythmic/media/` through
   `.create()` on every run. The plan recommended it and was wrong; corrected in
   `042364b`.
+
+- `f633dec` — Task 3. `PracticalItem(routine, aspect, expert_score)` and the `Aspect`
+  `TextChoices`. `aspect` carries **no default** and `expert_score` is
+  `DecimalField(max_digits=4, decimal_places=2)`; the `UniqueConstraint` on
+  `(routine, aspect)` is a real `UNIQUE` index. Reasoning is in the commit body.
+
+  **`sqlmigrate` is how you check a model reached the database as intended** —
+  `manage.py sqlmigrate questions 0002` renders the DDL without running it. It showed
+  `numeric(4, 2)` rather than `double precision`, the named `UNIQUE (routine_id,
+  aspect)`, and `varchar(2) NOT NULL` with no `DEFAULT`. Note also that Django's
+  migration optimizer folds `AddConstraint` into `CreateModel` when both are in the
+  same migration, so a missing `AddConstraint` operation is not a missing constraint —
+  a review comment of Claude's said otherwise and was wrong.
+
+  **Third instance of the same test defect: the test supplied the behaviour it was
+  checking.** `test_expert_score_is_stored_as_decimal` asserted `isinstance(...,
+  Decimal)` on the object `create()` returned, which is the literal that went in, so
+  it passed without Postgres being involved and would pass against a `FloatField`.
+  `create()` hands back `9.5` where a reload gives `Decimal('9.50')` — the conversion
+  is the database's, and only a reload sees it. Same shape as Task 2's `.order_by()`.
+  **Reload with `objects.get(pk=...)` before asserting anything about storage.**
+
+  A `related_name` reverse accessor (`routine.items`) draws a red squiggle in the
+  editor and works fine — Django builds it at class-preparation time, so Pylance
+  cannot see it. `django-stubs` is the fix if it becomes annoying; it is not
+  installed.
 
 **F9 and F10 both land in the exams/sittings plan**, along with `ExamComponent`,
 membership, sittings and the freeze. Then accounts and the roster, then the React

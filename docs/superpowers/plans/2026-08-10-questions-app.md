@@ -369,7 +369,7 @@ number. There is no stem and there are no options — see `CLAUDE.md`, decided
 2026-08-10. One routine has four items, one per aspect, and each carries its own
 expert score because a routine's `DA` score is not its `EX` score.
 
-- [ ] **Step 1: Write the model — you write this**
+- [x] **Step 1: Write the model — you write this**
 
 | field | type | notes |
 |---|---|---|
@@ -389,7 +389,7 @@ that costs when it reaches a mark.
 `max_digits=4, decimal_places=2` allows `0.00` to `99.99` — deductions are single
 digits, so this is roomy without being silly.
 
-- [ ] **Step 2: Add the constraint that matters**
+- [x] **Step 2: Add the constraint that matters**
 
 A routine must not have two `DA` items. In `Meta`:
 
@@ -405,14 +405,14 @@ This is a real `UNIQUE` index in Postgres, so it holds against the admin, a shel
 management command and a hand-written `INSERT` alike. A `clean()` method would only
 hold against forms.
 
-- [ ] **Step 3: Migrate**
+- [x] **Step 3: Migrate**
 
 ```bash
 ../.venv/bin/python manage.py makemigrations questions
 ../.venv/bin/python manage.py migrate
 ```
 
-- [ ] **Step 4: Write the failing tests**
+- [x] **Step 4: Write the failing tests**
 
 Add to `tests/test_questions_practical.py`, all `@pytest.mark.django_db`.
 
