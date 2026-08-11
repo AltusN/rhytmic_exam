@@ -29,3 +29,35 @@ class Routine(models.Model):
 
     def __str__(self) -> str:
         return f"{self.apparatus.name} - {self.label}"
+
+
+class Aspect(models.TextChoices):
+    DA = "DA", "Apparatus Difficulty"
+    DB = "DB", "Body Difficulty"
+    AV = "AV", "Artistic Value"
+    EX = "EX", "Execution"
+
+
+class PracticalItem(models.Model):
+    routine = models.ForeignKey(
+        Routine,
+        on_delete=models.PROTECT,
+        related_name="items",
+        help_text="The routine this item belongs to.",
+    )
+    aspect = models.CharField(
+        max_length=2, choices=Aspect.choices, help_text="e.g 'DA', 'DB', 'AV', 'EX'"
+    )
+    expert_score = models.DecimalField(
+        max_digits=4, decimal_places=2, help_text="Expert score for this item."
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["routine", "aspect"], name="uq_one_item_per_aspect_per_routine"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.routine} - {self.aspect} - {self.expert_score}"
