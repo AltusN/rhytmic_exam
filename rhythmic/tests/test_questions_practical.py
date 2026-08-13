@@ -79,6 +79,8 @@ def test_a_routine_has_one_item_per_aspect():
         routine=routine, aspect=Aspect.EX, expert_score=Decimal("9.0")
     )
 
+    # Pylance may report `Routine` has no attribute `items`, but this reverse
+    # accessor is created dynamically by Django from PracticalItem.related_name.
     assert routine.items.count() == 4
 
 
