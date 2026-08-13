@@ -93,6 +93,13 @@ spurious zero to occupy. Modelling it as one exam with optional components means
 every result must distinguish *not applicable* from *scored zero*, which is the
 distinction legacy got wrong.
 
+**Re-certification is a requirement** (confirmed 2026-08-13). A judge is examined
+again each cycle and **both results must survive** — the earlier sitting is not
+replaced by the later one. Legacy could not do this at all: `exam_result` declared
+`UNIQUE (sagf_id)` with no year and no attempt number, so one row per person was the
+schema's ceiling (**F11**). This is why `Exam` carries a year and why sittings
+accumulate against a judge rather than a judge carrying a result.
+
 *Theory* is multiple choice. **It is no longer a real certification component** — it
 exists to exercise administering a multiple-choice paper across the different
 question formats. `mark_choice` scores it and `score_component` over those marks
@@ -117,6 +124,10 @@ requirement, so an official must be able to rename or reorder them without a dep
 Note the domain distinction: **a gymnast competes on four apparatus, chosen by level;
 a judge is examined on all five.** What a gymnast performs is not what a judge is
 tested on, so the exam's apparatus set does not follow the competition's.
+
+**The set and its order, for seed data:** `Rope, Hoop, Ball, Clubs, Ribbon` — FIG
+competition order, and the order the legacy database used. This is `Apparatus.position`
+1 through 5. It carries no exam content and is safe to commit as a fixture.
 
 **Apparatus and aspect are independent dimensions — a 4 × 5 grid**, and results are
 read *both* ways. Down a row gives the aspect's component score, which is what
@@ -253,10 +264,11 @@ absence as absence, never as a number.
 ## Read these before doing anything
 
 - `docs/superpowers/specs/2026-07-28-rhythmic-exam-rebuild-design.md` — the design.
-  Includes ten numbered findings (F1–F10) from the old app; each one is a bug the
+  Includes twelve numbered findings (F1–F12) from the old app; each one is a bug the
   rebuild must fix, and several have tests written specifically to pin them. F1–F8
   came from the original audit; **F9 and F10 were found on 2026-08-05** while
-  checking how legacy selected questions by level. Assume there are more.
+  checking how legacy selected questions by level; **F11 and F12 on 2026-08-13**,
+  from an old working database rather than from the code. Assume there are more.
 - `docs/superpowers/plans/2026-07-28-scoring-package.md` — the current plan.
 
 ## Layout
@@ -276,6 +288,22 @@ it either.
 
 The FastAPI backend was deleted on 2026-07-28 (recoverable from `4e6aa1b`,
 `206ff42`). Don't suggest reviving it.
+
+**`rhytmic.db` — an old working SQLite database, produced 2026-08-13.** Untracked and
+covered by `.gitignore`'s `*.db`; **it holds the real question bank and the practical
+answer key, so it must never be committed and its contents must not be quoted into
+commits, plans or chat.** Aggregate shape — counts, distributions, column types — is
+safe and is where F9's confirmation and F11/F12 came from.
+
+**It is evidence of what was done, not a model for what to do.** Every structural
+choice in it is one the rebuild is deliberately reversing: scalar `exam_level`,
+positional `answer_1..answer_20` keys, `TEXT` expert scores, one result per person.
+Read it to find out what went wrong, never to copy a shape.
+
+Two facts from it that bear on planning rather than on findings: all 75 questions are
+`question_type = 1` and none references an image, so **the type 2–5 layouts have no
+known data** — worth settling before Task 5 builds five block renderers. And the 117
+tracked images in `legacy/` are not referenced by this database either.
 
 ## Spelling
 

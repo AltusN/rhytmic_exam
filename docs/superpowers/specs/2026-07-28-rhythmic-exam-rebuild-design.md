@@ -99,8 +99,14 @@ equality.
 
 The question bank was removed from this repository on 2026-07-28, so whether the data
 worked around this — by importing level 1's questions a second time under `exam_level =
-"2"` — cannot be checked here. If it did, the level rule lived in a spreadsheet and nothing
-in the system enforced it. Found 2026-08-05, after the original audit.
+"2"` — could not be checked at the time. **Settled 2026-08-13 against an old working
+database:** it did not. Level 1 holds 50 questions and level 2 holds 25, with `question_id`
+ranges 1–50 and 51–75 and **no overlapping question text at all**. A level 2 candidate was
+therefore asked 25 questions rather than 75 — the additions only, never the foundation.
+
+Two things follow. The cumulative rule existed nowhere: not in the query, and not as
+duplicated rows in the data either. And `user.level` is a nullable `VARCHAR` that was blank
+for 16 of 22 users, so for most of the roster the equality test had nothing to compare.
 
 ### F10 — A component the candidate never sat is scored as zero
 
@@ -115,6 +121,42 @@ Distinct from F5, which concerns the arithmetic of the practical percentage. Thi
 component that should not exist for that candidate having a score at all. The same
 conflation F3 makes between a blank answer and an unreadable one: absence is not a value.
 Found 2026-08-05, after the original audit.
+
+### F11 — A candidate can hold only one exam result, ever
+
+`exam_result` declares `UNIQUE (sagf_id)` and carries no year, cycle or attempt number. One
+row per person is all the schema can hold, so a second examination has nowhere to go: it
+overwrites the first or it is refused. There is no third option.
+
+**Judges recertify every cycle**, so this is not an edge case — it is the normal life of
+every record in the table. A judge examined in two consecutive cycles has one row, and
+whichever attempt it holds, the other is gone. Nothing in the schema records that a
+previous examination happened, which also means the history that caps an awarded category
+(see the judging-experience rules) can never be reconstructed from this system's own data.
+
+The rebuild's `Exam(level, year, kind)` and `Sitting: judge · exam` make re-sitting the
+ordinary case rather than a schema violation: a judge accumulates sittings, each against a
+dated exam, and the record of the earlier one survives the later one. **Re-certification is
+a requirement, confirmed 2026-08-13**, not a nice-to-have inherited from the old shape.
+
+Found 2026-08-13, from an old working database rather than from the code.
+
+### F12 — The flag distinguishing an unsat component already existed and was ignored
+
+`exam_result` carries `practical_taken BOOLEAN` and `theory_taken BOOLEAN`. F10's
+fabricated `'{"answer_1":"0"}'` was therefore not written because the system had no way to
+say "this candidate did not sit the practical" — it had exactly that way, in a column beside
+the one it overwrote.
+
+This matters for how the rebuild guards it. A missing column is fixed by adding one; an
+ignored column is not, because the next reader of the data has to know the flag exists and
+must be consulted before the answer field means anything. Every query, report and export
+becomes responsible for a rule that lives nowhere. **That is the argument for making the
+absent case unrepresentable rather than flagged** — with theory and practical as separate
+exams and separate sittings, a candidate who did not sit the practical has no practical
+sitting, and there is no field to fabricate a value into and no flag to forget to check.
+
+Found 2026-08-13, alongside F11.
 
 ## Scope
 
