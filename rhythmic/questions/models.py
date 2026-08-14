@@ -61,3 +61,47 @@ class PracticalItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.routine} - {self.aspect} - {self.expert_score}"
+
+
+class Question(models.Model):
+    reference = models.CharField(
+        max_length=50, unique=True, help_text="e.g. 'RG-2026-014'"
+    )
+    notes = models.TextField(
+        blank=True, help_text="Internal notes or context for the question."
+    )
+
+    class Meta:
+        ordering = ["reference"]
+
+    def __str__(self) -> str:
+        return self.reference
+
+
+class Option(models.Model):
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="options"
+    )
+    position = models.PositiveSmallIntegerField(
+        help_text="Display order of the option."
+    )
+    is_correct = models.BooleanField(
+        default=False, help_text="Indicates if this option is the correct answer."
+    )
+
+    class Meta:
+        ordering = ["position"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["question"],
+                condition=models.Q(is_correct=True),
+                name="uq_one_correct_option_per_question",
+            ),
+            models.UniqueConstraint(
+                fields=["question", "position"],
+                name="uq_unique_option_position_per_question",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"Option {self.position} for Question {self.question.reference}"
