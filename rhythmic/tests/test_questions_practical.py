@@ -81,7 +81,7 @@ def test_a_routine_has_one_item_per_aspect():
 
     # Pylance may report `Routine` has no attribute `items`, but this reverse
     # accessor is created dynamically by Django from PracticalItem.related_name.
-    assert routine.items.count() == 4
+    assert routine.items.count() == 4  # type: ignore[attr-defined]
 
 
 @pytest.mark.django_db
