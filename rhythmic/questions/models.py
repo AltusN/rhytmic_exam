@@ -1,4 +1,7 @@
+from pathlib import PurePosixPath
+
 from django.db import models
+from django.utils.text import Truncator
 
 
 class Apparatus(models.Model):
@@ -105,3 +108,94 @@ class Option(models.Model):
 
     def __str__(self) -> str:
         return f"Option {self.position} for Question {self.question.reference}"
+
+
+class Kind(models.TextChoices):
+    TEXT = "TEXT", "Text"
+    IMAGE = "IMAGE", "Image"
+    VIDEO = "VIDEO", "Video"
+
+
+class ContentBlock(models.Model):
+    kind = models.CharField(
+        max_length=10, choices=Kind.choices, help_text="Type of content block."
+    )
+    position = models.PositiveSmallIntegerField(
+        help_text="Display order of the content block."
+    )
+    text = models.TextField(blank=True, help_text="Text content for the block.")
+    image = models.ImageField(
+        upload_to="blocks/", blank=True, help_text="Image content for the block."
+    )
+    video = models.FileField(
+        upload_to="blocks/", blank=True, help_text="Video content for the block."
+    )
+
+    class Meta:
+        abstract = True
+        ordering = ["position"]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    (
+                        models.Q(kind=Kind.TEXT)
+                        & ~models.Q(text="")
+                        & models.Q(image="")
+                        & models.Q(video="")
+                    )
+                    | (
+                        models.Q(kind=Kind.IMAGE)
+                        & ~models.Q(image="")
+                        & models.Q(text="")
+                        & models.Q(video="")
+                    )
+                    | (
+                        models.Q(kind=Kind.VIDEO)
+                        & ~models.Q(video="")
+                        & models.Q(text="")
+                        & models.Q(image="")
+                    )
+                ),
+                name="%(app_label)s_%(class)s_kind_matches_payload",
+            )
+        ]
+
+    def __str__(self) -> str:
+        # Django's type checker doesn't understand that get_kind_display()
+        # is always available on a model with choices, so we ignore the type error here.
+        kind_display = self.get_kind_display()  # type: ignore
+        if self.kind == Kind.TEXT:
+            return f"{kind_display} Block at position {self.position}: {Truncator(self.text).chars(40)}"
+        if self.kind == Kind.IMAGE:
+            return f"{kind_display} Block at position {self.position}: {PurePosixPath(self.image.name).name}"
+        if self.kind == Kind.VIDEO:
+            return f"{kind_display} Block at position {self.position}: {PurePosixPath(self.video.name).name}"
+        return "New block (unsaved)"
+
+
+class QuestionBlock(ContentBlock):
+    question = models.ForeignKey(
+        Question, on_delete=models.CASCADE, related_name="blocks"
+    )
+
+    class Meta(ContentBlock.Meta):
+        constraints = ContentBlock.Meta.constraints + [
+            models.UniqueConstraint(
+                fields=["question", "position"],
+                deferrable=models.Deferrable.DEFERRED,
+                name="uq_unique_block_position_per_question",
+            )
+        ]
+
+
+class OptionBlock(ContentBlock):
+    option = models.ForeignKey(Option, on_delete=models.CASCADE, related_name="blocks")
+
+    class Meta(ContentBlock.Meta):
+        constraints = ContentBlock.Meta.constraints + [
+            models.UniqueConstraint(
+                fields=["option", "position"],
+                deferrable=models.Deferrable.DEFERRED,
+                name="uq_unique_block_position_per_option",
+            )
+        ]
