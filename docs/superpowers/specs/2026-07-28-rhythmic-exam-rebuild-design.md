@@ -158,6 +158,96 @@ sitting, and there is no field to fabricate a value into and no flag to forget t
 
 Found 2026-08-13, alongside F11.
 
+### F13 — The five question types are five private JSON schemas that disagree
+
+Every layout beyond plain text stores structured data as JSON inside a `VARCHAR` column,
+and no two types agree on how to name the same thing. Across 89 questions:
+
+- The location of an image is `path` in types 2 and 3, `location` in type 4's stem, and
+  `image_location` in types 4 and 5's options. Three keys for one concept, two of them
+  inside the same question type.
+- Type 1's practical option payload is keyed `quesiton_type` — a misspelling shipped in
+  data, not in code. A reader spelling it correctly gets nothing, and cannot distinguish
+  that from a legitimately absent value.
+- Type 3's options carry a single key `q_a`, which names the option rather than describing
+  its content.
+- A stem is `{heading, question}` in one shape and `{images, question}` in another.
+- `question_images` holds a `videos` key — a column named for images, holding video.
+- The discriminator inside every payload, `"type"`, has exactly one value across all 188
+  occurrences: `"image"`. It discriminates nothing.
+- `table_columns` appears 12 times and is always `4`, and the grid it describes is a
+  `path` object of `{filename, location}` where `location` is a list of four names.
+
+**Five bespoke unpacking functions in `exam_utils.py` was the symptom; five bespoke
+serialisations is the cause.** A sixth layout could reuse none of it, and a correction to
+one type's key names reaches no other type — F1's family, in the content model rather than
+the results.
+
+The rebuild's content blocks replace all five: a stem is an ordered list of blocks and so
+is an option, so a new layout is new rows. Nothing has to agree on key names because there
+are no keys.
+
+Note what this *does* settle: the image grid is no longer hypothetical. It is always four
+columns, it occurs twelve times, and its content is four image references sharing a
+location. That is a known requirement to design against rather than a guess — see the
+questions-app plan, Task 5.
+
+Found 2026-08-15, in `rhytmic_master.db`.
+
+### F14 — The practical answer key is joined to its questions by convention, not by key
+
+`exam_practial_answers` holds 20 rows — `Rope, Hoop, Ball, Clubs, Ribbon` against four
+aspects. It carries no foreign key to anything. A row's identity is an
+`internal_question_value` with 20 distinct values, a `result_question_value` with only 4,
+and a `decipline` string; the questions those scores belong to are four separate rows in
+`exam_questions`, each holding five video filenames. **Nothing in the schema connects the
+two.** The join is positional order plus string agreement, which is F2's key mismatch with
+a second table added to it.
+
+**This is a migration finding, not a design one.** The rebuild already makes the shape
+unrepresentable — `PracticalItem(routine, aspect, expert_score)` carries a real foreign key
+and a real `UNIQUE (routine, aspect)`, so an expert score cannot exist without naming
+exactly which cell of the 4 × 5 grid it belongs to. There is nothing to fix in the new
+models.
+
+The risk is entirely in the import. Reconstructing routine ↔ aspect ↔ score from positional
+convention has one dominant failure mode: an off-by-one shifts every expert score by one
+apparatus and produces twenty plausible marks that are all wrong. Nothing in the source data
+can detect it, because the ordering *is* the key. Any importer must therefore reconstruct
+the mapping from the `decipline` and `result_question_value` strings and assert the 5 × 4
+grid is complete before writing a single row — never from row order.
+
+Note also that `control_score`, the expert score itself, is `VARCHAR(64)` holding three
+characters. **The expert score is text**, which is exactly the comparison F3 gets wrong, and
+the import is where it stops being text.
+
+For context on how the practical was stored: those four question rows carry
+`question_type = '1'` — the same type as a plain four-option theory question — with a JSON
+stem, a `question_images` column holding a `videos` key, and four unused option columns all
+answered `'A'`. That shape is why the two tables were never linked; it had nowhere to put a
+relationship. Splitting theory from practical was decided on 2026-08-10, before this
+database was read.
+
+Found 2026-08-15, in `rhytmic_master.db`.
+
+### F15 — The JSON payloads do not fit the columns that hold them
+
+`exam_questions` declares `question VARCHAR(200)` and `option_a`–`option_d VARCHAR(64)`.
+The data reaches 340 characters in `question`, and 275 in `option_b` and `option_c`.
+
+SQLite does not enforce declared widths, so this was invisible for the life of the app.
+Postgres does. **The legacy question bank cannot be loaded into its own declared schema on
+any database that enforces types** — a migration has to widen the columns first, which is
+the schema conceding that the varchars were never holding what they claimed to.
+
+Nothing was truncated and no data was lost. The finding is that the declaration and the
+content have contradicted each other unnoticed for the life of the system, and the only
+reason it never bit is the choice of engine. Any port that assumed the declared widths were
+real — including the deleted FastAPI one — was working from a schema that had already been
+overruled by its own data.
+
+Found 2026-08-15, in `rhytmic_master.db`.
+
 ## Scope
 
 ### In

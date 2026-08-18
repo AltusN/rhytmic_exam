@@ -111,6 +111,15 @@ shown four times, once per aspect** — every apparatus judged on `DA`, then all
 again on `DB`, then `AV`, then `EX`. Aspect-major, not video-major: the candidate
 does not watch one routine four times in a row.
 
+**Confirmed from data, 2026-08-15.** `rhytmic_master.db` stores the practical as
+exactly four rows headed `Scoring D1 + D2`, `Scoring D3 + D4`, `Scoring AV` and
+`Scoring EX`, five video filenames each, against a 20-row answer key of
+`Rope, Hoop, Ball, Clubs, Ribbon` by four aspects. One row per aspect holding all
+five apparatus **is** aspect-major. This ordering was derived from the domain before
+the database was read; it is corroboration of a correct decision, not a finding —
+the finding next to it is F14, which is about the missing join between those two
+tables.
+
 | aspect | was | grade bands |
 |---|---|---|
 | `DA` | D1+D2 | Difficulty |
@@ -264,11 +273,12 @@ absence as absence, never as a number.
 ## Read these before doing anything
 
 - `docs/superpowers/specs/2026-07-28-rhythmic-exam-rebuild-design.md` — the design.
-  Includes twelve numbered findings (F1–F12) from the old app; each one is a bug the
+  Includes fifteen numbered findings (F1–F15) from the old app; each one is a bug the
   rebuild must fix, and several have tests written specifically to pin them. F1–F8
   came from the original audit; **F9 and F10 were found on 2026-08-05** while
-  checking how legacy selected questions by level; **F11 and F12 on 2026-08-13**,
-  from an old working database rather than from the code. Assume there are more.
+  checking how legacy selected questions by level; **F11 and F12 on 2026-08-13** and
+  **F13–F15 on 2026-08-15**, from old working databases rather than from the code.
+  Assume there are more.
 - `docs/superpowers/plans/2026-07-28-scoring-package.md` — the current plan.
 
 ## Layout
@@ -289,21 +299,35 @@ it either.
 The FastAPI backend was deleted on 2026-07-28 (recoverable from `4e6aa1b`,
 `206ff42`). Don't suggest reviving it.
 
-**`rhytmic.db` — an old working SQLite database, produced 2026-08-13.** Untracked and
-covered by `.gitignore`'s `*.db`; **it holds the real question bank and the practical
-answer key, so it must never be committed and its contents must not be quoted into
-commits, plans or chat.** Aggregate shape — counts, distributions, column types — is
-safe and is where F9's confirmation and F11/F12 came from.
+**Two old working SQLite databases, both untracked and covered by `.gitignore`'s
+`*.db`. They hold the real question bank and the practical answer key, so neither may
+ever be committed and their contents must not be quoted into commits, plans or chat.**
+Aggregate shape — counts, distributions, column types, JSON key names — is safe, and is
+where F9's confirmation and F11–F15 came from.
 
-**It is evidence of what was done, not a model for what to do.** Every structural
-choice in it is one the rebuild is deliberately reversing: scalar `exam_level`,
-positional `answer_1..answer_20` keys, `TEXT` expert scores, one result per person.
-Read it to find out what went wrong, never to copy a shape.
+- **`rhytmic.db`**, produced 2026-08-13. 75 questions, all `question_type = 1`, none
+  referencing media. A later, reduced state. Source of F11 and F12.
+- **`rhytmic_master.db`**, found 2026-08-15. **The original bank: 89 questions across
+  all five types, 85 theory and 4 practical.** Source of F13–F15. Predates the change
+  that introduced levels, so it says nothing about F9.
 
-Two facts from it that bear on planning rather than on findings: all 75 questions are
-`question_type = 1` and none references an image, so **the type 2–5 layouts have no
-known data** — worth settling before Task 5 builds five block renderers. And the 117
-tracked images in `legacy/` are not referenced by this database either.
+**They are evidence of what was done, not a model for what to do.** Every structural
+choice in them is one the rebuild is deliberately reversing: scalar `exam_level`,
+positional `answer_1..answer_20` keys, `TEXT` expert scores, one result per person,
+five private JSON schemas inside `VARCHAR` columns. Read them to find out what went
+wrong, never to copy a shape.
+
+**Two corrections the master database forced, both of which had reached this file as
+fact.** The type 2–5 layouts were recorded as having no known data; they have data —
+1 type 2, 2 type 3, 5 type 4, 39 type 5 — and their shapes are in F13. And the tracked
+media in `legacy/` was recorded as unreferenced; the master database references 98
+distinct files (88 `.jpg`, 10 `.mp4`) and **all 98 are present on disk**, across 44 of
+the 89 questions. So the media migration has a manifest, and the images are provably
+exam content rather than merely suspected of it — which raises, not lowers, the
+priority of the exposure noted under Hard constraints.
+
+Both corrections came from a claim in this file being checked rather than trusted.
+Treat the rest of this section the same way.
 
 ## Spelling
 
@@ -369,19 +393,21 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Two plans finished: the scoring package (seven tasks) and the Django skeleton
-(five). The questions app is in progress — Tasks 1-3 of eight are done.** As of
-2026-08-12, **92 tests pass** and both `ruff check .` and `ruff format --check .`
+(five). The questions app is in progress — Tasks 1-5 of eight are done.** As of
+2026-08-17, **109 tests pass** and both `ruff check .` and `ruff format --check .`
 are clean. Run all three from `rhythmic/`.
 
 | file | tests |
 |---|---|
-| `test_values.py` | 17 |
 | `test_aggregate.py` | 18 |
+| `test_values.py` | 17 |
 | `test_tables.py` | 14 |
 | `test_marking.py` | 12 |
 | `test_public_api.py` | 10 |
+| `test_questions_blocks.py` | 10 |
 | `test_legacy_parity.py` | 9 |
 | `test_questions_practical.py` | 9 |
+| `test_questions_theory.py` | 7 |
 | `test_django_smoke.py` | 2 |
 | `test_smoke.py` | 1 |
 
@@ -565,7 +591,7 @@ eight tasks. It is **content only**: `Question`, `Routine`, `Apparatus`, the con
 blocks replacing the legacy type 1–5 shapes, media upload, admin, and a preview
 action. It knows nothing about levels, exams or who sits what.
 
-**Next action: Task 4, `Question` and `Option`.**
+**Next action: Task 6, attributed edit history.**
 
 - `d035ce8` — Task 1. The `questions` app, registered in `INSTALLED_APPS`.
 - `a472415` — Task 2. `Apparatus` and `Routine`, `MEDIA_ROOT`/`MEDIA_URL`, media
@@ -615,6 +641,64 @@ action. It knows nothing about levels, exams or who sits what.
   editor and works fine — Django builds it at class-preparation time, so Pylance
   cannot see it. `django-stubs` is the fix if it becomes annoying; it is not
   installed.
+
+- `af153e2` — Task 4. `Question` and `Option`. `CASCADE` here against `PROTECT` in
+  Tasks 2 and 3: an option has no meaning without its question, where an apparatus
+  outlives the routines referencing it. The partial unique index —
+  `UniqueConstraint(fields=["question"], condition=Q(is_correct=True))` — gives **at
+  most one** correct option, never **at least one**; a question with zero correct
+  options still saves, because the database has nothing to check until the child rows
+  exist. Task 7's formset validation closes that, and
+  `test_a_question_with_no_correct_option_still_saves` is the marker.
+
+- `a8915b0` — Task 5, fixes F13. `Kind`, abstract `ContentBlock`, `QuestionBlock` and
+  `OptionBlock`. Legacy's five per-type JSON schemas become rows: a text-plus-image
+  stem is two blocks, and image options are `kind=IMAGE` rather than a distinct
+  question type. Reasoning is in the commit body.
+
+  **The kind `CheckConstraint` is declared once on the abstract base and templated
+  with `%(app_label)s_%(class)s_`**, so each child gets its own copy under its own
+  name — constraint names are database-wide, so an untemplated name fails at
+  `migrate`. A child must write `class Meta(ContentBlock.Meta)` **and**
+  `constraints = ContentBlock.Meta.constraints + [...]`: assigning a fresh list
+  replaces the inherited one. Verified that a bare `class Meta:` in a child yields
+  `ordering=[]` while inheriting or omitting `Meta` yields `['position']` — so the
+  bare form silently drops both. `test_the_kind_constraint_applies_to_the_option_block_too`
+  exists because only a test on the *second* child can see that.
+
+  **Deferred constraints are invisible to `pytest-django`.** The `(parent, position)`
+  uniques are `DEFERRABLE INITIALLY DEFERRED` so an admin reorder can rewrite
+  positions inside one transaction. Postgres then checks them at `COMMIT`, and
+  `django_db` rolls back instead of committing — so two rows sharing a position insert
+  cleanly and the `IntegrityError` surfaces in *teardown*, reported as an ERROR
+  against a fixture on a test that "passed". A `pytest.raises` around the duplicate
+  therefore passes whether the constraint exists or not. The tests force it with
+  `SET CONSTRAINTS ALL IMMEDIATE` in a fixture. `CHECK` constraints are unaffected —
+  they fire on every row write.
+
+  The fixture takes `db` **for documentation, not because it breaks without it** —
+  verified that it works either way, since pytest-django's `_django_db_marker` is
+  autouse and autouse fixtures run first at the same scope.
+
+  **Isolate the row you are testing, because the error message cannot.** One
+  constraint with three OR'd arms produces one message for every violation, so
+  `match=` cannot tell you which arm fired. `kind=IMAGE` with text and *no image*
+  breaks two clauses at once and still passes with the text clause deleted from the
+  constraint; `kind=IMAGE` with a valid image *and* text is the isolated case.
+  Confirmed by rewriting the constraint in Postgres inside a test transaction —
+  DDL is transactional there, so the weakened version rolls back.
+
+  Match on the **constraint name only**, never Postgres's full sentence: the wording
+  belongs to Postgres and will change.
+
+  **Fourth instance of the test supplying its own behaviour**, after Task 2's
+  `.order_by()`, Task 3's `isinstance` on what `create()` returned, and an interim
+  `first()` here: `assert block1.position == block2.position` compares two literals
+  the test had just passed to `create()`, so it holds under every mutation including
+  deleting the model. Replaced with `list(question.blocks.all()) == [block]` per
+  parent, which reads from Postgres. Related mechanic worth knowing —
+  `QuerySet.first()` silently applies `order_by("pk")` when the queryset is
+  unordered, so it never raises on an unordered queryset, it just picks for you.
 
 **F9 and F10 both land in the exams/sittings plan**, along with `ExamComponent`,
 membership, sittings and the freeze. Then accounts and the roster, then the React

@@ -585,11 +585,45 @@ Abstract, with:
 | `image` | `ImageField(upload_to="blocks/", blank=True)` | used when `kind` is `IMAGE` |
 | `video` | `FileField(upload_to="blocks/", blank=True)` | used when `kind` is `VIDEO` |
 
-`Meta` carries `abstract = True` and `ordering = ["position"]`.
+`Meta` carries `abstract = True`, `ordering = ["position"]`, and the kind constraint
+below.
 
-The spec's vocabulary lists an *image-grid* as well. Leave it out. A grid is several
-image blocks plus a layout decision, and nothing renders it yet — add it when the
-renderer exists and you know what it needs. Building it now means guessing.
+The spec's vocabulary lists an *image-grid* as well. Leave it out — and as of
+2026-08-15 that deferral is confirmed rather than assumed. `rhytmic_master.db` shows
+grids are always four columns, occur twelve times, and are four image references
+sharing a location; crucially **a grid never co-occurs with loose images in the same
+question** (44 questions have standalone media only, 3 have a grid only). So four
+image blocks in sequence captures the content losslessly, and the four-up layout can
+be added later without ambiguity about which images it applies to. See F13.
+
+**Decision, 2026-08-15: `kind` and the payload fields are constrained, not merely
+documented.** Three kinds against three payload fields is nine combinations of which
+three are valid. A `kind=IMAGE` row with no image renders as nothing, in a
+candidate's exam, with no error anywhere.
+
+Unlike Task 4's at-least-one-correct-option, this *is* expressible as a row
+constraint — that gap existed because the database has nothing to check until child
+rows are inserted, and the argument does not transfer. The constraint requires the
+kind's own field to be non-empty **and the other two to be empty**, because permitting
+both `text` and `image` on one block gives it two contents and lets a renderer
+switching on `kind` silently drop one.
+
+```python
+models.CheckConstraint(
+    condition=(...),
+    name="%(app_label)s_%(class)s_kind_matches_payload",
+)
+```
+
+Two things to know. `CheckConstraint` takes `condition=` on Django 5.1+; the `check=`
+kwarg most tutorials still show raises `TypeError` on 6.1. And constraint names must be
+unique across the whole database, so a literal name in an abstract base collides the
+moment the second child inherits it — `%(app_label)s_%(class)s` is interpolated per
+concrete child.
+
+**Consequence to accept now:** this forbids reusing `text` as a caption or alt-text on
+an image block. When accessibility needs one, it gets its own field rather than
+overloading `text`, which keeps the constraint valid.
 
 - [ ] **Step 2: Write the two concrete children**
 
@@ -600,6 +634,44 @@ on_delete=models.CASCADE, related_name="blocks")`.
 on_delete=models.CASCADE, related_name="blocks")`.
 
 Both `CASCADE` — a block has no meaning without its parent.
+
+**Decision, 2026-08-15: position is unique per parent, and deferred.**
+
+```python
+models.UniqueConstraint(
+    fields=["question", "position"],
+    deferrable=models.Deferrable.DEFERRED,
+    name="uq_one_block_per_position_per_question",
+)
+```
+
+Without it, two stem blocks at the same position come back in whatever order Postgres
+chooses, so **the same question can read differently to different candidates** and
+nothing reports an error. Non-deterministic stem order is a defect in an exam that has
+to survive a dispute, not an untidiness.
+
+`DEFERRED` because swapping positions 1 and 2 in one admin formset save violates an
+immediate constraint mid-transaction. Deferring the check to commit makes reordering
+work at all. Note `Option`'s equivalent constraint from Task 4 is *not* deferred and
+has the same latent problem — fix it in Task 7 when the admin gets inline reordering,
+not before. The cost of deferring: Postgres cannot use a deferrable constraint for
+`ON CONFLICT` inference, so `bulk_create(update_conflicts=True)` against it will not
+work. That only matters if the legacy import ever upserts blocks.
+
+**This constraint cannot live in the abstract base** — it names `question` on one
+child and `option` on the other. So each child declares its own `Meta`, and that is
+where two silent traps live:
+
+```python
+class Meta(ContentBlock.Meta):
+    constraints = ContentBlock.Meta.constraints + [...]
+```
+
+A bare `class Meta:` drops the inherited `ordering`, and the ordering test would then
+pass while testing nothing. And `constraints` is a plain list attribute — declaring it
+in the child **replaces** the inherited list rather than extending it, so the kind
+constraint disappears from that table with no error at all. `sqlmigrate` is how you
+catch both.
 
 - [ ] **Step 3: Migrate and confirm the abstract base made no table**
 
@@ -622,7 +694,58 @@ Expected: tables for `questions_questionblock` and `questions_optionblock`, and
 | `test_an_option_carries_its_own_blocks` | an option's blocks are independent of its question's |
 | `test_deleting_a_question_deletes_its_blocks` | count drops to zero |
 | `test_contentblock_has_no_table_of_its_own` | `ContentBlock._meta.abstract is True` |
+| `test_a_text_block_without_text_is_refused` | `kind=TEXT` with empty `text` raises `IntegrityError` |
+| `test_an_image_block_carrying_text_is_refused` | the *other* half of the kind constraint — one payload only |
+| `test_the_kind_constraint_applies_to_option_blocks_too` | proves `%(class)s` gave `OptionBlock` its own copy, not that `QuestionBlock` took it |
+| `test_two_blocks_cannot_share_a_position` | `IntegrityError` on duplicate `(question, position)` |
+| `test_two_questions_may_use_the_same_positions` | the uniqueness is scoped per parent |
 | `test_a_type_one_question_is_text_stem_and_text_options` | build the legacy type 1 shape end to end: one text stem block, four options each with one text block, one flagged correct |
+
+Match `IntegrityError` on the constraint name — `pytest.raises(IntegrityError,
+match="...")` — for the two kind tests. Both constraints raise the same exception
+class, so without the name you cannot tell which one fired, and a test that passes for
+the wrong reason is the defect this project keeps rediscovering.
+
+The `OptionBlock` test is not redundancy. The kind constraint is declared once on the
+abstract base and templated per child; if the child's `Meta` replaces `constraints`
+instead of extending it, `QuestionBlock` keeps the constraint and `OptionBlock`
+silently loses it. Only a test against the second child sees that.
+
+**A deferred constraint is not checked until `COMMIT`, and `django_db` never commits.**
+Verified 2026-08-15 by probe: creating two blocks with the same `(question, position)`
+inside a `@pytest.mark.django_db` test inserts **both rows with no error**, and the
+`IntegrityError` then surfaces during teardown — pytest reports an `ERROR` against a
+fixture on a test that otherwise passed. A `pytest.raises` around the second `create()`
+therefore passes whether the constraint exists or not.
+
+The two constraint families differ, and the tests must respect it:
+
+| constraint | checked | in a test |
+|---|---|---|
+| `CHECK` (kind matches payload) | on every row write | `pytest.raises` works unchanged |
+| `UNIQUE ... DEFERRABLE INITIALLY DEFERRED` | at `COMMIT` | must be forced immediate first |
+
+Force it inside the test's transaction, before the inserts:
+
+```python
+with connection.cursor() as cursor:
+    cursor.execute("SET CONSTRAINTS ALL IMMEDIATE")
+```
+
+`connection` from `django.db`. Both position tests need it, so it belongs in a fixture
+rather than being typed twice.
+
+Give the fixture `db` as a parameter. **Not because it fails without it** — verified
+2026-08-15 that a fixture with no `db` parameter still forces the constraints
+successfully, because pytest-django's `_django_db_marker` is autouse and autouse
+fixtures run before non-autouse ones at the same scope. Declare `db` to state the
+dependency and to stop depending on a plugin's internal ordering, not to fix a break.
+
+**This applies again at Task 7**, when `Option`'s
+`uq_unique_option_position_per_question` becomes deferrable — the existing
+`test_duplicate_position_for_the_same_question_is_refused` in
+`tests/test_questions_theory.py` passes today because that constraint is still
+immediate, and will silently stop testing anything the moment it is deferred.
 
 That last test is the one that proves the design. Legacy needed
 `make_type_one_question` to produce that shape; here it is rows. Name it for the
