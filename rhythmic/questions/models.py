@@ -2,6 +2,7 @@ from pathlib import PurePosixPath
 
 from django.db import models
 from django.utils.text import Truncator
+from simple_history.models import HistoricalRecords
 
 
 class Apparatus(models.Model):
@@ -54,6 +55,7 @@ class PracticalItem(models.Model):
     expert_score = models.DecimalField(
         max_digits=4, decimal_places=2, help_text="Expert score for this item."
     )
+    history = HistoricalRecords()
 
     class Meta:
         constraints = [
@@ -73,6 +75,7 @@ class Question(models.Model):
     notes = models.TextField(
         blank=True, help_text="Internal notes or context for the question."
     )
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["reference"]
@@ -91,6 +94,7 @@ class Option(models.Model):
     is_correct = models.BooleanField(
         default=False, help_text="Indicates if this option is the correct answer."
     )
+    history = HistoricalRecords()
 
     class Meta:
         ordering = ["position"]
@@ -177,6 +181,7 @@ class QuestionBlock(ContentBlock):
     question = models.ForeignKey(
         Question, on_delete=models.CASCADE, related_name="blocks"
     )
+    history = HistoricalRecords()
 
     class Meta(ContentBlock.Meta):
         constraints = ContentBlock.Meta.constraints + [
@@ -190,6 +195,7 @@ class QuestionBlock(ContentBlock):
 
 class OptionBlock(ContentBlock):
     option = models.ForeignKey(Option, on_delete=models.CASCADE, related_name="blocks")
+    history = HistoricalRecords()
 
     class Meta(ContentBlock.Meta):
         constraints = ContentBlock.Meta.constraints + [
