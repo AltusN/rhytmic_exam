@@ -800,12 +800,29 @@ web = [
 - [ ] **Step 2: Add history to the models that get edited**
 
 `from simple_history.models import HistoricalRecords`, then `history =
-HistoricalRecords()` on **`Question`, `Option`, and `PracticalItem`**.
+HistoricalRecords()` on **`Question`, `Option`, `PracticalItem`, `QuestionBlock` and
+`OptionBlock`**.
+
+**Revised 2026-08-18: the two block models were added.** This step originally named
+only the first three, because it was written before Task 5 existed. After Task 5,
+`Question` carries `reference` and `notes` and nothing else, and `Option` carries
+`position` and `is_correct` — **every word a candidate reads lives in a block row.**
+History on `Question` and `Option` alone would record who flipped `is_correct` and
+say nothing about who reworded the stem or a distractor, and a reworded distractor
+can turn a candidate's wrong answer right. That is dispute material by this task's
+own standard.
+
+Note the cost, because it is not free: each historical model doubles the writes on
+its table, and blocks churn far more than `is_correct` does during authoring.
+Accepted deliberately.
 
 Not on `Apparatus` or `Routine`. Ask what question the history answers: "who changed
 this answer key" and "who changed this expert score" are dispute material. "Who
 renamed Ribbon" is not. Every historical model doubles the writes on that table, so
 this is a judgement about value, not a default to apply everywhere.
+
+`HistoricalRecords()` on an **abstract** base does not do what you want — it must go
+on each concrete child. Putting it on `ContentBlock` is the thing to check at review.
 
 - [ ] **Step 3: Add the middleware that records *who***
 
@@ -828,9 +845,23 @@ command have no request and record no user, which is correct — nobody was logg
 | `test_editing_an_expert_score_records_both_values` | save `4.20`, change to `4.50`, then the item's `history.count() == 2` and the older record still holds `Decimal("4.20")` |
 | `test_history_records_the_change_type` | the first historical row's `history_type` is `"+"` (created), the second `"~"` (changed) |
 | `test_apparatus_has_no_history` | `hasattr(Apparatus, "history") is False` |
+| `test_rewording_a_block_records_both_versions` | edit a `QuestionBlock`'s `text`, then `history.count() == 2` and the older record holds the original wording |
+| `test_block_history_survives_deleting_the_question` | delete the question; the block row goes with it, the historical rows do not |
 
 The third test pins a decision rather than a behaviour. Without it, someone adds
 `HistoricalRecords()` to every model in a tidying pass and nothing objects.
+
+The fifth is the one that justifies history existing at all. simple_history drops the
+`FOREIGN KEY` on the tracked model's own relations — verified in the generated DDL,
+where `questions_historicalquestionblock.question_id` is a plain nullable `bigint`
+with an index and no constraint. So `Question.delete()` cascades the live block away
+and leaves its history standing. An audit record that vanishes with the thing it
+audits answers nothing during a dispute.
+
+**Attribution is not testable here.** `history_user_id` is filled by the middleware
+from `request.user`, and these tests make no request, so every historical row they
+write has a null user. Testing that the middleware works needs the admin client —
+it belongs in Task 7.
 
 - [ ] **Step 5: Run, lint, commit**
 

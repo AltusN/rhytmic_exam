@@ -393,8 +393,8 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Two plans finished: the scoring package (seven tasks) and the Django skeleton
-(five). The questions app is in progress — Tasks 1-5 of eight are done.** As of
-2026-08-17, **109 tests pass** and both `ruff check .` and `ruff format --check .`
+(five). The questions app is in progress — Tasks 1-6 of eight are done.** As of
+2026-08-18, **114 tests pass** and both `ruff check .` and `ruff format --check .`
 are clean. Run all three from `rhythmic/`.
 
 | file | tests |
@@ -408,6 +408,7 @@ are clean. Run all three from `rhythmic/`.
 | `test_legacy_parity.py` | 9 |
 | `test_questions_practical.py` | 9 |
 | `test_questions_theory.py` | 7 |
+| `test_questions_history.py` | 5 |
 | `test_django_smoke.py` | 2 |
 | `test_smoke.py` | 1 |
 
@@ -591,7 +592,7 @@ eight tasks. It is **content only**: `Question`, `Routine`, `Apparatus`, the con
 blocks replacing the legacy type 1–5 shapes, media upload, admin, and a preview
 action. It knows nothing about levels, exams or who sits what.
 
-**Next action: Task 6, attributed edit history.**
+**Next action: Task 7, the admin.**
 
 - `d035ce8` — Task 1. The `questions` app, registered in `INSTALLED_APPS`.
 - `a472415` — Task 2. `Apparatus` and `Routine`, `MEDIA_ROOT`/`MEDIA_URL`, media
@@ -699,6 +700,56 @@ action. It knows nothing about levels, exams or who sits what.
   parent, which reads from Postgres. Related mechanic worth knowing —
   `QuerySet.first()` silently applies `order_by("pk")` when the queryset is
   unordered, so it never raises on an unordered queryset, it just picks for you.
+
+- `ddbd625` — Task 6. `django-simple-history` on `Question`, `Option`,
+  `PracticalItem`, `QuestionBlock` and `OptionBlock`. Not on `Apparatus` or
+  `Routine` — "who renamed Ribbon" is not dispute material, and every historical
+  model doubles the writes on its table.
+
+  **The plan named only the first three and was wrong.** It was written before Task
+  5, and after Task 5 every word a candidate reads lives in a block row: history on
+  `Question` and `Option` alone records who flipped `is_correct` and nothing about
+  who reworded a distractor. Corrected in the plan.
+
+  **History is not F1's fix.** F1 is results being recomputed against the live
+  answer key; it is closed by the sitting freezing its own snapshot of marks, in the
+  exams app. History answers a different question — *who changed this key, and when*
+  — which is why the spec rejected version chains rather than adding them. A commit
+  body claiming `Fixes F1` here was caught at review.
+
+  **`simple_history` is an app *and* a middleware, and they do different jobs.** The
+  middleware records *who*, from `request.user`, so it must sit after
+  `AuthenticationMiddleware`; without it history records what changed and not who.
+  `INSTALLED_APPS` gets the templates, template tags, management commands and
+  translations — the package ships **no `migrations/`**, because each historical
+  model is built under the tracked model's own app (`models.py:302`,
+  `app_module = "%s.models" % model._meta.app_label`). So the tables land in
+  `questions/migrations/` and the recording half works even unregistered — which is
+  why the omission survives until someone clicks History in the admin.
+
+  **The audit outlives the record.** simple_history drops the `FOREIGN KEY` on the
+  tracked relation: `questions_historicalquestionblock.question_id` is a plain
+  nullable `bigint` with an index and no constraint. `Question.delete()` cascades the
+  live block away and leaves its history standing, plus a `-` row marking when it
+  stopped existing. Historical tables also do **not** carry the model's own
+  `CheckConstraint` — correct for an append-only log, which must be able to hold
+  states you would now reject.
+
+  **Historical querysets order newest-first** — `("-history_date", "-history_id")`,
+  from the package source. So `history.first()` is the latest edit and
+  `history.last()` is the creation, the opposite of every other queryset in the
+  suite.
+
+  **Fifth instance of a test that cannot fail.** `test_apparatus_has_no_history` was
+  written as `pytest.raises(Exception): Apparatus._meta.get_field("history")` —
+  but `HistoricalRecords` installs a **manager, not a field**, so `get_field` raises
+  `FieldDoesNotExist` on every model in the project, `Question` included. Verified
+  both ways. `hasattr(Model, "history")` is the probe that discriminates.
+
+  **`bulk_create()` and `queryset.update()` bypass the signals and write no
+  history** — the package ships `bulk_create_with_history()` and
+  `bulk_update_with_history()` for that. Same list as the `clean()` argument: shell,
+  management commands, bulk operations, raw SQL. Relevant to the media migration.
 
 **F9 and F10 both land in the exams/sittings plan**, along with `ExamComponent`,
 membership, sittings and the freeze. Then accounts and the roster, then the React
