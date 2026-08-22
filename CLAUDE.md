@@ -393,8 +393,8 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Two plans finished: the scoring package (seven tasks) and the Django skeleton
-(five). The questions app is in progress — Tasks 1-6 of eight are done.** As of
-2026-08-18, **114 tests pass** and both `ruff check .` and `ruff format --check .`
+(five). The questions app is in progress — Tasks 1-7 of eight are done.** As of
+2026-08-22, **125 tests pass** and both `ruff check .` and `ruff format --check .`
 are clean. Run all three from `rhythmic/`.
 
 | file | tests |
@@ -404,9 +404,10 @@ are clean. Run all three from `rhythmic/`.
 | `test_tables.py` | 14 |
 | `test_marking.py` | 12 |
 | `test_public_api.py` | 10 |
+| `test_questions_admin.py` | 10 |
 | `test_questions_blocks.py` | 10 |
+| `test_questions_practical.py` | 10 |
 | `test_legacy_parity.py` | 9 |
-| `test_questions_practical.py` | 9 |
 | `test_questions_theory.py` | 7 |
 | `test_questions_history.py` | 5 |
 | `test_django_smoke.py` | 2 |
@@ -592,7 +593,7 @@ eight tasks. It is **content only**: `Question`, `Routine`, `Apparatus`, the con
 blocks replacing the legacy type 1–5 shapes, media upload, admin, and a preview
 action. It knows nothing about levels, exams or who sits what.
 
-**Next action: Task 7, the admin.**
+**Next action: Task 8, the preview.**
 
 - `d035ce8` — Task 1. The `questions` app, registered in `INSTALLED_APPS`.
 - `a472415` — Task 2. `Apparatus` and `Routine`, `MEDIA_ROOT`/`MEDIA_URL`, media
@@ -668,8 +669,8 @@ action. It knows nothing about levels, exams or who sits what.
   exists because only a test on the *second* child can see that.
 
   **Deferred constraints are invisible to `pytest-django`.** The `(parent, position)`
-  uniques are `DEFERRABLE INITIALLY DEFERRED` so an admin reorder can rewrite
-  positions inside one transaction. Postgres then checks them at `COMMIT`, and
+  uniques are `DEFERRABLE INITIALLY DEFERRED` so that code rewriting positions inside
+  one transaction can swap two of them. Postgres then checks them at `COMMIT`, and
   `django_db` rolls back instead of committing — so two rows sharing a position insert
   cleanly and the `IntegrityError` surfaces in *teardown*, reported as an ERROR
   against a fixture on a test that "passed". A `pytest.raises` around the duplicate
@@ -750,6 +751,96 @@ action. It knows nothing about levels, exams or who sits what.
   history** — the package ships `bulk_create_with_history()` and
   `bulk_update_with_history()` for that. Same list as the `clean()` argument: shell,
   management commands, bulk operations, raw SQL. Relevant to the media migration.
+
+- `3d8f554` — Task 7, the admin. All five models registered; `QuestionBlock` and
+  `Option` inline under `Question`, `OptionBlock` under `Option`. Reasoning is in the
+  commit body.
+
+  **`admin.py` is discovered by name.** `AdminConfig.ready()` calls `autodiscover()`
+  (`django/contrib/admin/apps.py:27`), which imports the `admin` submodule of every
+  installed app. That import *is* the registration; rename the file and every screen
+  silently disappears. An inline is never registered — `@admin.register` only writes
+  into `admin.site._registry`, and a registry entry is what creates URLs.
+
+  **A green `manage.py check` is only evidence about what the checker reached.**
+  `QuestionAdmin` was written with `list_display = ("reference", "created_at",
+  "updated_at")` against a model with no timestamp fields, and checks passed — because
+  the class carried no `@admin.register`, so `admin.E1xx` never looked at it.
+  Registering it in a shell produced four errors immediately. Same shape as the test
+  defect this project keeps producing: a validator with nothing registered validates
+  nothing.
+
+  **`SimpleHistoryAdmin`, not `ModelAdmin`, on the three tracked models.** Plain
+  `ModelAdmin` already has a History button (`django/contrib/admin/options.py:2561`)
+  — it lists `LogEntry` rows, which record admin actions only and as free text.
+  `SimpleHistoryAdmin` replaces that view with the historical rows, so Task 6's
+  history became *readable* here rather than merely recorded. Verified: the history
+  page renders both the old and the new expert score.
+
+  **`list_select_related` on `PracticalItemAdmin`, and the trap is `__str__`.** The
+  changelist applies `select_related()` on its own when `list_display` names a
+  `ForeignKey` (`django/contrib/admin/views/main.py:531`), but only one hop.
+  `Routine.__str__` reaches through to `apparatus.name`, so a 20-row key — the real
+  size — cost 25 queries. With `["routine__apparatus"]`, 5. **A `__str__` that
+  crosses a relation is a query per row and is invisible until counted.**
+
+  **`simple_history.register()` is the model-layer alternative to
+  `HistoricalRecords()`, not an admin thing.** Calling it in a `ModelAdmin` body runs
+  at import time and raises `MultipleRegistrationsError`, which fails
+  `autodiscover_modules` and takes the whole project down.
+
+  **The deferrable constraints do not do what this file said they did.** Task 5
+  recorded that the `(parent, position)` uniques are `DEFERRABLE` "so an admin reorder
+  can rewrite positions inside one transaction". Disproven 2026-08-22: posting a swap
+  through the admin is rejected by `ModelForm._post_clean()`, which runs
+  `validate_unique()` — a `SELECT` for a conflicting row — *before* any `UPDATE` is
+  emitted, so deferral never comes into it. Below the form layer it works exactly as
+  designed: the same swap in one transaction succeeds for `QuestionBlock` and fails
+  for `Option`, whose constraint is immediate. **Deferral is necessary for an admin
+  reorder but not sufficient**; a custom formset renumbering from form order is the
+  missing half, and is not built. Consequence: `Option`'s constraint stays immediate
+  and `test_duplicate_position_for_the_same_question_is_refused` is not at risk.
+
+  **`OptionInlineFormSet` enforces exactly one correct option, not at least one.**
+  The plan said at-least-one and was wrong: two correct options hits
+  `uq_one_correct_option_per_question` as an unhandled `IntegrityError` — a 500 page
+  rather than a form error. Form layer only, so a shell, a management command or a
+  fixture load still bypasses it.
+
+  **Iterate `self.forms`, not `self.cleaned_data`.** The latter is a property that
+  calls `self.is_valid()` and raises `AttributeError` when any child form failed
+  (`django/forms/formsets.py:277`), so one bad `position` blows up inside `clean()`.
+  Django's docs work around it with `if any(self.errors): return`; iterating
+  `self.forms` needs no guard. Advice in this file and the plan said otherwise.
+
+  **Sixth, seventh and eighth instances of a test that cannot fail**, all in one task.
+  (6) `assert "Questions" in body` — page chrome, true on a changelist showing
+  `0 questions`, and the row it was supposed to prove was never created because the
+  setup POSTed the add form instead of using `objects.create`. (7)
+  `assert item.aspect in body` where `aspect` is `"DA"` — present with zero rows,
+  because `list_filter` renders `?aspect__exact=DA` in the sidebar. The obvious fix,
+  asserting the display label, is the same bug: that is the sidebar's link text. (8)
+  Two admin POST tests whose inline prefixes were `optionblock_set-` rather than
+  `options-` and `blocks-`; **deleting every `is_correct` key from the payload changed
+  nothing**, because an unbound formset has zero correct options and `clean()` raises
+  the same message. Both passed for two review rounds.
+
+  **The inline prefix is the FK's `related_name`** —
+  `BaseInlineFormSet.get_default_prefix()` returns the accessor name
+  (`django/forms/models.py:1174`). `<model>_set` is the no-`related_name` default.
+  Every inline on the page needs its four management keys or the formset never binds
+  and the response carries `ManagementForm data is missing`. **A `200` from an admin
+  POST means the form re-rendered — it failed;** a save is a `302`.
+
+  **Write the control test first.** `test_a_question_with_one_correct_option_saves_successfully`
+  is what proves the payload is well-formed, and it is why the two rejection tests can
+  be believed. Verified by mutation: with the `!= 1` check replaced by `if False:`,
+  both rejection tests fail and the control still passes.
+
+  **A paused VS Code debugger holds the test database open.** pytest-django then
+  cannot drop and recreate `test_rhythmic` — Postgres reports "database is being
+  accessed by other users" and the run dies with `SystemExit: 2` before collection.
+  The message names a database problem; the cause is a breakpoint.
 
 **F9 and F10 both land in the exams/sittings plan**, along with `ExamComponent`,
 membership, sittings and the freeze. Then accounts and the roster, then the React

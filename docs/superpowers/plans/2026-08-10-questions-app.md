@@ -650,11 +650,20 @@ chooses, so **the same question can read differently to different candidates** a
 nothing reports an error. Non-deterministic stem order is a defect in an exam that has
 to survive a dispute, not an untidiness.
 
-`DEFERRED` because swapping positions 1 and 2 in one admin formset save violates an
-immediate constraint mid-transaction. Deferring the check to commit makes reordering
-work at all. Note `Option`'s equivalent constraint from Task 4 is *not* deferred and
-has the same latent problem — fix it in Task 7 when the admin gets inline reordering,
-not before. The cost of deferring: Postgres cannot use a deferrable constraint for
+`DEFERRED` because swapping positions 1 and 2 inside one transaction violates an
+immediate constraint mid-way. Deferring the check to commit makes a programmatic
+swap work at all — a data migration, a management command, an import.
+
+**It does not make an admin reorder work, and an earlier version of this plan said it
+did.** Verified 2026-08-22: posting a swap through the admin is rejected by
+`ModelForm._post_clean()`, which runs `validate_unique()` — a `SELECT` for a
+conflicting row — *before* any `UPDATE` is emitted. The write never happens, so
+whether the database would have deferred its check is irrelevant. Deferral is
+necessary for an admin reorder but not sufficient; the form layer has to be bypassed
+too, which is a custom formset that renumbers positions from form order. Not built.
+
+`Option`'s equivalent constraint from Task 4 is *not* deferred, and it does not need
+to be for Task 7 — the form layer rejects the swap either way. The cost of deferring: Postgres cannot use a deferrable constraint for
 `ON CONFLICT` inference, so `bulk_create(update_conflicts=True)` against it will not
 work. That only matters if the legacy import ever upserts blocks.
 
@@ -741,11 +750,13 @@ successfully, because pytest-django's `_django_db_marker` is autouse and autouse
 fixtures run before non-autouse ones at the same scope. Declare `db` to state the
 dependency and to stop depending on a plugin's internal ordering, not to fix a break.
 
-**This applies again at Task 7**, when `Option`'s
-`uq_unique_option_position_per_question` becomes deferrable — the existing
+**This was expected to apply again at Task 7 and does not.** `Option`'s
+`uq_unique_option_position_per_question` stays immediate — see the note under Task 5
+on why deferring it would not have helped the admin — so
 `test_duplicate_position_for_the_same_question_is_refused` in
-`tests/test_questions_theory.py` passes today because that constraint is still
-immediate, and will silently stop testing anything the moment it is deferred.
+`tests/test_questions_theory.py` keeps working unchanged. The warning stands for
+whenever that constraint *is* deferred: it will silently stop testing anything
+without the fixture.
 
 That last test is the one that proves the design. Legacy needed
 `make_type_one_question` to produce that shape; here it is rows. Name it for the
@@ -892,14 +903,14 @@ part of the frontend work. Blocks and options are edited **inline**, inside thei
 parent's page, because authoring a question means composing its stem and answers in
 one place.
 
-- [ ] **Step 1: Register the practical models**
+- [x] **Step 1: Register the practical models**
 
 `Apparatus`, `Routine` and `PracticalItem` with `admin.site.register` or the
 `@admin.register` decorator. Give `PracticalItem` a `list_display` of routine,
 aspect and expert score, and a `list_filter` on aspect — a screen listing 20 items
 with no filter is a screen officials will not use.
 
-- [ ] **Step 2: Register the theory models with inlines**
+- [x] **Step 2: Register the theory models with inlines**
 
 `QuestionAdmin` needs two inlines: `QuestionBlockInline` for the stem and
 `OptionInline` for the answers. Both subclass `admin.TabularInline` (or `StackedInline`
@@ -910,21 +921,31 @@ inlines two deep. Register `Option` separately with its own `OptionBlockInline` 
 option content is editable on the option's own page. Discovering that limitation
 here, deliberately, beats discovering it while debugging.
 
-- [ ] **Step 3: Close the at-least-one-correct gap**
+- [x] **Step 3: Close the at-least-one-correct gap**
 
 Task 4 left it open: the database enforces at most one correct option, never at
 least one. Add a formset validation on `OptionInline` that raises `ValidationError`
-when no option is flagged correct.
+unless **exactly one** option is flagged correct.
+
+Exactly-one rather than at-least-one, revised 2026-08-22. Two correct options is not
+merely undesirable — it hits `uq_one_correct_option_per_question` as an unhandled
+`IntegrityError`, which is a 500 page rather than a form error an author can read.
+The database catches it and the admin has no way to render that.
 
 You write this. The construct is a custom `BaseInlineFormSet` with a `clean()`
-method, set as `OptionInline.formset`. Inside `clean()`, iterate
-`self.cleaned_data`, skipping forms marked for deletion.
+method, set as `OptionInline.formset`. Inside `clean()`, iterate **`self.forms`** and
+read `form.cleaned_data` with `.get()`, skipping forms marked for deletion.
+
+Not `self.cleaned_data`: that is a property which calls `self.is_valid()` and raises
+`AttributeError` when any child form failed (`django/forms/formsets.py:277`), so one
+bad `position` blows up inside `clean()`. Django's docs work around it with
+`if any(self.errors): return`; iterating `self.forms` needs no such guard.
 
 **This is form-layer validation, so it holds only for the admin.** A shell or a
 management command can still create a question with no correct answer. That is the
 trade recorded in Task 4 — worth knowing rather than assuming closed.
 
-- [ ] **Step 4: Write the failing tests**
+- [x] **Step 4: Write the failing tests**
 
 `tests/test_questions_admin.py`, all `@pytest.mark.django_db`. Use the
 `admin_client` fixture — **`pytest-django` provides it**, logged in as a superuser,
@@ -935,7 +956,28 @@ so you do not build one.
 | `test_question_changelist_renders` | GET the question changelist, status `200` |
 | `test_practical_item_changelist_renders` | same for practical items |
 | `test_anonymous_is_redirected_from_the_admin` | with the plain `client` fixture, GET the changelist, status `302` |
-| `test_a_question_with_no_correct_option_is_rejected` | POST the add form with two options, neither correct; assert the response contains the error and `Question.objects.count() == 0` |
+| `test_a_question_with_one_correct_option_is_saved` | the **control**: POST with exactly one correct option; assert `302` and that the option was created |
+| `test_a_question_with_no_correct_option_is_rejected` | POST with no option correct; assert the response contains the error and that no option was created |
+| `test_a_question_with_two_correct_options_is_rejected` | same, both correct |
+
+**Write the control test first.** The three rejection payloads are long and easy to
+get subtly wrong, and a wrong payload still produces the error message — an empty
+formset has zero correct options, so `clean()` raises exactly as if the rule had
+fired. Two rounds of review on 2026-08-22 passed against a payload whose inline
+prefixes were wrong and which never bound at all. Only a test that *succeeds* proves
+the payload is well-formed.
+
+**The inline prefix is the FK's `related_name`**, not `<model>_set` —
+`BaseInlineFormSet.get_default_prefix()` returns the accessor name
+(`django/forms/models.py:1174`). So `options-` and `blocks-` here. Both inlines need
+their four management keys (`TOTAL_FORMS`, `INITIAL_FORMS`, `MIN_NUM_FORMS`,
+`MAX_NUM_FORMS`) even the one you are not exercising, or the formset never binds and
+the page comes back carrying `ManagementForm data is missing`. A checkbox is sent as
+`"on"` when ticked and **omitted** when not.
+
+**Posting to the change view rather than the add view is fine and slightly better** —
+`question.options.count() == 0` asserts that the option formset specifically saved
+nothing, where `Question.objects.count() == 0` only says the page failed somehow.
 
 Reverse the URLs rather than hardcoding them:
 `reverse("admin:questions_question_changelist")`. A hardcoded `/admin/questions/...`
@@ -945,12 +987,12 @@ The third test is the F7 lesson as a habit — the legacy `download_results` rou
 no authentication and exposed every candidate's scores. Assert it on every admin
 screen you add.
 
-- [ ] **Step 5: Run, lint, commit**
+- [x] **Step 5: Run, lint, commit**
 
 ```bash
 ../.venv/bin/python -m pytest -q && ../.venv/bin/ruff format . && ../.venv/bin/ruff check .
 git status --short
-git add rhythmic/questions/ rhythmic/tests/test_questions_admin.py
+git add rhythmic/questions/ rhythmic/tests/test_questions_admin.py rhythmic/tests/test_questions_practical.py
 git commit
 ```
 
