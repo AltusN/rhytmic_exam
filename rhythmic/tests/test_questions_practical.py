@@ -134,3 +134,16 @@ def test_the_same_aspect_on_two_routines_is_ok():
 
     assert item1.aspect == item2.aspect
     assert item1.routine != item2.routine
+
+
+@pytest.mark.django_db
+def test_practical_item_str_representation():
+    apparatus = Apparatus.objects.create(name="Rope", position=1)
+    routine = Routine.objects.create(
+        apparatus=apparatus, label="Routine 1", video="path/to/video.mp4"
+    )
+    practical_item = PracticalItem.objects.create(
+        routine=routine, aspect=Aspect.DA, expert_score=Decimal("5.00")
+    )
+
+    assert str(practical_item) == "Rope - Routine 1 - DA - 5.00"
