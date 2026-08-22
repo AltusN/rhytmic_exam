@@ -1006,94 +1006,7 @@ delete-marked case.
 
 ---
 
-### Task 8: The preview
-
-**Files:**
-- Create: `questions/views.py`, `questions/urls.py`,
-  `questions/templates/questions/preview.html`,
-  `questions/templates/questions/_block.html`, `tests/test_questions_preview.py`
-- Modify: `config/urls.py`, `questions/admin.py`
-
-**The concept.** The admin form shows an official a stack of block rows. It cannot
-show them what a candidate will see — and "what will this look like" is exactly the
-question an author needs answered before publishing. The spec calls for a `[Preview]`
-action for this reason, and it is the one piece of candidate-facing rendering in this
-plan.
-
-- [ ] **Step 1: Write the view**
-
-A staff-only view taking a question's primary key and rendering its blocks and
-options in candidate order. You write it.
-
-The constructs: `django.contrib.admin.views.decorators.staff_member_required` as the
-decorator — **not** `login_required`, which would let any authenticated candidate
-preview a draft question including which option is correct. `get_object_or_404` for
-the lookup, so a bad primary key is a 404 rather than a 500.
-
-- [ ] **Step 2: Write the templates**
-
-`preview.html` iterates the question's blocks, then its options, and for each option
-iterates that option's blocks. `_block.html` renders one block by `kind` — text as a
-paragraph, image as an `<img>`, video as a `<video controls>`.
-
-**The preview must not reveal `is_correct`.** It shows what a candidate sees, and a
-candidate does not see the answer. Getting this wrong makes the preview useless for
-its purpose and leaks the key to anyone who can reach it.
-
-- [ ] **Step 3: Wire the URL**
-
-`questions/urls.py` with a `preview` path; include it from `config/urls.py` under a
-`questions/` prefix. Name the route so `reverse()` works.
-
-- [ ] **Step 4: Add the admin link**
-
-A method on `QuestionAdmin` returning an `<a>` to the preview URL, added to
-`list_display`. Mark it with `django.utils.html.format_html` rather than building the
-string yourself — that is what escapes the content, and F8 is the legacy version of
-getting this wrong.
-
-- [ ] **Step 5: Write the failing tests**
-
-`tests/test_questions_preview.py`, all `@pytest.mark.django_db`.
-
-| test | asserts |
-|---|---|
-| `test_preview_renders_the_stem_and_options` | build a type-1 question; the response contains the stem text and all four option texts |
-| `test_preview_does_not_reveal_the_correct_option` | the response does **not** contain the words "correct" or the `is_correct` value |
-| `test_preview_requires_staff` | with the plain `client` fixture, status is `302` |
-| `test_preview_of_a_missing_question_is_404` | a primary key that does not exist gives `404`, not `500` |
-
-For the second test, assert on absence — `assert b"correct" not in response.content`.
-Absence tests are weaker than presence tests by nature, so make the correct option's
-text distinctive in the fixture and assert *that* string is present exactly as many
-times as the others.
-
-- [ ] **Step 6: Run, lint, commit**
-
-```bash
-../.venv/bin/python -m pytest -q && ../.venv/bin/ruff format . && ../.venv/bin/ruff check .
-git status --short
-git add rhythmic/questions/ rhythmic/config/urls.py rhythmic/tests/test_questions_preview.py
-git commit
-```
-
-Subject: `feat(questions): preview a question as a candidate sees it`
-Body: why `staff_member_required` rather than `login_required`; that the preview
-deliberately hides the correct option.
-
-**Review gate:** Claude reviews the permission decorator and whether the
-does-not-reveal test could pass vacuously.
-
-**Red-first is mandatory here.** Every assertion in this task is a substring of a
-rendered page, and a Django page is full of strings that have nothing to do with the
-row under test — `"DA"` survived a review round in Task 7 because `list_filter`
-renders it in the sidebar. Render the page **without** the row, assert the string is
-absent, and only then assert it is present. See CLAUDE.md, "No test is accepted until
-it has been shown red".
-
----
-
-### Task 9: Backfill the tests the mutation sweep found
+### Task 8: Close the gaps the mutation sweep found
 
 **Files:**
 - Modify: `tests/test_questions_practical.py`, `tests/test_questions_theory.py`,
@@ -1103,6 +1016,12 @@ it has been shown red".
 Added 2026-08-22 after `tools/mutation_sweep.py` was run against the finished
 questions app: 20 mutants, **11 killed and 9 survived**. A survivor is a change to
 the code that no test objected to. This task closes them.
+
+**It runs before the preview, and it is not new work.** These are Tasks 2-7 not being
+finished: every survivor is a claim made by code that is already committed and
+already reviewed. Building the preview first would mean adding the task with the
+highest density of vacuous-assertion risk on top of a suite that reports green about
+things it does not check.
 
 - [ ] **Step 1: The ordering claims**
 
@@ -1186,6 +1105,93 @@ exists, which is the exception the convention reserves it for.
 
 **Review gate:** Claude re-runs `tools/mutation_sweep.py` and reports the survivor
 count rather than reading the tests and judging them.
+
+---
+
+### Task 9: The preview
+
+**Files:**
+- Create: `questions/views.py`, `questions/urls.py`,
+  `questions/templates/questions/preview.html`,
+  `questions/templates/questions/_block.html`, `tests/test_questions_preview.py`
+- Modify: `config/urls.py`, `questions/admin.py`
+
+**The concept.** The admin form shows an official a stack of block rows. It cannot
+show them what a candidate will see — and "what will this look like" is exactly the
+question an author needs answered before publishing. The spec calls for a `[Preview]`
+action for this reason, and it is the one piece of candidate-facing rendering in this
+plan.
+
+- [ ] **Step 1: Write the view**
+
+A staff-only view taking a question's primary key and rendering its blocks and
+options in candidate order. You write it.
+
+The constructs: `django.contrib.admin.views.decorators.staff_member_required` as the
+decorator — **not** `login_required`, which would let any authenticated candidate
+preview a draft question including which option is correct. `get_object_or_404` for
+the lookup, so a bad primary key is a 404 rather than a 500.
+
+- [ ] **Step 2: Write the templates**
+
+`preview.html` iterates the question's blocks, then its options, and for each option
+iterates that option's blocks. `_block.html` renders one block by `kind` — text as a
+paragraph, image as an `<img>`, video as a `<video controls>`.
+
+**The preview must not reveal `is_correct`.** It shows what a candidate sees, and a
+candidate does not see the answer. Getting this wrong makes the preview useless for
+its purpose and leaks the key to anyone who can reach it.
+
+- [ ] **Step 3: Wire the URL**
+
+`questions/urls.py` with a `preview` path; include it from `config/urls.py` under a
+`questions/` prefix. Name the route so `reverse()` works.
+
+- [ ] **Step 4: Add the admin link**
+
+A method on `QuestionAdmin` returning an `<a>` to the preview URL, added to
+`list_display`. Mark it with `django.utils.html.format_html` rather than building the
+string yourself — that is what escapes the content, and F8 is the legacy version of
+getting this wrong.
+
+- [ ] **Step 5: Write the failing tests**
+
+`tests/test_questions_preview.py`, all `@pytest.mark.django_db`.
+
+| test | asserts |
+|---|---|
+| `test_preview_renders_the_stem_and_options` | build a type-1 question; the response contains the stem text and all four option texts |
+| `test_preview_does_not_reveal_the_correct_option` | the response does **not** contain the words "correct" or the `is_correct` value |
+| `test_preview_requires_staff` | with the plain `client` fixture, status is `302` |
+| `test_preview_of_a_missing_question_is_404` | a primary key that does not exist gives `404`, not `500` |
+
+For the second test, assert on absence — `assert b"correct" not in response.content`.
+Absence tests are weaker than presence tests by nature, so make the correct option's
+text distinctive in the fixture and assert *that* string is present exactly as many
+times as the others.
+
+- [ ] **Step 6: Run, lint, commit**
+
+```bash
+../.venv/bin/python -m pytest -q && ../.venv/bin/ruff format . && ../.venv/bin/ruff check .
+git status --short
+git add rhythmic/questions/ rhythmic/config/urls.py rhythmic/tests/test_questions_preview.py
+git commit
+```
+
+Subject: `feat(questions): preview a question as a candidate sees it`
+Body: why `staff_member_required` rather than `login_required`; that the preview
+deliberately hides the correct option.
+
+**Review gate:** Claude reviews the permission decorator and whether the
+does-not-reveal test could pass vacuously.
+
+**Red-first is mandatory here.** Every assertion in this task is a substring of a
+rendered page, and a Django page is full of strings that have nothing to do with the
+row under test — `"DA"` survived a review round in Task 7 because `list_filter`
+renders it in the sidebar. Render the page **without** the row, assert the string is
+absent, and only then assert it is present. See CLAUDE.md, "No test is accepted until
+it has been shown red".
 
 ---
 

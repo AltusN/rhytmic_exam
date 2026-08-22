@@ -626,8 +626,10 @@ nine tasks. It is **content only**: `Question`, `Routine`, `Apparatus`, the cont
 blocks replacing the legacy type 1–5 shapes, media upload, admin, and a preview
 action. It knows nothing about levels, exams or who sits what.
 
-**Next action: Task 8, the preview.** Task 9 was added on 2026-08-22 and is the
-test backfill the mutation sweep found — do it after Task 8, not instead of it.
+**Next action: Task 8, closing the gaps the mutation sweep found.** Added
+2026-08-22, and put *before* the preview deliberately — the survivors are claims made
+by code that is already committed, so this is Tasks 2-7 not being finished rather
+than new work. The preview became Task 9.
 
 **`rhythmic/tools/mutation_sweep.py` exists and should be run at the end of every
 task from now on.** It breaks one claim at a time and checks that a test objects; a
