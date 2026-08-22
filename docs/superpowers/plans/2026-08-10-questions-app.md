@@ -1084,6 +1084,109 @@ deliberately hides the correct option.
 **Review gate:** Claude reviews the permission decorator and whether the
 does-not-reveal test could pass vacuously.
 
+**Red-first is mandatory here.** Every assertion in this task is a substring of a
+rendered page, and a Django page is full of strings that have nothing to do with the
+row under test — `"DA"` survived a review round in Task 7 because `list_filter`
+renders it in the sidebar. Render the page **without** the row, assert the string is
+absent, and only then assert it is present. See CLAUDE.md, "No test is accepted until
+it has been shown red".
+
+---
+
+### Task 9: Backfill the tests the mutation sweep found
+
+**Files:**
+- Modify: `tests/test_questions_practical.py`, `tests/test_questions_theory.py`,
+  `tests/test_questions_blocks.py`, `tests/test_questions_history.py`,
+  `tests/test_questions_admin.py`, `tests/test_django_smoke.py`
+
+Added 2026-08-22 after `tools/mutation_sweep.py` was run against the finished
+questions app: 20 mutants, **11 killed and 9 survived**. A survivor is a change to
+the code that no test objected to. This task closes them.
+
+- [ ] **Step 1: The ordering claims**
+
+`ordering-routine` and `ordering-question` survived — `Routine.Meta.ordering` and
+`Question.Meta.ordering` are asserted nowhere. `Apparatus` has such a test and it is
+the model to copy, including its lesson: **assert on the bare queryset**, never
+`.order_by(...)`, or the test supplies the sort it exists to check.
+
+`Routine` is the interesting one, because its ordering is `["apparatus__position",
+"label"]` — two apparatus and two labels are needed before the test can tell that
+form apart from `["label"]`.
+
+- [ ] **Step 2: `ContentBlock.__str__`**
+
+`str-contentblock-text` survived; the method has four branches (text, image, video,
+unsaved) and none is covered. `str-routine` and `str-practicalitem` are killed, so
+those two files show the shape.
+
+The image and video branches are the ones worth care: they run
+`PurePosixPath(...).name`, so a block with `image="blocks/a/b/c.jpg"` should render
+`c.jpg`. The unsaved branch exists only because `RET503` demanded a return.
+
+- [ ] **Step 3: History on `Question`, `Option` and `OptionBlock`**
+
+`history-off-question`, `history-off-option` and `history-off-optionblock` all
+survived. `test_questions_history.py` covers `PracticalItem` and `QuestionBlock` and
+stops there — so **the answer key's own audit trail is the untested half**, which is
+exactly backwards: who flipped `is_correct` is the dispute-relevant edit.
+
+Remember historical querysets order newest-first, so `history.first()` is the latest
+edit and `history.last()` is the creation.
+
+- [ ] **Step 4: The two admin claims**
+
+`admin-select-related` survived — deleting `list_select_related` from
+`PracticalItemAdmin` costs 25 queries instead of 5 on a 20-row key and no test
+notices. The construct is pytest-django's **`django_assert_num_queries`** fixture.
+Assert a number that fails when the second hop is dropped; do not assert a range so
+wide it can never fail.
+
+`admin-plain-modeladmin` survived — swapping `SimpleHistoryAdmin` for
+`ModelAdmin` breaks nothing, because the history *view* is never requested.
+`reverse("admin:questions_practicalitem_history", args=[pk])` and assert both the
+old and the new expert score appear. Plain `ModelAdmin` also serves that URL, so the
+assertion must be on the values, not on the status code.
+
+`admin-drop-list-filter-aspect` also survived and is deliberately **not** in scope —
+it is presentation, and a test pinning it buys less than it costs.
+
+- [ ] **Step 5: Models and migrations must agree**
+
+The sweep cannot reach `CheckConstraint`, `UniqueConstraint` or column types at all:
+the test database is built from `questions/migrations/`, not from `models.py`.
+Renaming `uq_one_correct_option_per_question` in the model passes every test.
+
+So the schema claims are only as good as someone remembering to run
+`makemigrations`. Add to `tests/test_django_smoke.py`:
+
+```python
+call_command("makemigrations", "--check", "--dry-run")
+```
+
+from `django.core.management`. It raises `SystemExit` when a model change has no
+migration. That single test is what makes every constraint test in the suite mean
+what it appears to mean.
+
+- [ ] **Step 6: Re-run the sweep, lint, commit**
+
+```bash
+../.venv/bin/python tools/mutation_sweep.py     # expect 0 survivors bar list_filter
+../.venv/bin/python -m pytest -q && ../.venv/bin/ruff format . && ../.venv/bin/ruff check .
+git status --short
+git commit
+```
+
+Subject: `test(questions): close the gaps the mutation sweep found`
+Body: that the sweep is the source; that the answer key's history was the untested
+half; that `makemigrations --check` is what makes the constraint tests meaningful.
+`test:` is right here rather than `feat:` — this is tests added to code that already
+exists, which is the exception the convention reserves it for.
+
+**Review gate:** Claude re-runs `tools/mutation_sweep.py` and reports the survivor
+count rather than reading the tests and judging them.
+
 ---
 
 ## What this plan deliberately leaves out

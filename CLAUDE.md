@@ -53,6 +53,39 @@ a confident derivation that is really a rationalisation of the conventional answ
 you'd already picked. Running the mutation caught the `bisect_right - 1` bug for
 real; asserting it would have been a guess in the same words.
 
+**No test is accepted until it has been shown red.** Adopted 2026-08-22, after the
+same defect reached nine instances across Tasks 2-7. Every one of them is the same
+sentence — *the assertion does not depend on the code under test* — wearing a
+different disguise:
+
+- **the test supplies the value it checks** — Task 2's `.order_by()`, Task 3's
+  `isinstance` on what `create()` returned, Task 5's `block1.position ==
+  block2.position`;
+- **the assertion is true of the framework regardless** — Task 6's
+  `get_field("history")`, which raises on every model; Task 7's `"Questions"` and
+  `"DA"`, both page chrome present with zero rows;
+- **the setup silently never happened**, so the failure observed is a different
+  failure — Task 7's inline prefixes, where deleting every `is_correct` key from the
+  payload changed nothing.
+
+Reading an assertion and judging it is what failed: eight of the nine were caught
+late, and the prefix one survived **two** review rounds after the trap had already
+been named twice in the same session. Breaking the code and watching the test fail
+has never failed — `bisect_right - 1`, `get_queryset` returning `.none()`, `if
+False:` on the option rule, three for three.
+
+So the rule is mechanical, not a matter of suspicion, because suspicion is
+demonstrably not a reliable trigger:
+
+- **He writes the test before the code where the plan says "write the failing
+  tests"** — Task 7's step said exactly that and neither of us held it.
+- **Claude mutates and reports** as part of the review round, not when something
+  looks off. Name the line that must break to make this test fail, then break it.
+- **A test whose subject is a rendered page must be run with the row absent first.**
+  Assert the string is missing, then assert it is present. Task 8 is templates, where
+  every assertion is a substring of a page full of Django's own strings — the highest
+  density this project will ever have for the second disguise.
+
 **Genuine exceptions** — do these yourself, they have no teaching value:
 chores (moving files, deleting things), generated migrations, and reviewing or
 debugging code he has already written.
@@ -393,7 +426,7 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Two plans finished: the scoring package (seven tasks) and the Django skeleton
-(five). The questions app is in progress — Tasks 1-7 of eight are done.** As of
+(five). The questions app is in progress — Tasks 1-7 of nine are done.** As of
 2026-08-22, **125 tests pass** and both `ruff check .` and `ruff format --check .`
 are clean. Run all three from `rhythmic/`.
 
@@ -589,11 +622,38 @@ nothing about formatting. That gap cost review rounds on Tasks 3 and 5, which is
 why the pre-commit hook exists.
 
 **The questions-app plan is written** — `docs/superpowers/plans/2026-08-10-questions-app.md`,
-eight tasks. It is **content only**: `Question`, `Routine`, `Apparatus`, the content
+nine tasks. It is **content only**: `Question`, `Routine`, `Apparatus`, the content
 blocks replacing the legacy type 1–5 shapes, media upload, admin, and a preview
 action. It knows nothing about levels, exams or who sits what.
 
-**Next action: Task 8, the preview.**
+**Next action: Task 8, the preview.** Task 9 was added on 2026-08-22 and is the
+test backfill the mutation sweep found — do it after Task 8, not instead of it.
+
+**`rhythmic/tools/mutation_sweep.py` exists and should be run at the end of every
+task from now on.** It breaks one claim at a time and checks that a test objects; a
+SURVIVED mutant is a change to the code nobody noticed. Run from `rhythmic/`:
+
+```bash
+../.venv/bin/python tools/mutation_sweep.py
+```
+
+First run against the finished questions app, 2026-08-22: **20 mutants, 11 killed,
+9 survived.** The survivors are `Routine` and `Question` ordering,
+`ContentBlock.__str__`, `list_select_related`, `SimpleHistoryAdmin`, history on
+`Question`/`Option`/`OptionBlock`, and `list_filter` on aspect. All but the last are
+Task 9.
+
+**The sweep cannot reach the schema, and that is a finding in itself.** The test
+database is built from `questions/migrations/`, not from `models.py`, so renaming
+`uq_one_correct_option_per_question` in the model passes the whole suite. Every
+constraint test in this project therefore tests the *migration*, and is only as
+trustworthy as someone having remembered to run `makemigrations`. There is no
+`makemigrations --check` test yet; Task 9 adds it, and it is what makes the rest
+mean what they appear to mean.
+
+New mutants belong in the catalogue as behaviour is added — the file is a record of
+what the code claims, which is why it is worth keeping rather than being a one-off
+script.
 
 - `d035ce8` — Task 1. The `questions` app, registered in `INSTALLED_APPS`.
 - `a472415` — Task 2. `Apparatus` and `Routine`, `MEDIA_ROOT`/`MEDIA_URL`, media
