@@ -93,3 +93,12 @@ def test_two_questions_can_have_options_with_the_same_position():
 
     assert Option.objects.filter(question=question1, position=1).exists()
     assert Option.objects.filter(question=question2, position=1).exists()
+
+
+@pytest.mark.django_db
+def test_ordering_on_question_is_by_reference():
+    question1 = Question.objects.create(reference="b")
+    question2 = Question.objects.create(reference="a")
+    question3 = Question.objects.create(reference="c")
+
+    assert list(Question.objects.all()) == [question2, question1, question3]

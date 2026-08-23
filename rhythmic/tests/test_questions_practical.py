@@ -147,3 +147,30 @@ def test_practical_item_str_representation():
     )
 
     assert str(practical_item) == "Rope - Routine 1 - DA - 5.00"
+
+
+@pytest.mark.django_db
+def test_routine_ordering_by_apparatus_and_label():
+    # positions run against creation order, so the ordering can only be
+    # coming from apparatus__position, not from pk/creation order.
+    apparatus1 = Apparatus.objects.create(name="Apparatus A", position=2)
+    apparatus2 = Apparatus.objects.create(name="Apparatus B", position=1)
+
+    # Created against label order (2 before 1), so dropping label falls back
+    # to creation/pk order and disagrees with the expected label-sorted result.
+    routine2 = Routine.objects.create(
+        apparatus=apparatus1, label="Routine 2", video="path/to/video2.mp4"
+    )
+    routine1 = Routine.objects.create(
+        apparatus=apparatus1, label="Routine 1", video="path/to/video1.mp4"
+    )
+    # Label sorts last globally, so a label-first ordering would move this
+    # routine to the end instead of keeping it first on position.
+    routine3 = Routine.objects.create(
+        apparatus=apparatus2, label="Routine 9", video="path/to/video3.mp4"
+    )
+
+    routines_ordered = list(Routine.objects.all())
+    assert routines_ordered[0] == routine3  # Apparatus B, Routine 9
+    assert routines_ordered[1] == routine1  # Apparatus A, Routine 1
+    assert routines_ordered[2] == routine2  # Apparatus A, Routine 2

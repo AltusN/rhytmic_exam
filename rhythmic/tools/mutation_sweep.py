@@ -43,8 +43,14 @@ MUTANTS = [
     (
         "ordering-routine",
         "questions/models.py",
-        'ordering = ["apparatus__position", "label"]',
+        'ordering = ["apparatus__position", "label", "pk"]',
         "ordering = []",
+    ),
+    (
+        "ordering-routine-drop-label",
+        "questions/models.py",
+        'ordering = ["apparatus__position", "label", "pk"]',
+        'ordering = ["apparatus__position", "pk"]',
     ),
     (
         "ordering-question",

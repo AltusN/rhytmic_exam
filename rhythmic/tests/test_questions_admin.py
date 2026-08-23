@@ -3,7 +3,7 @@ from decimal import Decimal
 import pytest
 from django.urls import reverse
 
-from questions.models import Apparatus, PracticalItem, Question, Routine
+from questions.models import Apparatus, Aspect, PracticalItem, Question, Routine
 
 
 @pytest.mark.django_db
@@ -34,6 +34,57 @@ def test_practicalitem_changelist_renders(client, admin_user):
 
     response = client.get(url)
     assert str(routine) in response.content.decode("utf-8")
+
+
+@pytest.mark.django_db
+def test_practicalitem_changelist_uses_select_related(
+    admin_client, django_assert_num_queries
+):
+    apparatuses = [
+        Apparatus.objects.create(name=f"Apparatus {position}", position=position)
+        for position in range(1, 6)
+    ]
+    for apparatus in apparatuses:
+        routine = Routine.objects.create(
+            apparatus=apparatus,
+            label=f"Routine {apparatus.position}",
+            video=f"routines/routine{apparatus.position}.mp4",
+        )
+        for aspect in Aspect:
+            PracticalItem.objects.create(
+                routine=routine, aspect=aspect, expert_score=Decimal("5.00")
+            )
+
+    url = reverse("admin:questions_practicalitem_changelist")
+
+    with django_assert_num_queries(5):
+        response = admin_client.get(url)
+
+    assert response.status_code == 200
+
+
+@pytest.mark.django_db
+def test_practicalitem_admin_history_shows_old_and_new_values(admin_client):
+    apparatus = Apparatus.objects.create(name="Rope", position=1)
+    routine = Routine.objects.create(
+        apparatus=apparatus,
+        label="Routine 1",
+        video="routines/routine1.mp4",
+    )
+    practical_item = PracticalItem.objects.create(
+        routine=routine, aspect=Aspect.DA, expert_score=Decimal("4.20")
+    )
+
+    practical_item.expert_score = Decimal("4.50")
+    practical_item.save()
+
+    url = reverse("admin:questions_practicalitem_history", args=[practical_item.pk])
+    response = admin_client.get(url)
+    body = response.content.decode("utf-8")
+
+    # The current value also appears in PracticalItem.__str__ page chrome.
+    assert "4.50" in body
+    assert "4.20" in body
 
 
 @pytest.mark.parametrize(

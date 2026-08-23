@@ -186,3 +186,36 @@ def test_a_type_one_question_is_text_stem_and_text_options():
         ["This is option 3"],
         ["This is option 4"],
     ]
+
+
+def test_str_reports_video_filename():
+    question = Question(reference="ref-video")
+    block = QuestionBlock(
+        question=question, position=1, kind=Kind.VIDEO, video="blocks/clip.mp4"
+    )
+    assert str(block) == "Video Block at position 1: clip.mp4"
+
+
+def test_str_reports_image_filename():
+    question = Question(reference="ref-image")
+    block = QuestionBlock(
+        question=question, position=1, kind=Kind.IMAGE, image="blocks/picture.png"
+    )
+    assert str(block) == "Image Block at position 1: picture.png"
+
+
+def test_str_on_an_unsaved_block_with_no_kind():
+    question = Question(reference="ref-unsaved")
+    block = QuestionBlock(question=question, position=1)
+    assert str(block) == "New block (unsaved)"
+
+
+def test_str_reports_truncated_text_for_long_text_blocks():
+    question = Question(reference="ref-long-text")
+    long_text = "This is a very long text block that should be truncated in the string representation."
+    block = QuestionBlock(question=question, position=1, kind=Kind.TEXT, text=long_text)
+    # Django's Truncator.chars(40) keeps 40 total characters, ending in a single "…".
+    assert (
+        str(block)
+        == "Text Block at position 1: This is a very long text block that sho…"
+    )

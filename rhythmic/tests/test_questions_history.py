@@ -5,6 +5,7 @@ import pytest
 from questions.models import (
     Apparatus,
     Kind,
+    Option,
     PracticalItem,
     Question,
     QuestionBlock,
@@ -84,3 +85,42 @@ def test_block_history_survives_deleting_the_question():
     # Ordering puts newest first, so the last record is the creation
     assert historical_records.last().history_type == "+"
     assert historical_records.first().history_type == "-"
+
+
+@pytest.mark.django_db
+def test_correcting_a_reference_records_both_versions():
+    question = Question.objects.create(reference="ref1")
+    original_reference = question.reference
+
+    question.reference = "ref2"
+    question.save()
+
+    assert question.history.count() == 2
+    assert question.history.last().reference == original_reference
+
+
+@pytest.mark.django_db
+def test_flipping_the_correct_option_records_both_versions():
+    question = Question.objects.create(reference="ref 1")
+    # A single option avoids uq_one_correct_option_per_question when flipping.
+    option = Option.objects.create(question=question, position=1, is_correct=False)
+
+    option.is_correct = True
+    option.save()
+
+    assert option.history.count() == 2
+    assert option.history.last().is_correct is False
+
+
+@pytest.mark.django_db
+def test_rewording_an_option_block_records_both_versions():
+    question = Question.objects.create(reference="ref 1")
+    option = Option.objects.create(question=question, position=1, is_correct=False)
+    original_text = "Awesome option block"
+    option_block = option.blocks.create(position=1, kind=Kind.TEXT, text=original_text)
+
+    option_block.text = "Not nearly as awesome option block"
+    option_block.save()
+
+    assert option_block.history.count() == 2
+    assert option_block.history.last().text == original_text

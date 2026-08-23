@@ -29,7 +29,7 @@ class Routine(models.Model):
     )
 
     class Meta:
-        ordering = ["apparatus__position", "label"]
+        ordering = ["apparatus__position", "label", "pk"]
 
     def __str__(self) -> str:
         return f"{self.apparatus.name} - {self.label}"
