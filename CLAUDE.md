@@ -54,9 +54,10 @@ you'd already picked. Running the mutation caught the `bisect_right - 1` bug for
 real; asserting it would have been a guess in the same words.
 
 **No test is accepted until it has been shown red.** Adopted 2026-08-22, after the
-same defect reached nine instances across Tasks 2-7. Every one of them is the same
-sentence — *the assertion does not depend on the code under test* — wearing a
-different disguise:
+same defect reached nine instances across Tasks 2-7; a tenth arrived in Task 8, in a
+test written *after* the rule was adopted. Every one of them is the same sentence —
+*the assertion does not depend on the code under test* — wearing a different
+disguise:
 
 - **the test supplies the value it checks** — Task 2's `.order_by()`, Task 3's
   `isinstance` on what `create()` returned, Task 5's `block1.position ==
@@ -66,13 +67,20 @@ different disguise:
   `"DA"`, both page chrome present with zero rows;
 - **the setup silently never happened**, so the failure observed is a different
   failure — Task 7's inline prefixes, where deleting every `is_correct` key from the
-  payload changed nothing.
+  payload changed nothing;
+- **the assertion sits inside the failure handler**, so it can only confirm a failure
+  and never report one — Task 8's `except SystemExit: assert e.code == 1`, which
+  passes whether or not a migration is missing. Both paths return normally: no
+  exception means the function falls off the end, and an exception means the handler
+  agrees the exit code was 1. Note the assertion is *also* the first disguise —
+  `e.code` is `1` because Django's `sys.exit(1)` put it there two frames up.
 
-Reading an assertion and judging it is what failed: eight of the nine were caught
-late, and the prefix one survived **two** review rounds after the trap had already
-been named twice in the same session. Breaking the code and watching the test fail
+Reading an assertion and judging it is what failed: nine of the ten were caught late,
+the prefix one survived **two** review rounds after the trap had already been named
+twice in the same session, and the tenth was read and passed twice by Claude in the
+session that had just adopted this rule. Breaking the code and watching the test fail
 has never failed — `bisect_right - 1`, `get_queryset` returning `.none()`, `if
-False:` on the option rule, three for three.
+False:` on the option rule, and the whole of Task 8.
 
 So the rule is mechanical, not a matter of suspicion, because suspicion is
 demonstrably not a reliable trigger:
@@ -82,7 +90,7 @@ demonstrably not a reliable trigger:
 - **Claude mutates and reports** as part of the review round, not when something
   looks off. Name the line that must break to make this test fail, then break it.
 - **A test whose subject is a rendered page must be run with the row absent first.**
-  Assert the string is missing, then assert it is present. Task 8 is templates, where
+  Assert the string is missing, then assert it is present. Task 9 is templates, where
   every assertion is a substring of a page full of Django's own strings — the highest
   density this project will ever have for the second disguise.
 
@@ -426,8 +434,8 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Two plans finished: the scoring package (seven tasks) and the Django skeleton
-(five). The questions app is in progress — Tasks 1-7 of nine are done.** As of
-2026-08-22, **125 tests pass** and both `ruff check .` and `ruff format --check .`
+(five). The questions app is in progress — Tasks 1-8 of nine are done.** As of
+2026-08-23, **137 tests pass** and both `ruff check .` and `ruff format --check .`
 are clean. Run all three from `rhythmic/`.
 
 | file | tests |
@@ -435,15 +443,15 @@ are clean. Run all three from `rhythmic/`.
 | `test_aggregate.py` | 18 |
 | `test_values.py` | 17 |
 | `test_tables.py` | 14 |
+| `test_questions_blocks.py` | 14 |
 | `test_marking.py` | 12 |
+| `test_questions_admin.py` | 12 |
+| `test_questions_practical.py` | 11 |
 | `test_public_api.py` | 10 |
-| `test_questions_admin.py` | 10 |
-| `test_questions_blocks.py` | 10 |
-| `test_questions_practical.py` | 10 |
 | `test_legacy_parity.py` | 9 |
-| `test_questions_theory.py` | 7 |
-| `test_questions_history.py` | 5 |
-| `test_django_smoke.py` | 2 |
+| `test_questions_theory.py` | 8 |
+| `test_questions_history.py` | 8 |
+| `test_django_smoke.py` | 3 |
 | `test_smoke.py` | 1 |
 
 **Postgres must be running for the full suite to pass.** `docker compose up -d` from
@@ -626,10 +634,10 @@ nine tasks. It is **content only**: `Question`, `Routine`, `Apparatus`, the cont
 blocks replacing the legacy type 1–5 shapes, media upload, admin, and a preview
 action. It knows nothing about levels, exams or who sits what.
 
-**Next action: Task 8, closing the gaps the mutation sweep found.** Added
-2026-08-22, and put *before* the preview deliberately — the survivors are claims made
-by code that is already committed, so this is Tasks 2-7 not being finished rather
-than new work. The preview became Task 9.
+**Next action: Task 9, the preview.** The last task in the questions-app plan: a
+view rendering a question as a candidate sees it, plus `_block.html`. Red-first is
+mandatory there and the rule above says why — every assertion is a substring of a
+page full of Django's own strings.
 
 **`rhythmic/tools/mutation_sweep.py` exists and should be run at the end of every
 task from now on.** It breaks one claim at a time and checks that a test objects; a
@@ -640,18 +648,25 @@ SURVIVED mutant is a change to the code nobody noticed. Run from `rhythmic/`:
 ```
 
 First run against the finished questions app, 2026-08-22: **20 mutants, 11 killed,
-9 survived.** The survivors are `Routine` and `Question` ordering,
-`ContentBlock.__str__`, `list_select_related`, `SimpleHistoryAdmin`, history on
-`Question`/`Option`/`OptionBlock`, and `list_filter` on aspect. All but the last are
-Task 9.
+9 survived.** After Task 8, 2026-08-23: **21 mutants, 20 killed, 1 survived** — and
+the survivor, `list_filter` on aspect, is the one Task 8 declared out of scope.
+
+**`UNAPPLIED` is the sweep's most valuable line and the easiest to skim past.** It
+does not mean the claim is safe; it means the tool could not find the code to break,
+so it reported *nothing at all* about that claim. Exact-string matching plus a loud
+`UNAPPLIED` is what makes the report trustworthy when the code moves underneath it —
+a regex would have silently mutated something else. The consequence is that **the
+catalogue is maintained alongside the code, exactly like a test**: refactor a model
+and the sweep starts reporting less than it did, with no change in the survivor
+count. `ordering-routine` went `UNAPPLIED` the moment Task 8 changed the ordering.
 
 **The sweep cannot reach the schema, and that is a finding in itself.** The test
 database is built from `questions/migrations/`, not from `models.py`, so renaming
 `uq_one_correct_option_per_question` in the model passes the whole suite. Every
 constraint test in this project therefore tests the *migration*, and is only as
-trustworthy as someone having remembered to run `makemigrations`. There is no
-`makemigrations --check` test yet; Task 9 adds it, and it is what makes the rest
-mean what they appear to mean.
+trustworthy as someone having remembered to run `makemigrations`. Task 8 closed that
+with `test_dry_run_makemigrations`, which is what makes the rest mean what they
+appear to mean.
 
 New mutants belong in the catalogue as behaviour is added — the file is a record of
 what the code claims, which is why it is worth keeping rather than being a one-off
@@ -903,6 +918,58 @@ script.
   cannot drop and recreate `test_rhythmic` — Postgres reports "database is being
   accessed by other users" and the run dies with `SystemExit: 2` before collection.
   The message names a database problem; the cause is a breakpoint.
+
+- `df5f45f` — Task 8, the backfill. Nine sweep survivors down to one: ordering on
+  `Routine` and `Question`, all four `ContentBlock.__str__` branches, history on
+  `Question`/`Option`/`OptionBlock`, `list_select_related`, `SimpleHistoryAdmin`, and
+  `makemigrations --check`. Every one of these is a claim made by code that was
+  already committed, which is why the task went *before* the preview.
+
+  **`Routine.Meta.ordering` gained `"pk"`, and that is a behaviour change inside a
+  `test:` commit.** The second key is only observable inside a tie on the first, and
+  tie order is the planner's choice — Postgres returned four tied rows in *reverse*
+  insertion order, so a fixture built the obvious way passed with the `label` key
+  deleted. `["apparatus__position", "label", "pk"]` is a total order, so no tie
+  remains and the fallback is creation order rather than an arbitrary one. Verified:
+  four mutants — `[]`, drop-label, drop-position, swapped keys — all die, and none of
+  them rests on tie behaviour.
+
+  **`Meta.ordering` is migration-visible but emits no DDL.** Django records it as
+  `AlterModelOptions`, and `manage.py sqlmigrate questions 0006` prints `-- (no-op)`.
+  The migration exists because a later migration rebuilds the historical model from
+  the graph rather than from `models.py`. So a bare `Meta` edit with no
+  `makemigrations` leaves model and graph disagreeing with nothing to notice —
+  which is exactly what `test_dry_run_makemigrations` now catches.
+
+  **Two corrections to advice given in the same session, both found by running it.**
+  `makemigrations --check` does *not* need `--dry-run` in Django 6.1 —
+  `makemigrations.py:118` reads `if check_changes: self.dry_run = True`, so nothing
+  is written; that was true before Django 4.2 and no longer is. And the test **does**
+  need `@pytest.mark.django_db`: `makemigrations` builds a `MigrationLoader` against
+  the default connection to read `django_migrations` before the autodetector runs, so
+  without the marker it fails with `Database access not allowed`.
+
+  **`SystemExit` derives from `BaseException`, not `Exception`**, so `except
+  Exception` around `call_command(..., "--check")` is dead code — it cannot catch the
+  one failure the test exists to detect. ruff said so independently with `BLE001`.
+  Catching `SystemExit` *specifically* is worth doing and is clean under ruff:
+  pytest captures stdout per test rather than per exception, so Django's operation
+  list (`~ Alter field position on apparatus`) survives, and `pytest.fail` puts a
+  remediation into the short summary line where `SystemExit: 1` says nothing.
+
+  **On an admin history page, the current value is chrome.**
+  `admin/object_history.html` renders `{{ object }}` in the title, and
+  `PracticalItem.__str__` ends in the expert score — so the *new* value is present
+  under plain `ModelAdmin` too, with three occurrences and no history at all. Only
+  the **old** value discriminates. Second disguise, on a `__str__` that reaches into
+  the asserted content; worth remembering for Task 9's preview tests.
+
+  **Something in the editor formats Python fenced code blocks in Markdown.** It
+  rewrote two paste-this-line fragments in the questions-app plan from `    "questions",`
+  to `("questions",)` — valid Python for a module-level tuple, and wrong as an entry
+  to paste into a list in `settings.py`. Ruff does not touch `.md`; this is an
+  extension. Reverted, but the plans are full of such fragments and the damage is
+  silent.
 
 **F9 and F10 both land in the exams/sittings plan**, along with `ExamComponent`,
 membership, sittings and the freeze. Then accounts and the roster, then the React

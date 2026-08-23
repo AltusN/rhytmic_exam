@@ -1023,7 +1023,7 @@ already reviewed. Building the preview first would mean adding the task with the
 highest density of vacuous-assertion risk on top of a suite that reports green about
 things it does not check.
 
-- [ ] **Step 1: The ordering claims**
+- [x] **Step 1: The ordering claims**
 
 `ordering-routine` and `ordering-question` survived — `Routine.Meta.ordering` and
 `Question.Meta.ordering` are asserted nowhere. `Apparatus` has such a test and it is
@@ -1034,7 +1034,15 @@ the model to copy, including its lesson: **assert on the bare queryset**, never
 "label"]` — two apparatus and two labels are needed before the test can tell that
 form apart from `["label"]`.
 
-- [ ] **Step 2: `ContentBlock.__str__`**
+**Done, and it cost a model change.** The `label` key is only observable inside a tie
+on `apparatus__position`, and tie order is the planner's choice — Postgres returned
+four tied rows in *reverse* insertion order, so the obvious fixture passed with
+`label` deleted. `Routine.Meta.ordering` is now
+`["apparatus__position", "label", "pk"]`: a total order, no ties, and the fallback is
+creation order rather than an arbitrary one. Migration `0006` carries it, and
+`sqlmigrate` prints `-- (no-op)` because `AlterModelOptions` emits no DDL.
+
+- [x] **Step 2: `ContentBlock.__str__`**
 
 `str-contentblock-text` survived; the method has four branches (text, image, video,
 unsaved) and none is covered. `str-routine` and `str-practicalitem` are killed, so
@@ -1044,7 +1052,7 @@ The image and video branches are the ones worth care: they run
 `PurePosixPath(...).name`, so a block with `image="blocks/a/b/c.jpg"` should render
 `c.jpg`. The unsaved branch exists only because `RET503` demanded a return.
 
-- [ ] **Step 3: History on `Question`, `Option` and `OptionBlock`**
+- [x] **Step 3: History on `Question`, `Option` and `OptionBlock`**
 
 `history-off-question`, `history-off-option` and `history-off-optionblock` all
 survived. `test_questions_history.py` covers `PracticalItem` and `QuestionBlock` and
@@ -1054,7 +1062,7 @@ exactly backwards: who flipped `is_correct` is the dispute-relevant edit.
 Remember historical querysets order newest-first, so `history.first()` is the latest
 edit and `history.last()` is the creation.
 
-- [ ] **Step 4: The two admin claims**
+- [x] **Step 4: The two admin claims**
 
 `admin-select-related` survived — deleting `list_select_related` from
 `PracticalItemAdmin` costs 25 queries instead of 5 on a 20-row key and no test
@@ -1071,7 +1079,7 @@ assertion must be on the values, not on the status code.
 `admin-drop-list-filter-aspect` also survived and is deliberately **not** in scope —
 it is presentation, and a test pinning it buys less than it costs.
 
-- [ ] **Step 5: Models and migrations must agree**
+- [x] **Step 5: Models and migrations must agree**
 
 The sweep cannot reach `CheckConstraint`, `UniqueConstraint` or column types at all:
 the test database is built from `questions/migrations/`, not from `models.py`.
@@ -1081,14 +1089,23 @@ So the schema claims are only as good as someone remembering to run
 `makemigrations`. Add to `tests/test_django_smoke.py`:
 
 ```python
-call_command("makemigrations", "--check", "--dry-run")
+call_command("makemigrations", "--check")
 ```
 
 from `django.core.management`. It raises `SystemExit` when a model change has no
 migration. That single test is what makes every constraint test in the suite mean
 what it appears to mean.
 
-- [ ] **Step 6: Re-run the sweep, lint, commit**
+**Three things this plan had wrong, all found by running it.** `--dry-run` is
+redundant: `makemigrations.py:118` reads `if check_changes: self.dry_run = True`, so
+`--check` writes nothing (true since Django 4.2). The test **needs**
+`@pytest.mark.django_db`, because `makemigrations` reads `django_migrations` through
+a `MigrationLoader` before the autodetector runs. And `SystemExit` derives from
+`BaseException`, so `except Exception` cannot catch it — catch `SystemExit` by name
+and call `pytest.fail`, which keeps Django's captured operation list *and* puts a
+remediation in the short summary line.
+
+- [x] **Step 6: Re-run the sweep, lint, commit**
 
 ```bash
 ../.venv/bin/python tools/mutation_sweep.py     # expect 0 survivors bar list_filter
@@ -1105,6 +1122,17 @@ exists, which is the exception the convention reserves it for.
 
 **Review gate:** Claude re-runs `tools/mutation_sweep.py` and reports the survivor
 count rather than reading the tests and judging them.
+
+**Done 2026-08-23, `df5f45f`.** 137 tests pass; the sweep is 21 mutants, 20 killed,
+1 survived — `admin-drop-list-filter-aspect`, the one declared out of scope. The
+catalogue grew by one (`ordering-routine-drop-label`) and `ordering-routine` was
+repointed at the three-key ordering after it went `UNAPPLIED`.
+
+**The gate earned itself on Step 5.** `except SystemExit: assert e.code == 1` passes
+on *both* paths — no exception means the function falls off the end, and an exception
+means the handler agrees the exit code was 1. It was read and approved twice before
+being run. Tenth instance of the recurring defect, and the first written after the
+red-first rule was adopted.
 
 ---
 
