@@ -173,3 +173,362 @@ Plan: `docs/superpowers/plans/2026-08-05-django-skeleton.md`. Five tasks, all do
 **`ruff check` and `ruff format` are separate commands** — a clean `check` says
 nothing about formatting. That gap cost review rounds on Tasks 3 and 5, which is
 why the pre-commit hook exists.
+
+## The questions app, nine tasks
+
+Plan: `docs/superpowers/plans/2026-08-10-questions-app.md`. Content only —
+`Question`, `Routine`, `Apparatus`, the content blocks, admin and preview.
+
+- `d035ce8` — Task 1. The `questions` app, registered in `INSTALLED_APPS`.
+- `a472415` — Task 2. `Apparatus` and `Routine`, `MEDIA_ROOT`/`MEDIA_URL`, media
+  served under `DEBUG`, `rhythmic/media/` gitignored.
+
+  **Two review findings worth carrying forward.** `Routine.Meta.ordering` names
+  `apparatus__position` rather than `apparatus`. Both generate identical SQL today —
+  Django follows a bare FK to the related model's own `Meta.ordering` and falls back
+  to its primary key when there is none — so this is taste, but it survives someone
+  deleting `Apparatus.Meta.ordering`, which the implicit form does not.
+
+  The ordering *test* was the real finding, and it is general. As first written it
+  called `Apparatus.objects.all().order_by("position")` — supplying the very sort it
+  existed to check, so it passed with `Meta.ordering` deleted. Confirmed by mutating
+  `Apparatus._meta.ordering` to `[]` in a shell and printing the query: the model's
+  `ORDER BY` disappears while the test's does not. **A test that specifies the
+  behaviour it is checking tests the ORM, not the model.** Assert on the bare
+  queryset.
+
+  Also: test videos are set with a plain string, `video="routines/example.mp4"`, not
+  `SimpleUploadedFile` — the latter writes real files into `rhythmic/media/` through
+  `.create()` on every run. The plan recommended it and was wrong; corrected in
+  `042364b`.
+
+- `f633dec` — Task 3. `PracticalItem(routine, aspect, expert_score)` and the `Aspect`
+  `TextChoices`. `aspect` carries **no default** and `expert_score` is
+  `DecimalField(max_digits=4, decimal_places=2)`; the `UniqueConstraint` on
+  `(routine, aspect)` is a real `UNIQUE` index. Reasoning is in the commit body.
+
+  **`sqlmigrate` is how you check a model reached the database as intended** —
+  `manage.py sqlmigrate questions 0002` renders the DDL without running it. It showed
+  `numeric(4, 2)` rather than `double precision`, the named `UNIQUE (routine_id,
+  aspect)`, and `varchar(2) NOT NULL` with no `DEFAULT`. Note also that Django's
+  migration optimizer folds `AddConstraint` into `CreateModel` when both are in the
+  same migration, so a missing `AddConstraint` operation is not a missing constraint —
+  a review comment of Claude's said otherwise and was wrong.
+
+  **Third instance of the same test defect: the test supplied the behaviour it was
+  checking.** `test_expert_score_is_stored_as_decimal` asserted `isinstance(...,
+  Decimal)` on the object `create()` returned, which is the literal that went in, so
+  it passed without Postgres being involved and would pass against a `FloatField`.
+  `create()` hands back `9.5` where a reload gives `Decimal('9.50')` — the conversion
+  is the database's, and only a reload sees it. Same shape as Task 2's `.order_by()`.
+  **Reload with `objects.get(pk=...)` before asserting anything about storage.**
+
+  A `related_name` reverse accessor (`routine.items`) draws a red squiggle in the
+  editor and works fine — Django builds it at class-preparation time, so Pylance
+  cannot see it. `django-stubs` is the fix if it becomes annoying; it is not
+  installed.
+
+- `af153e2` — Task 4. `Question` and `Option`. `CASCADE` here against `PROTECT` in
+  Tasks 2 and 3: an option has no meaning without its question, where an apparatus
+  outlives the routines referencing it. The partial unique index —
+  `UniqueConstraint(fields=["question"], condition=Q(is_correct=True))` — gives **at
+  most one** correct option, never **at least one**; a question with zero correct
+  options still saves, because the database has nothing to check until the child rows
+  exist. Task 7's formset validation closes that, and
+  `test_a_question_with_no_correct_option_still_saves` is the marker.
+
+- `a8915b0` — Task 5, fixes F13. `Kind`, abstract `ContentBlock`, `QuestionBlock` and
+  `OptionBlock`. Legacy's five per-type JSON schemas become rows: a text-plus-image
+  stem is two blocks, and image options are `kind=IMAGE` rather than a distinct
+  question type. Reasoning is in the commit body.
+
+  **The kind `CheckConstraint` is declared once on the abstract base and templated
+  with `%(app_label)s_%(class)s_`**, so each child gets its own copy under its own
+  name — constraint names are database-wide, so an untemplated name fails at
+  `migrate`. A child must write `class Meta(ContentBlock.Meta)` **and**
+  `constraints = ContentBlock.Meta.constraints + [...]`: assigning a fresh list
+  replaces the inherited one. Verified that a bare `class Meta:` in a child yields
+  `ordering=[]` while inheriting or omitting `Meta` yields `['position']` — so the
+  bare form silently drops both. `test_the_kind_constraint_applies_to_the_option_block_too`
+  exists because only a test on the *second* child can see that.
+
+  **Deferred constraints are invisible to `pytest-django`.** The `(parent, position)`
+  uniques are `DEFERRABLE INITIALLY DEFERRED` so that code rewriting positions inside
+  one transaction can swap two of them. Postgres then checks them at `COMMIT`, and
+  `django_db` rolls back instead of committing — so two rows sharing a position insert
+  cleanly and the `IntegrityError` surfaces in *teardown*, reported as an ERROR
+  against a fixture on a test that "passed". A `pytest.raises` around the duplicate
+  therefore passes whether the constraint exists or not. The tests force it with
+  `SET CONSTRAINTS ALL IMMEDIATE` in a fixture. `CHECK` constraints are unaffected —
+  they fire on every row write.
+
+  The fixture takes `db` **for documentation, not because it breaks without it** —
+  verified that it works either way, since pytest-django's `_django_db_marker` is
+  autouse and autouse fixtures run first at the same scope.
+
+  **Isolate the row you are testing, because the error message cannot.** One
+  constraint with three OR'd arms produces one message for every violation, so
+  `match=` cannot tell you which arm fired. `kind=IMAGE` with text and *no image*
+  breaks two clauses at once and still passes with the text clause deleted from the
+  constraint; `kind=IMAGE` with a valid image *and* text is the isolated case.
+  Confirmed by rewriting the constraint in Postgres inside a test transaction —
+  DDL is transactional there, so the weakened version rolls back.
+
+  Match on the **constraint name only**, never Postgres's full sentence: the wording
+  belongs to Postgres and will change.
+
+  **Fourth instance of the test supplying its own behaviour**, after Task 2's
+  `.order_by()`, Task 3's `isinstance` on what `create()` returned, and an interim
+  `first()` here: `assert block1.position == block2.position` compares two literals
+  the test had just passed to `create()`, so it holds under every mutation including
+  deleting the model. Replaced with `list(question.blocks.all()) == [block]` per
+  parent, which reads from Postgres. Related mechanic worth knowing —
+  `QuerySet.first()` silently applies `order_by("pk")` when the queryset is
+  unordered, so it never raises on an unordered queryset, it just picks for you.
+
+- `ddbd625` — Task 6. `django-simple-history` on `Question`, `Option`,
+  `PracticalItem`, `QuestionBlock` and `OptionBlock`. Not on `Apparatus` or
+  `Routine` — "who renamed Ribbon" is not dispute material, and every historical
+  model doubles the writes on its table.
+
+  **The plan named only the first three and was wrong.** It was written before Task
+  5, and after Task 5 every word a candidate reads lives in a block row: history on
+  `Question` and `Option` alone records who flipped `is_correct` and nothing about
+  who reworded a distractor. Corrected in the plan.
+
+  **History is not F1's fix.** F1 is results being recomputed against the live
+  answer key; it is closed by the sitting freezing its own snapshot of marks, in the
+  exams app. History answers a different question — *who changed this key, and when*
+  — which is why the spec rejected version chains rather than adding them. A commit
+  body claiming `Fixes F1` here was caught at review.
+
+  **`simple_history` is an app *and* a middleware, and they do different jobs.** The
+  middleware records *who*, from `request.user`, so it must sit after
+  `AuthenticationMiddleware`; without it history records what changed and not who.
+  `INSTALLED_APPS` gets the templates, template tags, management commands and
+  translations — the package ships **no `migrations/`**, because each historical
+  model is built under the tracked model's own app (`models.py:302`,
+  `app_module = "%s.models" % model._meta.app_label`). So the tables land in
+  `questions/migrations/` and the recording half works even unregistered — which is
+  why the omission survives until someone clicks History in the admin.
+
+  **The audit outlives the record.** simple_history drops the `FOREIGN KEY` on the
+  tracked relation: `questions_historicalquestionblock.question_id` is a plain
+  nullable `bigint` with an index and no constraint. `Question.delete()` cascades the
+  live block away and leaves its history standing, plus a `-` row marking when it
+  stopped existing. Historical tables also do **not** carry the model's own
+  `CheckConstraint` — correct for an append-only log, which must be able to hold
+  states you would now reject.
+
+  **Historical querysets order newest-first** — `("-history_date", "-history_id")`,
+  from the package source. So `history.first()` is the latest edit and
+  `history.last()` is the creation, the opposite of every other queryset in the
+  suite.
+
+  **Fifth instance of a test that cannot fail.** `test_apparatus_has_no_history` was
+  written as `pytest.raises(Exception): Apparatus._meta.get_field("history")` —
+  but `HistoricalRecords` installs a **manager, not a field**, so `get_field` raises
+  `FieldDoesNotExist` on every model in the project, `Question` included. Verified
+  both ways. `hasattr(Model, "history")` is the probe that discriminates.
+
+  **`bulk_create()` and `queryset.update()` bypass the signals and write no
+  history** — the package ships `bulk_create_with_history()` and
+  `bulk_update_with_history()` for that. Same list as the `clean()` argument: shell,
+  management commands, bulk operations, raw SQL. Relevant to the media migration.
+
+- `3d8f554` — Task 7, the admin. All five models registered; `QuestionBlock` and
+  `Option` inline under `Question`, `OptionBlock` under `Option`. Reasoning is in the
+  commit body.
+
+  **`admin.py` is discovered by name.** `AdminConfig.ready()` calls `autodiscover()`
+  (`django/contrib/admin/apps.py:27`), which imports the `admin` submodule of every
+  installed app. That import *is* the registration; rename the file and every screen
+  silently disappears. An inline is never registered — `@admin.register` only writes
+  into `admin.site._registry`, and a registry entry is what creates URLs.
+
+  **A green `manage.py check` is only evidence about what the checker reached.**
+  `QuestionAdmin` was written with `list_display = ("reference", "created_at",
+  "updated_at")` against a model with no timestamp fields, and checks passed — because
+  the class carried no `@admin.register`, so `admin.E1xx` never looked at it.
+  Registering it in a shell produced four errors immediately. Same shape as the test
+  defect this project keeps producing: a validator with nothing registered validates
+  nothing.
+
+  **`SimpleHistoryAdmin`, not `ModelAdmin`, on the three tracked models.** Plain
+  `ModelAdmin` already has a History button (`django/contrib/admin/options.py:2561`)
+  — it lists `LogEntry` rows, which record admin actions only and as free text.
+  `SimpleHistoryAdmin` replaces that view with the historical rows, so Task 6's
+  history became *readable* here rather than merely recorded. Verified: the history
+  page renders both the old and the new expert score.
+
+  **`list_select_related` on `PracticalItemAdmin`, and the trap is `__str__`.** The
+  changelist applies `select_related()` on its own when `list_display` names a
+  `ForeignKey` (`django/contrib/admin/views/main.py:531`), but only one hop.
+  `Routine.__str__` reaches through to `apparatus.name`, so a 20-row key — the real
+  size — cost 25 queries. With `["routine__apparatus"]`, 5. **A `__str__` that
+  crosses a relation is a query per row and is invisible until counted.**
+
+  **`simple_history.register()` is the model-layer alternative to
+  `HistoricalRecords()`, not an admin thing.** Calling it in a `ModelAdmin` body runs
+  at import time and raises `MultipleRegistrationsError`, which fails
+  `autodiscover_modules` and takes the whole project down.
+
+  **The deferrable constraints do not do what this file said they did.** Task 5
+  recorded that the `(parent, position)` uniques are `DEFERRABLE` "so an admin reorder
+  can rewrite positions inside one transaction". Disproven 2026-08-22: posting a swap
+  through the admin is rejected by `ModelForm._post_clean()`, which runs
+  `validate_unique()` — a `SELECT` for a conflicting row — *before* any `UPDATE` is
+  emitted, so deferral never comes into it. Below the form layer it works exactly as
+  designed: the same swap in one transaction succeeds for `QuestionBlock` and fails
+  for `Option`, whose constraint is immediate. **Deferral is necessary for an admin
+  reorder but not sufficient**; a custom formset renumbering from form order is the
+  missing half, and is not built. Consequence: `Option`'s constraint stays immediate
+  and `test_duplicate_position_for_the_same_question_is_refused` is not at risk.
+
+  **`OptionInlineFormSet` enforces exactly one correct option, not at least one.**
+  The plan said at-least-one and was wrong: two correct options hits
+  `uq_one_correct_option_per_question` as an unhandled `IntegrityError` — a 500 page
+  rather than a form error. Form layer only, so a shell, a management command or a
+  fixture load still bypasses it.
+
+  **Iterate `self.forms`, not `self.cleaned_data`.** The latter is a property that
+  calls `self.is_valid()` and raises `AttributeError` when any child form failed
+  (`django/forms/formsets.py:277`), so one bad `position` blows up inside `clean()`.
+  Django's docs work around it with `if any(self.errors): return`; iterating
+  `self.forms` needs no guard. Advice in this file and the plan said otherwise.
+
+  **Sixth, seventh and eighth instances of a test that cannot fail**, all in one task.
+  (6) `assert "Questions" in body` — page chrome, true on a changelist showing
+  `0 questions`, and the row it was supposed to prove was never created because the
+  setup POSTed the add form instead of using `objects.create`. (7)
+  `assert item.aspect in body` where `aspect` is `"DA"` — present with zero rows,
+  because `list_filter` renders `?aspect__exact=DA` in the sidebar. The obvious fix,
+  asserting the display label, is the same bug: that is the sidebar's link text. (8)
+  Two admin POST tests whose inline prefixes were `optionblock_set-` rather than
+  `options-` and `blocks-`; **deleting every `is_correct` key from the payload changed
+  nothing**, because an unbound formset has zero correct options and `clean()` raises
+  the same message. Both passed for two review rounds.
+
+  **The inline prefix is the FK's `related_name`** —
+  `BaseInlineFormSet.get_default_prefix()` returns the accessor name
+  (`django/forms/models.py:1174`). `<model>_set` is the no-`related_name` default.
+  Every inline on the page needs its four management keys or the formset never binds
+  and the response carries `ManagementForm data is missing`. **A `200` from an admin
+  POST means the form re-rendered — it failed;** a save is a `302`.
+
+  **Write the control test first.** `test_a_question_with_one_correct_option_saves_successfully`
+  is what proves the payload is well-formed, and it is why the two rejection tests can
+  be believed. Verified by mutation: with the `!= 1` check replaced by `if False:`,
+  both rejection tests fail and the control still passes.
+
+  **A paused VS Code debugger holds the test database open.** pytest-django then
+  cannot drop and recreate `test_rhythmic` — Postgres reports "database is being
+  accessed by other users" and the run dies with `SystemExit: 2` before collection.
+  The message names a database problem; the cause is a breakpoint.
+
+- `df5f45f` — Task 8, the backfill. Nine sweep survivors down to one: ordering on
+  `Routine` and `Question`, all four `ContentBlock.__str__` branches, history on
+  `Question`/`Option`/`OptionBlock`, `list_select_related`, `SimpleHistoryAdmin`, and
+  `makemigrations --check`. Every one of these is a claim made by code that was
+  already committed, which is why the task went *before* the preview.
+
+  **`Routine.Meta.ordering` gained `"pk"`, and that is a behaviour change inside a
+  `test:` commit.** The second key is only observable inside a tie on the first, and
+  tie order is the planner's choice — Postgres returned four tied rows in *reverse*
+  insertion order, so a fixture built the obvious way passed with the `label` key
+  deleted. `["apparatus__position", "label", "pk"]` is a total order, so no tie
+  remains and the fallback is creation order rather than an arbitrary one. Verified:
+  four mutants — `[]`, drop-label, drop-position, swapped keys — all die, and none of
+  them rests on tie behaviour.
+
+  **`Meta.ordering` is migration-visible but emits no DDL.** Django records it as
+  `AlterModelOptions`, and `manage.py sqlmigrate questions 0006` prints `-- (no-op)`.
+  The migration exists because a later migration rebuilds the historical model from
+  the graph rather than from `models.py`. So a bare `Meta` edit with no
+  `makemigrations` leaves model and graph disagreeing with nothing to notice —
+  which is exactly what `test_dry_run_makemigrations` now catches.
+
+  **Two corrections to advice given in the same session, both found by running it.**
+  `makemigrations --check` does *not* need `--dry-run` in Django 6.1 —
+  `makemigrations.py:118` reads `if check_changes: self.dry_run = True`, so nothing
+  is written; that was true before Django 4.2 and no longer is. And the test **does**
+  need `@pytest.mark.django_db`: `makemigrations` builds a `MigrationLoader` against
+  the default connection to read `django_migrations` before the autodetector runs, so
+  without the marker it fails with `Database access not allowed`.
+
+  **`SystemExit` derives from `BaseException`, not `Exception`**, so `except
+  Exception` around `call_command(..., "--check")` is dead code — it cannot catch the
+  one failure the test exists to detect. ruff said so independently with `BLE001`.
+  Catching `SystemExit` *specifically* is worth doing and is clean under ruff:
+  pytest captures stdout per test rather than per exception, so Django's operation
+  list (`~ Alter field position on apparatus`) survives, and `pytest.fail` puts a
+  remediation into the short summary line where `SystemExit: 1` says nothing.
+
+  **On an admin history page, the current value is chrome.**
+  `admin/object_history.html` renders `{{ object }}` in the title, and
+  `PracticalItem.__str__` ends in the expert score — so the *new* value is present
+  under plain `ModelAdmin` too, with three occurrences and no history at all. Only
+  the **old** value discriminates. Second disguise, on a `__str__` that reaches into
+  the asserted content; worth remembering for Task 9's preview tests.
+
+  **Something in the editor formats Python fenced code blocks in Markdown.** It
+  rewrote two paste-this-line fragments in the questions-app plan from `    "questions",`
+  to `("questions",)` — valid Python for a module-level tuple, and wrong as an entry
+  to paste into a list in `settings.py`. Ruff does not touch `.md`; this is an
+  extension. Reverted, but the plans are full of such fragments and the damage is
+  silent.
+
+**F9 and F10 both land in the exams/sittings plan**, along with `ExamComponent`,
+membership, sittings and the freeze. Then accounts and the roster, then the React
+island last.
+
+Write the plan before writing code; that ordering is what the whole rebuild has run
+on. The spec's Questions section already specifies `Question`, `QuestionBlock`,
+`Option` and `OptionBlock` in detail, so this is planning work rather than design
+work — with one deviation to design deliberately: `Routine` and `Apparatus` are not
+in the spec, and they exist so that one video is referenced by four questions instead
+of copied into each.
+
+Each task in a plan ends at a **review gate**. He posts the code; you review it
+before he starts the next task.
+
+- `797b09f` — Task 9, the preview, closing the plan. A `staff_member_required`
+  view, `preview.html` looping the stem then the options, and `_block.html`
+  rendering one block by `kind`. The admin gains a `format_html` link column.
+
+  **`login_required` would admit exactly the wrong people.** A candidate *is*
+  authenticated, so that decorator opens draft questions and their options to the
+  people sitting the exam. Only a **signed-in non-staff** user distinguishes the two
+  decorators — anonymous gets a `302` from either — which is why there are two
+  permission tests and why the anonymous one alone was vacuous.
+
+  **Django templates resolve a missing name to the empty string, silently.** No
+  exception, no log line. `{{ question.title }}` on a model with no `title` renders
+  nothing, `{% if block.kind == 'text' %}` never matches the uppercase `Kind` values,
+  and a `{% for %}` over a non-existent relation iterates zero times. Every template
+  error in this task except one was invisible; the exception was `{% option.text %}`,
+  which is a `TemplateSyntaxError` because `{% %}` is the tag bracket and `{{ }}` is
+  the print bracket.
+
+  **`name=` in `path()` is a label you invent; `reverse()` is the other direction.**
+  A `name=reverse(...)` argument is circular and runs at import time while the
+  URLconf is still being built. The route name and the view function's name are
+  independent — `reverse("questions:preview")` fails on `preview_question`, and the
+  error blames the view rather than the name.
+
+  **The leak test states the property, not a symptom.** `assert "is_correct" not in
+  body` was the eleventh vacuous assertion: `is_correct` is a Python attribute name,
+  so a template printing `{{ option.is_correct }}` emits `True`, and the string
+  checked for can never appear. Two options given identical visible content and
+  differing only in `is_correct` must render byte-identically — verified against a
+  printed value, a conditional CSS class and conditional markup, all three killed by
+  one assertion. `len(list_items) == 2` is the positive control that stops an empty
+  page passing.
+
+  **First task where every test was shown red before acceptance**, and both vacuous
+  assertions were caught by mutation on the first review round rather than surviving
+  several. The sweep gained its first **template** mutant; the decorator mutant
+  aliases the import (`login_required as staff_member_required`) because the
+  substitution must be contiguous, and mutating the `@` line alone would raise
+  `NameError` and kill the mutant for the wrong reason.
+

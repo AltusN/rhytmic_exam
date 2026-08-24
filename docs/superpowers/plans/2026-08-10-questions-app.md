@@ -1150,7 +1150,7 @@ question an author needs answered before publishing. The spec calls for a `[Prev
 action for this reason, and it is the one piece of candidate-facing rendering in this
 plan.
 
-- [ ] **Step 1: Write the view**
+- [x] **Step 1: Write the view**
 
 A staff-only view taking a question's primary key and rendering its blocks and
 options in candidate order. You write it.
@@ -1160,7 +1160,7 @@ decorator — **not** `login_required`, which would let any authenticated candid
 preview a draft question including which option is correct. `get_object_or_404` for
 the lookup, so a bad primary key is a 404 rather than a 500.
 
-- [ ] **Step 2: Write the templates**
+- [x] **Step 2: Write the templates**
 
 `preview.html` iterates the question's blocks, then its options, and for each option
 iterates that option's blocks. `_block.html` renders one block by `kind` — text as a
@@ -1170,19 +1170,19 @@ paragraph, image as an `<img>`, video as a `<video controls>`.
 candidate does not see the answer. Getting this wrong makes the preview useless for
 its purpose and leaks the key to anyone who can reach it.
 
-- [ ] **Step 3: Wire the URL**
+- [x] **Step 3: Wire the URL**
 
 `questions/urls.py` with a `preview` path; include it from `config/urls.py` under a
 `questions/` prefix. Name the route so `reverse()` works.
 
-- [ ] **Step 4: Add the admin link**
+- [x] **Step 4: Add the admin link**
 
 A method on `QuestionAdmin` returning an `<a>` to the preview URL, added to
 `list_display`. Mark it with `django.utils.html.format_html` rather than building the
 string yourself — that is what escapes the content, and F8 is the legacy version of
 getting this wrong.
 
-- [ ] **Step 5: Write the failing tests**
+- [x] **Step 5: Write the failing tests**
 
 `tests/test_questions_preview.py`, all `@pytest.mark.django_db`.
 
@@ -1198,7 +1198,7 @@ Absence tests are weaker than presence tests by nature, so make the correct opti
 text distinctive in the fixture and assert *that* string is present exactly as many
 times as the others.
 
-- [ ] **Step 6: Run, lint, commit**
+- [x] **Step 6: Run, lint, commit**
 
 ```bash
 ../.venv/bin/python -m pytest -q && ../.venv/bin/ruff format . && ../.venv/bin/ruff check .
@@ -1213,6 +1213,13 @@ deliberately hides the correct option.
 
 **Review gate:** Claude reviews the permission decorator and whether the
 does-not-reveal test could pass vacuously.
+
+**Done 2026-08-24, `797b09f`.** 142 tests pass; the sweep is 23 mutants, 22 killed,
+1 survived — `admin-drop-list-filter-aspect`, still out of scope. **The gate caught
+both things it was written to catch**, on the first round: the does-not-reveal test
+checked for `is_correct`, a string no leak can emit, and the permission test used an
+anonymous client, which `login_required` redirects too. Nine of nine — the plan is
+closed.
 
 **Red-first is mandatory here.** Every assertion in this task is a substring of a
 rendered page, and a Django page is full of strings that have nothing to do with the
