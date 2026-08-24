@@ -1,0 +1,548 @@
+<title>Rhythmic Exam Schema</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  :root {
+    --bg:          #f4f5f8;
+    --surface:     #ffffff;
+    --surface-2:   #fafbfc;
+    --ink:         #161b25;
+    --ink-2:       #39424f;
+    --muted:       #6a7482;
+    --line:        #dde1e8;
+    --line-strong: #c3cad5;
+    --accent:      #8a5a12;
+    --accent-soft: #f6efe1;
+    --flag:        #8c2f42;
+    --flag-soft:   #faebee;
+    --plate:       #fbfaf7;
+    --plate-line:  #e2ded4;
+
+    --f-display: "Newsreader", Georgia, "Times New Roman", serif;
+    --f-body: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+    --step--1: clamp(0.78rem, 0.76rem + 0.10vw, 0.84rem);
+    --step-0:  clamp(0.95rem, 0.92rem + 0.14vw, 1.03rem);
+    --step-1:  clamp(1.13rem, 1.06rem + 0.32vw, 1.31rem);
+    --step-2:  clamp(1.42rem, 1.28rem + 0.68vw, 1.85rem);
+    --step-3:  clamp(1.95rem, 1.66rem + 1.44vw, 2.9rem);
+
+    --sp-1: 0.35rem;
+    --sp-2: 0.7rem;
+    --sp-3: 1.15rem;
+    --sp-4: 1.9rem;
+    --sp-5: 3rem;
+    --sp-6: 4.6rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:          #11151d;
+      --surface:     #191f2a;
+      --surface-2:   #1e2430;
+      --ink:         #e9ebf1;
+      --ink-2:       #bcc3d0;
+      --muted:       #939cac;
+      --line:        #2a3140;
+      --line-strong: #3a4354;
+      --accent:      #d9a441;
+      --accent-soft: #2b2416;
+      --flag:        #e58398;
+      --flag-soft:   #2e1c21;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg:          #11151d;
+    --surface:     #191f2a;
+    --surface-2:   #1e2430;
+    --ink:         #e9ebf1;
+    --ink-2:       #bcc3d0;
+    --muted:       #939cac;
+    --line:        #2a3140;
+    --line-strong: #3a4354;
+    --accent:      #d9a441;
+    --accent-soft: #2b2416;
+    --flag:        #e58398;
+    --flag-soft:   #2e1c21;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink-2);
+    font-family: var(--f-body);
+    font-size: var(--step-0);
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+  }
+
+  .wrap {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: var(--sp-5) var(--sp-3) var(--sp-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+  }
+
+  h1, h2, h3 { color: var(--ink); text-wrap: balance; margin: 0; }
+  h1 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: var(--step-3);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+  }
+  h2 {
+    font-family: var(--f-display);
+    font-weight: 600;
+    font-size: var(--step-2);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  h3 {
+    font-family: var(--f-body);
+    font-weight: 600;
+    font-size: var(--step-0);
+  }
+  p { margin: 0; }
+  a { color: var(--accent); }
+
+  .eyebrow {
+    font-family: var(--f-mono);
+    font-size: var(--step--1);
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  header.masthead {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding-bottom: var(--sp-3);
+    border-bottom: 2px solid var(--line-strong);
+  }
+  .lede {
+    font-family: var(--f-display);
+    font-size: var(--step-1);
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 46ch;
+  }
+  .provenance {
+    font-family: var(--f-mono);
+    font-size: var(--step--1);
+    color: var(--muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1) var(--sp-3);
+    padding-top: var(--sp-1);
+  }
+  .provenance b { color: var(--ink-2); font-weight: 500; }
+
+  section { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .section-head { display: flex; flex-direction: column; gap: var(--sp-1); }
+  .prose { max-width: 66ch; }
+  .prose + .prose { margin-top: calc(var(--sp-2) * -1 + var(--sp-2)); }
+
+  code, .mono { font-family: var(--f-mono); font-size: 0.9em; }
+  code {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 0.08em 0.34em;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* --- diagram plate: kept light in both themes so the rendered SVG stays legible --- */
+  .plate {
+    background: var(--plate);
+    border: 1px solid var(--plate-line);
+    border-radius: 2px;
+    padding: var(--sp-3);
+    overflow-x: auto;
+    box-shadow: 0 1px 2px rgba(20, 24, 33, 0.06);
+  }
+  .plate pre.mermaid { margin: 0; background: transparent; }
+  figure { margin: 0; display: flex; flex-direction: column; gap: var(--sp-2); }
+  figcaption {
+    font-size: var(--step--1);
+    color: var(--muted);
+    display: flex;
+    gap: var(--sp-2);
+    align-items: baseline;
+  }
+  figcaption .mono { color: var(--ink-2); }
+
+  .islands {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: var(--sp-3);
+  }
+  .island {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: var(--sp-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+  }
+  .island .eyebrow { color: var(--accent); }
+  .island p { font-size: var(--step--1); line-height: 1.55; }
+
+  /* --- constraint notes --- */
+  .notes { display: flex; flex-direction: column; gap: var(--sp-2); }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: var(--sp-3);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--sp-1) var(--sp-3);
+    align-items: baseline;
+  }
+  .note .tag {
+    font-family: var(--f-mono);
+    font-size: var(--step--1);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--flag);
+    background: var(--flag-soft);
+    border-radius: 2px;
+    padding: 0.12em 0.5em;
+    white-space: nowrap;
+  }
+  .note h3 { grid-column: 2; }
+  .note p { grid-column: 2; font-size: var(--step--1); line-height: 1.6; max-width: 62ch; }
+  .note pre {
+    grid-column: 2;
+    margin: var(--sp-1) 0 0;
+    font-family: var(--f-mono);
+    font-size: var(--step--1);
+    line-height: 1.55;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: var(--sp-2);
+    overflow-x: auto;
+    color: var(--ink);
+  }
+  @media (max-width: 34rem) {
+    .note { grid-template-columns: 1fr; }
+    .note h3, .note p, .note pre { grid-column: 1; }
+    .note .tag { justify-self: start; }
+  }
+
+  /* --- table cards --- */
+  .tables {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+    gap: var(--sp-3);
+  }
+  .tbl {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .tbl > header {
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .tbl > header .name {
+    font-family: var(--f-mono);
+    font-weight: 600;
+    font-size: var(--step-0);
+    color: var(--ink);
+  }
+  .tbl > header .model { font-size: var(--step--1); color: var(--muted); }
+  .cols { display: flex; flex-direction: column; }
+  .col {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--sp-2);
+    align-items: baseline;
+    padding: 0.3rem var(--sp-3);
+    font-family: var(--f-mono);
+    font-size: var(--step--1);
+    border-bottom: 1px solid var(--line);
+  }
+  .col:last-child { border-bottom: 0; }
+  .col .n { color: var(--ink); }
+  .col .t { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .key {
+    display: inline-block;
+    font-size: 0.82em;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-radius: 2px;
+    padding: 0 0.32em;
+    margin-left: 0.35em;
+  }
+  .rule { color: var(--flag); }
+
+  footer.colophon {
+    border-top: 1px solid var(--line);
+    padding-top: var(--sp-3);
+    font-size: var(--step--1);
+    color: var(--muted);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-1);
+    max-width: 66ch;
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">questions app &middot; content only</p>
+    <h1>Rhythmic Exam Schema</h1>
+    <p class="lede">Seven tables, five relationships, and a set of rules the database enforces on its own — read straight out of the running Postgres instance.</p>
+    <div class="provenance">
+      <span><b>postgres 17</b> &middot; database <b>rhythmic</b></span>
+      <span>migrations <b>0001</b>–<b>0006</b></span>
+      <span>generated <b>2026-08-24</b></span>
+    </div>
+  </header>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Entity relationships</p>
+      <h2>Two islands, not one graph</h2>
+    </div>
+    <p class="prose">The five foreign keys form two clusters that never touch. That is not an omission — it is the decision of 2026-08-10 made visible: a practical item asks nothing about a routine beyond an aspect and a score, so it shares no structure with a multiple-choice question. Anything that joins them will live in the exams app, not here.</p>
+
+    <figure>
+      <div class="plate">
+<pre class="mermaid">
+erDiagram
+    APPARATUS  ||--o{ ROUTINE       : "PROTECT"
+    ROUTINE    ||--o{ PRACTICALITEM : "PROTECT"
+    QUESTION   ||--o{ QUESTIONBLOCK : "CASCADE"
+    QUESTION   ||--o{ OPTION        : "CASCADE"
+    OPTION     ||--o{ OPTIONBLOCK   : "CASCADE"
+
+    APPARATUS {
+        bigint id PK
+        varchar50 name UK "FIG order"
+        smallint position
+    }
+    ROUTINE {
+        bigint id PK
+        bigint apparatus_id FK
+        varchar200 label
+        varchar100 video "upload_to routines/"
+    }
+    PRACTICALITEM {
+        bigint id PK
+        bigint routine_id FK
+        varchar2 aspect "DA DB AV EX"
+        numeric4_2 expert_score
+    }
+    QUESTION {
+        bigint id PK
+        varchar50 reference UK
+        text notes "internal only"
+    }
+    QUESTIONBLOCK {
+        bigint id PK
+        bigint question_id FK
+        varchar10 kind "TEXT IMAGE VIDEO"
+        smallint position
+        text text
+        varchar100 image
+        varchar100 video
+    }
+    OPTION {
+        bigint id PK
+        bigint question_id FK
+        smallint position
+        boolean is_correct
+    }
+    OPTIONBLOCK {
+        bigint id PK
+        bigint option_id FK
+        varchar10 kind "TEXT IMAGE VIDEO"
+        smallint position
+        text text
+        varchar100 image
+        varchar100 video
+    }
+</pre>
+      </div>
+      <figcaption>
+        <span class="mono">5 foreign keys</span>
+        <span>Labels give the <span class="mono">on_delete</span> rule. Types are shown without punctuation, which Mermaid reserves.</span>
+      </figcaption>
+    </figure>
+
+    <div class="islands">
+      <div class="island">
+        <p class="eyebrow">Island one &middot; practical</p>
+        <p><b>Apparatus → Routine → PracticalItem.</b> One routine exists once and four items reference it — one per aspect. Replacing a video changes one row, not four. <code>PROTECT</code> throughout: an apparatus outlives the routines that use it.</p>
+      </div>
+      <div class="island">
+        <p class="eyebrow">Island two &middot; theory</p>
+        <p><b>Question → Block, Question → Option → Block.</b> Every word a candidate reads is a block row; legacy's five JSON schemas became this shape. <code>CASCADE</code> throughout: an option has no meaning without its question.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Read this beside the diagram</p>
+      <h2>Four rules no ER diagram draws</h2>
+    </div>
+    <p class="prose">pgAdmin builds its canvas from <code>pg_constraint</code> and renders lines for foreign keys. Everything below is real, enforced, and invisible to that process — which is why a generated ERD reads as a simpler design than the one actually running.</p>
+
+    <div class="notes">
+
+      <article class="note">
+        <span class="tag">index, not constraint</span>
+        <h3>At most one correct option per question</h3>
+        <p>A <em>partial</em> unique index — it constrains only the rows where <code>is_correct</code> is true. Postgres has no partial <code>UNIQUE</code> constraint, so this exists in <code>pg_indexes</code> and not in <code>pg_constraint</code> at all. It gives <em>at most</em> one correct option and never <em>at least</em> one: a question with zero correct options still saves, because there are no child rows for the database to object to. The admin formset closes that half.</p>
+        <pre>CREATE UNIQUE INDEX uq_one_correct_option_per_question
+    ON questions_option (question_id) WHERE is_correct;</pre>
+      </article>
+
+      <article class="note">
+        <span class="tag">check</span>
+        <h3>A block's kind must match its payload</h3>
+        <p>One three-armed <code>CHECK</code> on each block table. Exactly one of <code>text</code>, <code>image</code>, <code>video</code> may be non-empty, and it must be the one the <code>kind</code> names. Note it compares against <code>''</code> rather than <code>NULL</code> — every column in these tables is <code>NOT NULL</code>, so an empty file field is an empty string. One message covers all three arms, which is why a test has to isolate the row it is checking.</p>
+        <pre>CHECK ( (kind='TEXT'  AND text &lt;&gt; '' AND image = '' AND video = '')
+     OR (kind='IMAGE' AND image &lt;&gt; '' AND text  = '' AND video = '')
+     OR (kind='VIDEO' AND video &lt;&gt; '' AND text  = '' AND image = '') )</pre>
+      </article>
+
+      <article class="note">
+        <span class="tag">timing</span>
+        <h3>Two position rules, checked at different moments</h3>
+        <p>Both block tables defer their <code>(parent, position)</code> uniqueness to <code>COMMIT</code>, so code rewriting positions inside one transaction can swap two of them. <code>Option</code>'s equivalent is immediate and fires on every row write. The difference is invisible in any diagram and decides whether a reorder succeeds.</p>
+        <pre>questions_questionblock  UNIQUE (question_id, position)  DEFERRABLE INITIALLY DEFERRED
+questions_optionblock    UNIQUE (option_id,   position)  DEFERRABLE INITIALLY DEFERRED
+questions_option         UNIQUE (question_id, position)  <span class="rule">immediate</span></pre>
+      </article>
+
+      <article class="note">
+        <span class="tag">not enforced</span>
+        <h3>Aspect is a plain string to Postgres</h3>
+        <p><code>aspect</code> is <code>varchar(2)</code> with no <code>CHECK</code> and no default. <code>DA</code>, <code>DB</code>, <code>AV</code> and <code>EX</code> are Django <code>TextChoices</code>, enforced by form validation only — a shell, a management command or a fixture load can write <code>ZZ</code>. The uniqueness of <code>(routine_id, aspect)</code> <em>is</em> a real index; the vocabulary is not.</p>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <p class="eyebrow">Columns as built</p>
+      <h2>The seven tables</h2>
+    </div>
+    <p class="prose">Names as Postgres has them. <span class="mono" style="color:var(--accent)">PK</span> primary key, <span class="mono" style="color:var(--accent)">UK</span> unique, <span class="mono" style="color:var(--accent)">FK</span> foreign key. Historical tables from <code>simple_history</code> are omitted — all five carry exactly one foreign key, to <code>auth_user</code>, and none back to the model they shadow.</p>
+
+    <div class="tables">
+
+      <div class="tbl">
+        <header><span class="name">questions_apparatus</span><span class="model">Apparatus &middot; ordering: position</span></header>
+        <div class="cols">
+          <div class="col"><span class="n">id<span class="key">PK</span></span><span class="t">bigint</span></div>
+          <div class="col"><span class="n">name<span class="key">UK</span></span><span class="t">varchar(50)</span></div>
+          <div class="col"><span class="n">position</span><span class="t">smallint</span></div>
+        </div>
+      </div>
+
+      <div class="tbl">
+        <header><span class="name">questions_routine</span><span class="model">Routine &middot; ordering: apparatus__position, label, pk</span></header>
+        <div class="cols">
+          <div class="col"><span class="n">id<span class="key">PK</span></span><span class="t">bigint</span></div>
+          <div class="col"><span class="n">label</span><span class="t">varchar(200)</span></div>
+          <div class="col"><span class="n">video</span><span class="t">varchar(100)</span></div>
+          <div class="col"><span class="n">apparatus_id<span class="key">FK</span></span><span class="t">bigint</span></div>
+        </div>
+      </div>
+
+      <div class="tbl">
+        <header><span class="name">questions_practicalitem</span><span class="model">PracticalItem &middot; history tracked</span></header>
+        <div class="cols">
+          <div class="col"><span class="n">id<span class="key">PK</span></span><span class="t">bigint</span></div>
+          <div class="col"><span class="n">aspect</span><span class="t">varchar(2)</span></div>
+          <div class="col"><span class="n">expert_score</span><span class="t">numeric(4,2)</span></div>
+          <div class="col"><span class="n">routine_id<span class="key">FK</span></span><span class="t">bigint</span></div>
+        </div>
+      </div>
+
+      <div class="tbl">
+        <header><span class="name">questions_question</span><span class="model">Question &middot; ordering: reference &middot; history tracked</span></header>
+        <div class="cols">
+          <div class="col"><span class="n">id<span class="key">PK</span></span><span class="t">bigint</span></div>
+          <div class="col"><span class="n">reference<span class="key">UK</span></span><span class="t">varchar(50)</span></div>
+          <div class="col"><span class="n">notes</span><span class="t">text</span></div>
+        </div>
+      </div>
+
+      <div class="tbl">
+        <header><span class="name">questions_option</span><span class="model">Option &middot; history tracked</span></header>
+        <div class="cols">
+          <div class="col"><span class="n">id<span class="key">PK</span></span><span class="t">bigint</span></div>
+          <div class="col"><span class="n">position</span><span class="t">smallint</span></div>
+          <div class="col"><span class="n">is_correct</span><span class="t">boolean</span></div>
+          <div class="col"><span class="n">question_id<span class="key">FK</span></span><span class="t">bigint</span></div>
+        </div>
+      </div>
+
+      <div class="tbl">
+        <header><span class="name">questions_questionblock</span><span class="model">QuestionBlock &middot; ordering: position &middot; history tracked</span></header>
+        <div class="cols">
+          <div class="col"><span class="n">id<span class="key">PK</span></span><span class="t">bigint</span></div>
+          <div class="col"><span class="n">kind</span><span class="t">varchar(10)</span></div>
+          <div class="col"><span class="n">position</span><span class="t">smallint</span></div>
+          <div class="col"><span class="n">text</span><span class="t">text</span></div>
+          <div class="col"><span class="n">image</span><span class="t">varchar(100)</span></div>
+          <div class="col"><span class="n">video</span><span class="t">varchar(100)</span></div>
+          <div class="col"><span class="n">question_id<span class="key">FK</span></span><span class="t">bigint</span></div>
+        </div>
+      </div>
+
+      <div class="tbl">
+        <header><span class="name">questions_optionblock</span><span class="model">OptionBlock &middot; ordering: position &middot; history tracked</span></header>
+        <div class="cols">
+          <div class="col"><span class="n">id<span class="key">PK</span></span><span class="t">bigint</span></div>
+          <div class="col"><span class="n">kind</span><span class="t">varchar(10)</span></div>
+          <div class="col"><span class="n">position</span><span class="t">smallint</span></div>
+          <div class="col"><span class="n">text</span><span class="t">text</span></div>
+          <div class="col"><span class="n">image</span><span class="t">varchar(100)</span></div>
+          <div class="col"><span class="n">video</span><span class="t">varchar(100)</span></div>
+          <div class="col"><span class="n">option_id<span class="key">FK</span></span><span class="t">bigint</span></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer class="colophon">
+    <p>Built by querying <code>pg_attribute</code>, <code>pg_constraint</code> and <code>pg_indexes</code> on the running container, not by reading <code>models.py</code> — so it reflects what the migrations actually created. The test database is built the same way, which is why <code>makemigrations --check</code> earns its place in the suite.</p>
+    <p>Every column in all seven tables is <code>NOT NULL</code>. Nothing here is exam content: no question text, no options, no expert scores.</p>
+  </footer>
+
+</div>
