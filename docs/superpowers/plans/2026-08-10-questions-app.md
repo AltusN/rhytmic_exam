@@ -1239,7 +1239,10 @@ it has been shown red".
 - **Migrating the 128 legacy media files.** That is its own job, gated on the block
   renderers existing — and `legacy/` is deleted when it is done.
 - **Bulk import.** Legacy imported questions by CSV. Nothing needs it yet, and the
-  admin is the authoring surface.
+  admin is the authoring surface. **Qualified 2026-08-24:** it is the authoring
+  surface but a slow one — an option's text lives in an `OptionBlock`, which
+  Django's admin cannot reach from the Question page, so a four-option question
+  takes five saves. See CLAUDE.md, "Known limitation".
 - **The candidate-facing exam runner.** The React island, last plan.
 - **Marking anything.** `scoring/` already does that and this app hands it nothing.
 
