@@ -463,10 +463,16 @@ tests do not.
 **Don't chase a plan's own test-count estimates** — the questions-app plan predicted
 54 by Task 6 and was written before the tests were.
 
-**Next action: write the exams and sittings plan.** `ExamComponent`, membership,
-enrolment, sittings and the snapshot that makes F1 executable. **F9 and F10 land
-there.** Write the plan before writing code; that ordering is what the whole rebuild
-has run on.
+**The exams-and-sittings plan is written** —
+`docs/superpowers/plans/2026-08-24-exams-and-sittings.md`, ten tasks in two parts. Part A
+is the exam definition (`Exam`, `ExamComponent`, marking tables and grade bands as rows,
+explicit membership) and is independently shippable; Part B is the sitting, the freeze and
+marking. **Six findings close in it** — F1 and F2 at the freeze, F3 and F4 at marking, F5 at
+the component percentage, F9 at membership, F10/F11/F12 at the two-exam split and the
+dated exam.
+
+**Next action: Task 1, creating the `exams` app.** Then accounts and the roster, then the
+React island last.
 
 **`rhythmic/tools/mutation_sweep.py` exists and should be run at the end of every
 task from now on.** It breaks one claim at a time and checks that a test objects; a
