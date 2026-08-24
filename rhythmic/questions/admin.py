@@ -1,6 +1,8 @@
 from django.contrib import admin
 from django.core.exceptions import ValidationError
 from django.forms import BaseInlineFormSet
+from django.urls import reverse
+from django.utils.html import format_html
 from simple_history.admin import SimpleHistoryAdmin
 
 from questions.models import (
@@ -64,8 +66,13 @@ class OptionBlockInline(admin.TabularInline):
 @admin.register(Question)
 class QuestionAdmin(SimpleHistoryAdmin):
     inlines = [QuestionBlockInline, OptionInline]
-    list_display = ("reference",)
+    list_display = ("reference", "preview_link")
     search_fields = ("reference",)
+
+    @admin.display(description="Preview")
+    def preview_link(self, obj):
+        url = reverse("questions:preview", args=[obj.pk])
+        return format_html('<a href="{}" target="_blank">Preview</a>', url)
 
 
 @admin.register(Option)

@@ -1,0 +1,10 @@
+{% if block.kind == 'TEXT' %}
+    <p>{{ block.text }}</p>
+{% elif block.kind == 'IMAGE' %}
+    <img src="{{ block.image.url }}" alt="Image Block">
+{% elif block.kind == 'VIDEO' %}
+    <video controls>
+        <source src="{{ block.video.url }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+{% endif %}

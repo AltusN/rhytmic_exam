@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Preview {{ question.reference }}</title>
+    </head>
+    <body>
+        <h1>{{ question.reference }}</h1>
+
+        {% for block in question.blocks.all %}
+            {% include "questions/_block.html" %}
+        {% endfor %}
+        <ol>
+        {% for option in question.options.all %}
+            <li>
+                {% for block in option.blocks.all %}
+                    {% include "questions/_block.html" %}
+                {% endfor %}
+            </li>
+        {% endfor %}
+        </ol>
+    </body>
+</html>

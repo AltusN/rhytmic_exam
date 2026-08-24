@@ -25,6 +25,7 @@ TEST_PATHS = [
     "tests/test_questions_blocks.py",
     "tests/test_questions_history.py",
     "tests/test_questions_admin.py",
+    "tests/test_questions_preview.py",
 ]
 
 # (name, file, text to find, text to put in its place)
@@ -137,6 +138,24 @@ MUTANTS = [
         'Option, on_delete=models.CASCADE, related_name="blocks")\n'
         "    history = HistoricalRecords()",
         'Option, on_delete=models.CASCADE, related_name="blocks")',
+    ),
+    (
+        # Swaps the decorator's behaviour without touching the decorator line, so
+        # the substitution stays contiguous. Only a signed-in NON-staff user can
+        # tell these apart: anonymous gets a 302 from either one.
+        "preview-login-required-not-staff",
+        "questions/views.py",
+        "from django.contrib.admin.views.decorators import staff_member_required",
+        "from django.contrib.auth.decorators import login_required as staff_member_required",
+    ),
+    (
+        # Any leak works here — a printed value, a conditional class, conditional
+        # markup. The test asserts two options differing only in is_correct render
+        # identically, so it catches the property rather than one spelling of it.
+        "preview-leaks-is-correct",
+        "questions/templates/questions/preview.html",
+        "<li>",
+        "<li>{{ option.is_correct }}",
     ),
     (
         "admin-drop-list-filter-aspect",
