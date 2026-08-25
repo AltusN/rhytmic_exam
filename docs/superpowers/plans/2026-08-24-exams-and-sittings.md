@@ -184,8 +184,14 @@ fabricated `"0"` to occupy and no `practical_taken` flag for a future reader to 
 
 `level` a `PositiveSmallIntegerField`. `year` a `PositiveSmallIntegerField` — not a
 `DateField`; an exam belongs to a certification year, not to a day. `kind` a `CharField`
-with `choices=Kind.choices`, **no default** — the same argument as `PracticalItem.aspect` in
-Task 3 of the questions plan: a default here silently makes everything theory.
+with `choices=ExamKind.choices`, **no default** — the same argument as
+`PracticalItem.aspect` in Task 3 of the questions plan: a default here silently makes
+everything theory.
+
+**But no default is not the whole guard, and `PracticalItem.aspect` is a weaker precedent
+than this sentence implies** — it permits `aspect=''` today. Read **Open: how `kind` is
+pinned** under Step 3 before writing this model; option 1 there adds a `CheckConstraint` to
+`Meta.constraints` alongside the `UniqueConstraint`.
 
 `Meta.ordering` — a total order, so no tie is left to the planner. `["-year", "level",
 "kind"]` leaves ties when two exams share all three, which the constraint below forbids, so
@@ -202,7 +208,10 @@ this one is genuinely total. Say so in a comment rather than adding `pk` reflexi
 ```
 
 Confirm `smallint NOT NULL` on `year`, `varchar` with no `DEFAULT` on `kind`, and a named
-`UNIQUE (level, year, kind)`. Django's optimizer folds `AddConstraint` into `CreateModel`
+`UNIQUE (level, year, kind)` — plus a named `CHECK` on `kind` if Step 3's open decision went
+to option 1. Note what the absent `DEFAULT` does and does not buy you: Django still writes
+`''` for an unset `kind`, so the DDL confirms only that nothing was defaulted, never that
+nothing empty can be stored. Django's optimizer folds `AddConstraint` into `CreateModel`
 when both are in one migration, so a missing operation is not a missing constraint.
 
 - [ ] **Step 3: Write the failing tests**
@@ -211,13 +220,49 @@ when both are in one migration, so a missing operation is not a missing constrai
 |---|---|
 | `test_two_exams_can_share_a_level_across_years` | 2026 and 2030 level 2 theory both save |
 | `test_a_duplicate_level_year_kind_is_refused` | `pytest.raises(IntegrityError)`, `match="uq_one_exam_per_level_year_kind"` |
-| `test_kind_has_no_default` | building `Exam(level=1, year=2026)` and saving raises rather than quietly storing theory |
+| `test_kind_is_not_silently_theory` | see **Open: how `kind` is pinned** below — the assertion depends on a decision not yet made |
 | `test_exams_are_ordered_newest_year_first` | assert on the **bare queryset**, never `.order_by(...)` |
 
 Match on the **constraint name only**, never Postgres's full sentence — the wording is
 Postgres's and will change.
 
 The first test is the F11 marker: name it so a reader knows why it exists.
+
+**Open: how `kind` is pinned. Decide before writing Step 1.** This plan originally
+specified `test_kind_has_no_default` as *"building `Exam(level=1, year=2026)` and saving
+raises rather than quietly storing theory."* **That test cannot pass, and the claim behind
+it is wrong.** Probed 2026-08-25 against the precedent this plan cites,
+`PracticalItem.aspect` — a `CharField` with `choices` and no default — saved with no aspect
+supplied at all:
+
+```
+>>> STORED aspect = ''  (save did NOT raise)
+```
+
+`blank=False` governs forms and `full_clean()`; `save()` never consults it. Django gives an
+unset `CharField` its empty-string default, and Postgres accepts `''` into a
+`varchar NOT NULL`. **`choices=` generates no DDL** — it constrains the admin and validation
+only, so nothing at the schema level refuses a row.
+
+The distinction to hold: *no default* and *cannot be saved empty* are different claims.
+`default=` decides what gets filled in; only a database constraint decides what gets
+refused. And an `Exam` with `kind=''` is a third kind of exam that no code branches on —
+the same family as F10, a state the schema permits and the domain does not have.
+
+Two ways to close it, and the choice changes Step 1's model, Step 2's `sqlmigrate`
+expectations and this test:
+
+1. **Add a `CheckConstraint`** that `kind` is one of the choices — `models.Q(kind__in=
+   ExamKind.values)`, named `ck_exam_kind_is_valid`. The test then asserts
+   `pytest.raises(IntegrityError, match="ck_exam_kind_is_valid")`, Step 2 gains a `CHECK`
+   clause to confirm, and the bad row is unrepresentable rather than merely undefaulted.
+   Precedent exists: `ContentBlock` already constrains its own `kind` in the database.
+2. **Keep it undefaulted** and assert the stored value is `""`. Not vacuous — it goes red
+   if anyone adds `default=ExamKind.THEORY` — but it pins the absence of a default rather
+   than the impossibility of a bad row.
+
+Note `PracticalItem.aspect` has this same hole today: `aspect=''` is storable. Out of scope
+for this task; record it as a finding if it is confirmed to matter.
 
 - [ ] **Step 4: Run red, then implement, then green**
 
