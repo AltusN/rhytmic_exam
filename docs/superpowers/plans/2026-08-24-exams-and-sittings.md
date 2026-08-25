@@ -490,13 +490,24 @@ exactly the question history exists to answer.
 
 - [ ] **Step 2: Decide the uniqueness, and write down why**
 
-**Recommendation: no uniqueness on `(judge, exam)`.** F11 is the wound left by a schema that
-over-constrained — `UNIQUE (sagf_id)` decided a policy question the schema had no business
-deciding, and the cost was that recertification could not be recorded at all. Whether a
-retake within the same year is permitted is a federation rule nobody has stated. Leave the
-schema permissive and record the question.
+**No uniqueness on `(judge, exam)`. Settled 2026-08-25: a judge who fails may retake at a
+later date.** So multiple sittings against the *same* `Exam` row are the ordinary case, not
+an anomaly, and a `UNIQUE (judge, exam)` would forbid exactly the thing the federation
+permits. This is the second time the same schema mistake has been avoided: F11 is the wound
+left by `UNIQUE (sagf_id)` deciding a policy question the schema had no business deciding,
+and the cost was that recertification could not be recorded at all.
 
-Add it to `CLAUDE.md`'s open questions as part of this task's commit.
+**Two different repeats, one mechanism.** A *retake* is another sitting against the same
+exam after a failure; a *recertification* is a sitting against a later year's exam. Both are
+just another row in `sittings`, which is the point — the schema does not need to tell them
+apart, and a report that does can ask the exam's year.
+
+**The consequence for Task 9 and beyond: "the judge's result" is ambiguous.** Once retakes
+exist, a judge can hold two `ComponentResult` sets for one exam. Nothing in this plan picks
+between them, and nothing should — which sitting counts is a federation rule (latest?
+best? latest passing?) and belongs with the certification logic in the accounts plan. Write
+a test that a judge can hold two sittings against one exam and that **both survive**, and
+leave the selection alone.
 
 - [ ] **Step 3: Migrate and read the DDL**
 
@@ -505,6 +516,7 @@ Add it to `CLAUDE.md`'s open questions as part of this task's commit.
 | test | asserts |
 |---|---|
 | `test_a_judge_accumulates_sittings_across_years` | two sittings, 2026 and 2030, both survive; assert `judge.sittings.count() == 2` **after reload** |
+| `test_a_judge_can_retake_the_same_exam_after_failing` | two sittings against **one** `Exam` row, both survive — the retake marker, and what a `UNIQUE (judge, exam)` would break |
 | `test_a_new_sitting_is_pending` | the default |
 | `test_a_judge_with_no_practical_sitting_has_no_practical_result` | the **F10 marker** — enrol in theory only, assert `Sitting.objects.filter(judge=..., exam__kind=PRACTICAL).exists() is False`, and that nothing anywhere fabricates a zero |
 | `test_a_judge_with_sittings_cannot_be_deleted` | `PROTECT` |
@@ -814,8 +826,11 @@ Subject: `feat(exams): author exams and read sittings in the admin`
 
 ## Open questions this plan raises
 
-1. **May a judge sit the same exam twice in one year?** Task 6 leaves the schema permissive
-   deliberately. A federation answer turns into a constraint or stays absent.
+1. ~~May a judge sit the same exam twice?~~ **Resolved 2026-08-25: yes — a judge who fails
+   may retake at a later date.** No constraint on `(judge, exam)`, now for a stated reason
+   rather than an absent one. What it opens instead: **which sitting counts** when a judge
+   holds two results for one exam — latest, best, or latest passing. That is a certification
+   rule and belongs with the accounts plan, not here.
 2. **What does a candidate see between `submitted` and `certified`?** The spec says scoring
    and certification are separate events. Whether the percentage is visible before an
    official signs it off is a policy question, not a modelling one.
