@@ -46,6 +46,25 @@ next task starts.
   level-versus-attempt distinction are the accounts plan. This plan's `Sitting.judge` points
   at `settings.AUTH_USER_MODEL`, and `JudgeProfile` is a `OneToOneField` to that same user
   in the accounts plan — so the foreign key never has to move.
+
+  **Nothing registers judges yet.** Until the accounts plan lands, users come from
+  `manage.py createsuperuser` or the admin, and tests use `django_user_model.objects.create_user(...)`.
+  Registration itself inverts the legacy flow: an official imports the SAGF roster, a
+  candidate signs in with Google, and the system matches the verified email against the
+  roster. No match, no entry.
+
+  **This ordering is deliberate and the dependency is why.** The spec's `Certification`
+  carries `judge · level · awarded_on · sitting · certified_by` — it points *at* a sitting.
+  Accounts depends on exams; build accounts first and that foreign key has nothing to
+  reference. Part A here needs no user at all.
+
+  **The cost, stated plainly: this app cannot enforce eligibility.** The spec requires that
+  a judge may sit an exam only if this year's roster permits that level *and* their
+  certification history supports it, with disagreements flagged to an official and any
+  override recording who made it and why. None of that exists here — a `Sitting` can be
+  created for any user against any exam. **The check belongs at sitting *creation*, in the
+  accounts plan**, not at `start_sitting`, because a pending sitting is the enrolment and an
+  ineligible enrolment should never be recorded in the first place.
 - **The overall category.** Four grades to one category is the rule in the spec's §2.6
   table. It needs all four aspect grades to exist first, which is Task 9's output.
 - **The candidate-facing runner.** The React island is the last plan. Part B produces the
