@@ -289,10 +289,15 @@ rhythmic/
 ├── exams/               # exam definitions, sittings, certification
 ├── scoring/             # plain Python. No Django import. No database.
 ├── frontend/            # Vite + React + TypeScript → static/
-├── tests/
+├── tests/               # one subdirectory per package above
 ├── compose.yaml
 └── pyproject.toml
 ```
+
+Tests are collected under a single `rhythmic/tests/`, one subdirectory per package —
+`tests/scoring/`, `tests/questions/`, `tests/exams/`, `tests/config/`. **`tests/` and
+every subdirectory need an `__init__.py`**; see the note under Layout in `CLAUDE.md`
+for the two distinct ways collection breaks without them.
 
 ### Why Django
 

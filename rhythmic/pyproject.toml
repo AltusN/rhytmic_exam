@@ -51,6 +51,3 @@ ignore = [
 [tool.setuptools]
 packages = ["scoring"]
 
-[tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings"
-pythonpath = ["."]

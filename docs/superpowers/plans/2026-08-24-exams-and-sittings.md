@@ -88,10 +88,11 @@ rhythmic/exams/
   freeze.py          start_sitting() — the snapshot
   marking.py         submit_sitting() — calls scoring/, stores what comes back
   admin.py
-rhythmic/tests/
-  test_exams_definition.py  test_exams_membership.py  test_exams_sitting.py
-  test_exams_freeze.py      test_exams_marking.py     test_exams_results.py
-  test_exams_admin.py
+rhythmic/tests/exams/
+  __init__.py            required — see the note under Layout in CLAUDE.md
+  test_definition.py     test_membership.py  test_sitting.py
+  test_tables.py         test_freeze.py      test_marking.py
+  test_results.py        test_admin.py
 ```
 
 **Why `models/` is a package here and a single file in `questions/`.** The questions app has
@@ -110,7 +111,7 @@ that boundary in the file list. If it turns out to be one flat file's worth of c
 **Files:**
 - Create: `exams/` (via `startapp`), `exams/models/__init__.py`
 - Modify: `config/settings.py`
-- Test: `tests/test_exams_definition.py`
+- Test: `tests/exams/test_definition.py`
 
 **Interfaces:**
 - Produces: an installed app labelled `exams`.
@@ -119,7 +120,8 @@ that boundary in the file list. If it turns out to be one flat file's worth of c
 
 `manage.py startapp exams` from `rhythmic/`. Then turn `models.py` into the package the
 file structure above describes — delete `models.py`, create `models/__init__.py`. Delete
-the generated `tests.py`; tests live in `rhythmic/tests/`.
+the generated `tests.py`; tests live in `rhythmic/tests/exams/`, which needs an
+`__init__.py`.
 
 - [ ] **Step 2: Register it**
 
@@ -158,7 +160,7 @@ import.
 **Files:**
 - Create: `exams/models/definition.py`, `exams/migrations/0001_initial.py` (generated)
 - Modify: `exams/models/__init__.py`
-- Test: `tests/test_exams_definition.py`
+- Test: `tests/exams/test_definition.py`
 
 **Interfaces:**
 - Produces: `Exam(level, year, kind)`; `ExamKind.THEORY`, `ExamKind.PRACTICAL` as a
@@ -226,7 +228,7 @@ two rounds on exactly this.
 - [ ] **Step 5: Sweep, lint, commit**
 
 Add `ordering-exam` and `uq-exam-level-year-kind` to `tools/mutation_sweep.py`, and add
-`tests/test_exams_definition.py` to its `TEST_PATHS`.
+`tests/exams/test_definition.py` to its `TEST_PATHS`.
 
 Subject: `feat(exams): add Exam with a certification year (F11)`
 Body: that the year is what makes recertification representable, and that legacy's
@@ -240,7 +242,7 @@ Body: that the year is what makes recertification representable, and that legacy
 
 **Files:**
 - Modify: `exams/models/definition.py`, `exams/models/__init__.py`
-- Test: `tests/test_exams_definition.py`
+- Test: `tests/exams/test_definition.py`
 
 **Interfaces:**
 - Consumes: `Exam` from Task 2.
@@ -315,7 +317,7 @@ Subject: `feat(exams): add ExamComponent, one per marked section`
 **Files:**
 - Modify: `exams/models/definition.py`
 - Create: `exams/tables.py`
-- Test: `tests/test_exams_tables.py`
+- Test: `tests/exams/test_tables.py`
 
 **Interfaces:**
 - Consumes: `ExamComponent` from Task 3; `scoring.MarkingTable`, `scoring.BandRow`,
@@ -395,7 +397,7 @@ precisely so no deploy is needed.
 **Files:**
 - Create: `exams/models/membership.py`
 - Modify: `exams/models/__init__.py`
-- Test: `tests/test_exams_membership.py`
+- Test: `tests/exams/test_membership.py`
 
 **Interfaces:**
 - Consumes: `ExamComponent`; `questions.models.Question`, `questions.models.PracticalItem`.
@@ -474,7 +476,7 @@ the first test to check it asserts on **identity**, not on counts alone.
 **Files:**
 - Create: `exams/models/sitting.py`
 - Modify: `exams/models/__init__.py`
-- Test: `tests/test_exams_sitting.py`
+- Test: `tests/exams/test_sitting.py`
 
 **Interfaces:**
 - Consumes: `Exam`; `settings.AUTH_USER_MODEL`.
@@ -562,7 +564,7 @@ off `Sitting`.
 **Files:**
 - Modify: `exams/models/sitting.py`
 - Create: `exams/freeze.py`
-- Test: `tests/test_exams_freeze.py`
+- Test: `tests/exams/test_freeze.py`
 
 **Interfaces:**
 - Consumes: `Sitting`, `ExamComponent`, the membership models.
@@ -670,7 +672,7 @@ copied rather than referenced so a later edit cannot regroup a finished result.
 **Files:**
 - Create: `exams/marking.py`
 - Modify: `exams/models/sitting.py`
-- Test: `tests/test_exams_marking.py`
+- Test: `tests/exams/test_marking.py`
 
 **Interfaces:**
 - Consumes: `SittingItem`, `exams.tables`, `scoring.mark_choice`, `scoring.mark_numeric`.
@@ -726,7 +728,7 @@ Subject: `feat(exams): mark a sitting at submission and store the marks (F1, F3,
 
 **Files:**
 - Modify: `exams/models/sitting.py`, `exams/marking.py`
-- Test: `tests/test_exams_results.py`
+- Test: `tests/exams/test_results.py`
 
 **Interfaces:**
 - Consumes: `SittingItem`, `scoring.score_component`, `scoring.grade`, `exams.tables`.
@@ -785,7 +787,7 @@ Subject: `feat(exams): store component percentages and grades at submission (F5)
 **Files:**
 - Create: `exams/admin.py`
 - Modify: `tools/mutation_sweep.py`
-- Test: `tests/test_exams_admin.py`
+- Test: `tests/exams/test_admin.py`
 
 **Interfaces:**
 - Consumes: everything above.

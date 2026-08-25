@@ -20,12 +20,12 @@ RHYTHMIC = pathlib.Path(__file__).resolve().parent.parent
 PYTHON = RHYTHMIC.parent / ".venv" / "bin" / "python"
 
 TEST_PATHS = [
-    "tests/test_questions_theory.py",
-    "tests/test_questions_practical.py",
-    "tests/test_questions_blocks.py",
-    "tests/test_questions_history.py",
-    "tests/test_questions_admin.py",
-    "tests/test_questions_preview.py",
+    "tests/questions/test_theory.py",
+    "tests/questions/test_practical.py",
+    "tests/questions/test_blocks.py",
+    "tests/questions/test_history.py",
+    "tests/questions/test_admin.py",
+    "tests/questions/test_preview.py",
 ]
 
 # (name, file, text to find, text to put in its place)

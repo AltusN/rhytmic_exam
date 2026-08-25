@@ -349,6 +349,58 @@ legacy/
   flask_backend/    the 2023 Flask app. Reference only. Do not modify or run.
 ```
 
+**Tests live in `rhythmic/tests/`, one subdirectory per package** — `tests/scoring/`,
+`tests/questions/`, `tests/exams/`, `tests/config/`. Reorganised 2026-08-25 from a flat
+`tests/` whose filenames carried the app as a prefix; the prefixes are gone, so it is
+`tests/questions/test_theory.py`, not `tests/test_questions_theory.py`.
+
+**Claude proposed putting each `tests/` inside its app instead, and that was wrong** —
+`.vscode/settings.json` runs pytest with `cwd` = `rhythmic` and `pytestArgs: ["tests"]`,
+so deleting `rhythmic/tests/` silently breaks VSCode's test discovery while the CLI
+suite still passes. Check that file before moving tests again.
+
+**`tests/` and every subdirectory need an `__init__.py`.** Two different failures
+otherwise, both reproduced in this tree rather than recalled:
+
+- **No `__init__.py` anywhere:** pytest's default `prepend` import mode names a module
+  by its bare filename, so `tests/scoring/test_smoke.py` and `tests/config/test_smoke.py`
+  collide — `import file mismatch`, which aborts collection rather than failing a test.
+- **Subdirectories marked but `tests/` not:** worse and less obvious. pytest inserts the
+  first unmarked ancestor on `sys.path`, so the module becomes `questions.test_theory`
+  and `questions` resolves to **the real app package**. Result:
+  `ModuleNotFoundError: No module named 'questions.test_theory'` on eight files at once.
+  The test directory name shadowing the package it tests is the trap here.
+
+**`tests/scoring/ruff.toml` re-applies the framework ban to scoring's own tests.**
+Ruff resolves the nearest config per file, so `tests/scoring/` cannot inherit
+`scoring/ruff.toml` — different subtree. Without that file, a scoring test could
+`import django` and nothing would object, which is a hole in exactly the boundary
+`scoring/` exists to hold. **Keep the two banned-api lists identical.** The Django test
+directories deliberately do not get it — verified with `ruff check --no-cache` in both
+places, and note ruff's cache will happily report a stale pass right after you add a
+config, so use `--no-cache` when checking that one.
+
+**One pytest config, and it is `pytest.ini` at the repository root** (2026-08-25).
+`rhythmic/pyproject.toml` no longer carries `[tool.pytest.ini_options]`; putting it back
+re-creates the split described below. Only a config at the root can see `legacy/` in
+order to exclude it, which is why the root won.
+
+- **pytest resolves its config by walking UP from the common ancestor of the arguments
+  and stopping at the first match** — the opposite of ruff, which resolves the *nearest*
+  config per file. While both files existed, a run from `rhythmic/` stopped at
+  `pyproject.toml` and a run from the root used `pytest.ini`, so the two agreed only by
+  luck. Verified after the change: root, `rhythmic/`, VSCode's invocation and a
+  single-file run all report `configfile: pytest.ini`.
+- **`norecursedirs` replaces pytest's defaults, it does not extend them.** The stock list
+  is therefore repeated in the file alongside `legacy`. It is load-bearing: with `legacy`
+  removed, `pytest .` from the root aborts collection with
+  `ModuleNotFoundError: No module named 'flask'`, because the venv no longer has Flask.
+- **`testpaths` is ignored the moment an argument is passed**, so it is a convenience for
+  bare runs and never a safety boundary. `norecursedirs` is the boundary.
+
+The `git add` lines in the two finished plans still name the old flat paths. Leave them —
+they record commits that were actually made, like the pre-convention commit messages.
+
 `legacy/` is kept for exactly two things: the exam media (117 images, 10 videos)
 and the type 1–5 templates to check new rendering against. **It gets deleted when
 the media is migrated and the block renderers are built** — that condition was

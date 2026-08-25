@@ -1,0 +1,18 @@
+# These are the tests for scoring/, so they are held to scoring/'s rule: no web
+# framework, no ORM. The ban cannot be inherited from scoring/ruff.toml — ruff
+# resolves the nearest config per file, and these files do not live under scoring/.
+#
+# Keep this list identical to scoring/ruff.toml. If the two drift, the tests stop
+# being a check on the boundary and become a hole in it.
+extend = "../../pyproject.toml"
+
+# Without this, isort treats THIS directory as the source root and stops seeing
+# `scoring` as first-party, so it demands `from scoring.types import ...` be merged
+# into the third-party block with pytest. `src` defaults to the config file's own
+# directory and is not inherited through `extend`.
+src = ["../.."]
+
+[lint.flake8-tidy-imports.banned-api]
+"django".msg = "scoring/ is framework-free; if a test needs Django, it is not a scoring test"
+"sqlalchemy".msg = "scoring/ touches no database; marking tables arrive as arguments"
+"flask".msg = "Flask lives in legacy/ only; new code imports no web framework"
