@@ -471,8 +471,8 @@ marking. **Six findings close in it** — F1 and F2 at the freeze, F3 and F4 at 
 the component percentage, F9 at membership, F10/F11/F12 at the two-exam split and the
 dated exam.
 
-**Next action: Task 1, creating the `exams` app.** Then accounts and the roster, then the
-React island last.
+**Task 1 landed in `f188aa4`; next action is Task 2, `Exam` — level, year, kind.**
+Then accounts and the roster, then the React island last.
 
 **`rhythmic/tools/mutation_sweep.py` exists and should be run at the end of every
 task from now on.** It breaks one claim at a time and checks that a test objects; a
