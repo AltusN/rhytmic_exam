@@ -9,4 +9,9 @@
 # `ruff check --fix` from here once reordered its imports and converted .format()
 # calls to f-strings across 25 files.
 
-extend-exclude = ["legacy"]
+# It also excludes *.md. `ruff format` reformats Python code blocks INSIDE markdown,
+# so a run from here rewrites the plans and the spec: it turned the settings snippet
+# `    "questions",` into `("questions",)` in the questions-app plan on 2026-08-25.
+# Those blocks are deliberately partial -- they are fragments to paste, not modules.
+
+extend-exclude = ["legacy", "*.md"]
