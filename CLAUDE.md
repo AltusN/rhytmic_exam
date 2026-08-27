@@ -504,7 +504,7 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Three plans finished: the scoring package (seven tasks), the Django skeleton
-(five) and the questions app (nine).** As of 2026-08-24, **142 tests pass** and both
+(five) and the questions app (nine).** As of 2026-08-27, **148 tests pass** and both
 `ruff check .` and `ruff format --check .` are clean. Run all three from `rhythmic/`.
 
 **Postgres must be running for the full suite to pass.** `docker compose up -d` from
@@ -523,8 +523,10 @@ marking. **Six findings close in it** — F1 and F2 at the freeze, F3 and F4 at 
 the component percentage, F9 at membership, F10/F11/F12 at the two-exam split and the
 dated exam.
 
-**Task 1 landed in `f188aa4`; next action is Task 2, `Exam` — level, year, kind.**
-Then accounts and the roster, then the React island last.
+**Tasks 1 and 2 landed** — `f188aa4` and `6dcf513`. `Exam` carries level, year and
+kind, with `uq_one_exam_per_level_year_kind` and `ck_exam_kind_is_valid`.
+**Next action is Task 3, `ExamComponent`.** Then accounts and the roster, then the
+React island last.
 
 **`rhythmic/tools/mutation_sweep.py` exists and should be run at the end of every
 task from now on.** It breaks one claim at a time and checks that a test objects; a
@@ -538,7 +540,26 @@ First run against the finished questions app, 2026-08-22: **20 mutants, 11 kille
 9 survived.** After Task 8, 2026-08-23: **21 mutants, 20 killed, 1 survived**. After
 Task 9, 2026-08-24: **23 mutants, 22 killed, 1 survived** — the survivor,
 `list_filter` on aspect, is the one Task 8 declared out of scope. Task 9 added the
-catalogue's first **template** mutant; nothing in the tool assumed Python.
+catalogue's first **template** mutant; nothing in the tool assumed Python. After
+Task 2 of the exams plan, 2026-08-27: **26 mutants, 25 killed, 1 survived**, the same
+survivor.
+
+**Mutate where the claim actually lives, and know which ones need a fresh database.**
+A `UniqueConstraint` or `CheckConstraint` is DDL: it must be mutated in the
+**migration**, because the test database is built from migrations and not from
+`models.py`. `Meta.ordering`, `default=`, `__str__` and `on_delete` produce no DDL, so
+they are mutated in the **model** — pointing an ordering mutant at a migration's
+`options` dict is unfalsifiable in both directions, and reported `UNAPPLIED` when it
+was tried on 2026-08-27.
+
+**The sweep used to run everything under `--reuse-db`, and that made migration mutants
+unfalsifiable** (fixed 2026-08-27, `8f4c345`). pytest-django reuses the existing test
+database and never re-applies migrations, so a mutated migration never reached the
+schema and came back `SURVIVED`. Verified on `Exam`'s unique constraint: same
+mutation, **6 passed** under `--reuse-db`, **2 failed** under `--create-db`. A false
+`SURVIVED` is the expensive direction — it reads as a gap in the suite and sends you
+to rewrite tests that were already correct. Mutants whose target path contains
+`migrations` now get `--create-db`; the rest keep `--reuse-db`.
 
 **`UNAPPLIED` is the sweep's most valuable line and the easiest to skim past.** It
 does not mean the claim is safe; it means the tool could not find the code to break,
