@@ -181,7 +181,14 @@ for model, tail in HISTORY_TAILS.items():
     )
 
 
-def run_tests() -> int:
+def run_tests(*, fresh_database: bool) -> int:
+    """Run the suite once. `fresh_database` rebuilds the test database first.
+
+    `--reuse-db` keeps the sweep fast, but pytest-django then never re-applies
+    migrations, so a mutated migration is invisible and its mutant is reported
+    SURVIVED when the tests would in fact have killed it. Any mutant that edits a
+    migration must therefore pay for `--create-db`.
+    """
     result = subprocess.run(
         [
             str(PYTHON),
@@ -191,7 +198,7 @@ def run_tests() -> int:
             "-q",
             "-x",
             "--no-header",
-            "--reuse-db",
+            "--create-db" if fresh_database else "--reuse-db",
             "-p",
             "no:cacheprovider",
         ],
@@ -213,7 +220,7 @@ def main() -> int:
             continue
         try:
             source.write_text(original.replace(before, after, 1))
-            returncode = run_tests()
+            returncode = run_tests(fresh_database="migrations" in relative_path)
         finally:
             source.write_text(original)
         if returncode == 0:
