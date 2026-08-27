@@ -26,6 +26,7 @@ TEST_PATHS = [
     "tests/questions/test_history.py",
     "tests/questions/test_admin.py",
     "tests/questions/test_preview.py",
+    "tests/exams/test_definition.py",
 ]
 
 # (name, file, text to find, text to put in its place)
@@ -162,6 +163,28 @@ MUTANTS = [
         "questions/admin.py",
         'list_filter = ("aspect",)',
         "",
+    ),
+    (
+        "ordering-exam",
+        "exams/models/definition.py",
+        'ordering = ["-year", "level", "kind"]',
+        "ordering = []",
+    ),
+    (
+        # Drops "year" from the key, so two exams a level apart in re-certification
+        # (same level, same kind, different year) collide instead of coexisting.
+        "uq-exam-level-year-kind",
+        "exams/migrations/0001_initial.py",
+        'fields=("level", "year", "kind"),\n                        name="uq_one_exam_per_level_year_kind",',
+        'fields=("level", "kind"),\n                        name="uq_one_exam_per_level_year_kind",',
+    ),
+    (
+        # level__gte=0 always holds for a PositiveSmallIntegerField, so this
+        # disables the check regardless of what kind is actually saved.
+        "ck-exam-kind-valid",
+        "exams/migrations/0001_initial.py",
+        'condition=models.Q(("kind__in", ["PRACTICAL", "THEORY"])),',
+        'condition=models.Q(("level__gte", 0)),',
     ),
 ]
 
