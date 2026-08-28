@@ -328,18 +328,39 @@ are what drift. A component that knows it is `DA` is a lookup; one that infers i
 that can disagree with itself.
 
 `Meta.constraints`: `UniqueConstraint(("exam", "position"))` named
-`uq_unique_component_position_per_exam`, and `UniqueConstraint(("exam", "aspect"))` with
-`condition=~Q(aspect="")` named `uq_one_component_per_aspect_per_exam` — a partial index, so
-the four theory components across four exams do not collide on the empty string.
+`uq_one_component_position_per_exam`, and `UniqueConstraint(("exam", "aspect"))` named
+`uq_one_component_per_aspect_per_exam`. Plain constraints, both of them.
+
+**Corrected 2026-08-27. This step used to specify `condition=~Q(aspect="")` on the second
+one, and that was wrong.** The stated reason was that "the theory components across several
+exams collide on the empty string" — they do not. `exam` is *in* the key, so two rows
+differing by exam differ as tuples whatever `aspect` holds. Verified with two probes against
+the constraint as written, with no condition:
+
+| probe | result |
+|---|---|
+| blank-aspect components in **different exams** | both save |
+| blank-aspect components in **the same exam** | refused |
+
+So the only thing the condition would change is whether one exam may hold several
+aspect-less components — and the domain says it may not: theory is one component, the
+practical is four, one per aspect. The plain constraint therefore states something true,
+and adding `condition=` would *loosen* it to permit a row that does not exist.
+
+The general tell, worth carrying to the rest of this plan: **if you cannot name a row the
+constraint would wrongly reject, the condition is buying nothing.** Contrast
+`uq_one_correct_option_per_question`, where partiality is essential because a question has
+many incorrect options and exactly one correct — there the excluded value genuinely repeats.
 
 `Meta.ordering = ["position"]`.
 
-- [ ] **Step 2: Migrate, read the DDL, confirm the partial index**
+- [ ] **Step 2: Migrate and read the DDL**
 
-`sqlmigrate` will show the second constraint as `CREATE UNIQUE INDEX ... WHERE`. Note it is
-an **index, not a constraint** — Postgres has no partial `UNIQUE` constraint, so it appears
-in `pg_indexes` and not in `pg_constraint`, exactly like
-`uq_one_correct_option_per_question`. That is why `docs/schema.html` documents it separately.
+All three constraints appear inline in `CREATE TABLE` as named `CONSTRAINT` clauses — two
+`UNIQUE`, one `CHECK` — because none of them is partial. Confirm the `CHECK` reads
+`"marking_scheme" IN ('CHOICE', 'NUMERIC')`, and note the `FOREIGN KEY` arrives as a
+separate `ALTER TABLE` marked `DEFERRABLE INITIALLY DEFERRED`, which is Django's default and
+the reason deferred constraints are invisible to `pytest-django` — see the decisions log.
 
 - [ ] **Step 3: Write the failing tests**
 
@@ -347,27 +368,35 @@ in `pg_indexes` and not in `pg_constraint`, exactly like
 |---|---|
 | `test_a_theory_exam_has_one_component` | one component, `marking_scheme=CHOICE`, blank aspect |
 | `test_a_practical_exam_has_four_components_one_per_aspect` | DA/DB/AV/EX all save against one exam |
-| `test_a_second_component_for_the_same_aspect_is_refused` | `IntegrityError`, match the index name |
-| `test_two_theory_components_across_exams_do_not_collide_on_blank_aspect` | the partial-index marker: without `condition=`, this fails |
+| `test_a_second_component_for_the_same_aspect_is_refused` | `IntegrityError`, `match="uq_one_component_per_aspect_per_exam"` |
+| `test_a_second_component_in_the_same_position_is_refused` | `IntegrityError`, `match="uq_one_component_position_per_exam"` |
+| `test_marking_scheme_is_not_silently_choice` | `IntegrityError`, `match="ck_component_marking_scheme_is_valid"`, on a component created with **no** `marking_scheme` |
 | `test_deleting_an_exam_deletes_its_components` | `CASCADE`, asserted by reload |
-| `test_components_are_ordered_by_position` | bare queryset |
+| `test_components_are_ordered_by_position` | bare queryset, creation order disagreeing with expected order |
 
-The fourth is the one that earns its place. Write it and then delete `condition=~Q(...)`
-from the model to watch it fail — a partial unique index whose partiality is untested is
-a full unique index nobody noticed.
+**Match on the constraint name in every `raises`.** This model has three constraints on one
+table, so a bare `pytest.raises(IntegrityError)` can pass because the wrong one fired —
+the same reason Task 2 needed it, one degree worse.
+
+`test_marking_scheme_is_not_silently_choice` must **omit** `marking_scheme` rather than pass
+an invalid string. Task 2 established why: the bug is Django supplying `''` for a value you
+never gave, and a garbage string never exercises that path. Note `varchar(7)` is exact, so an
+over-long invalid value would be rejected on column width before the `CHECK` ever runs.
 
 - [ ] **Step 4: Run red, implement, green**
 
 - [ ] **Step 5: Sweep, lint, commit**
 
-New mutants: `ordering-component`, `uq-component-aspect-partial` (drop the `condition=`),
-`ondelete-component-exam`, `ck-component-marking-scheme`. The first and third are model
-mutants; the two constraint/index ones must be applied to the **migration** and will run
+New mutants: `ordering-component`, `uq-component-aspect` (drop `aspect` from the key),
+`uq-component-position` (drop `position` from the key), `ondelete-component-exam`
+(`CASCADE` → `PROTECT`), `ck-component-marking-scheme`. The first and fourth are model
+mutants; the three constraint ones must be applied to the **migration** and will run
 under `--create-db` — see the fresh-database rule in `CLAUDE.md`.
 
 Subject: `feat(exams): add ExamComponent, one per marked section`
 
-**Review gate.** Claude mutates the `condition=` off the partial index and reports.
+**Review gate.** Claude mutates each constraint off the migration and the `on_delete` off
+the model, and reports which tests object.
 
 ---
 
