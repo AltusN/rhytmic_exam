@@ -309,9 +309,19 @@ for the practical.
 component has no meaning without its exam, the same argument as `Option` under `Question`.
 
 `name` a `CharField` — what a candidate sees on their result. `position` a
-`PositiveSmallIntegerField`. `marking_scheme` a `CharField` with `choices`, no default.
+`PositiveSmallIntegerField`. `marking_scheme` a `CharField` with `choices`, no default,
+**and a `CheckConstraint`** — `models.Q(marking_scheme__in=MarkingScheme.values)`, named
+`ck_component_marking_scheme_is_valid` (decided 2026-08-27, same argument as
+`ck_exam_kind_is_valid` in Task 2: `choices=` generates no DDL, so without a check Django
+writes `''` and Postgres accepts it). Task 4 builds a marking table off this field, so a
+component that is neither `CHOICE` nor `NUMERIC` is a component nothing can mark.
 
-`aspect` a `CharField` using **`questions.models.Aspect.choices`**, `blank=True` for theory.
+`aspect` a `CharField` using **`questions.models.Aspect.choices`**, `blank=True` for theory,
+and **deliberately no check constraint** — `''` is a legitimate aspect here, because theory
+has none. Note the asymmetry with the field above it: on `marking_scheme` blank is a bug, on
+`aspect` blank is meaningful, and they sit two lines apart. Any check on `aspect` would have
+to read `aspect__in=Aspect.values` **or** `aspect=""`, which is why the partial unique index
+below carries `condition=~Q(aspect="")` rather than the field carrying a check.
 Store it rather than inferring it from the members' aspects: apparatus and aspect are
 independent dimensions read *both* ways, and `CLAUDE.md` records that ordering and inference
 are what drift. A component that knows it is `DA` is a lookup; one that infers it is a scan
@@ -351,7 +361,9 @@ a full unique index nobody noticed.
 - [ ] **Step 5: Sweep, lint, commit**
 
 New mutants: `ordering-component`, `uq-component-aspect-partial` (drop the `condition=`),
-`ondelete-component-exam`.
+`ondelete-component-exam`, `ck-component-marking-scheme`. The first and third are model
+mutants; the two constraint/index ones must be applied to the **migration** and will run
+under `--create-db` — see the fresh-database rule in `CLAUDE.md`.
 
 Subject: `feat(exams): add ExamComponent, one per marked section`
 
