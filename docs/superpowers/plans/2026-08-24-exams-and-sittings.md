@@ -425,6 +425,12 @@ this task is what lets an official express it without a deploy.
 
 - [ ] **Step 1: Write the row models**
 
+**First, add `"django.contrib.postgres"` to `INSTALLED_APPS`** (found 2026-08-27). Without
+it `ArrayField` fails a system check outright — `postgres.E005: 'django.contrib.postgres'
+must be in INSTALLED_APPS in order to use ArrayField` — so `makemigrations` refuses before
+anything else happens. It goes with the other `django.contrib.*` entries, above
+`simple_history`. The column type is `numeric(m, n)[]` once it is there.
+
 `MarkingTableRow(component, expert_minimum, percentages)` — `expert_minimum` a
 `DecimalField`, `percentages` an `ArrayField` of `DecimalField` (Postgres-only, from
 `django.contrib.postgres.fields`; this project is Postgres-only and says so).
@@ -437,9 +443,21 @@ rather than producing a silent wrong mark.
 `GradeBandRow(component, name, minimum)` — `minimum` a `DecimalField`, inclusive.
 `UniqueConstraint(("component", "name"))`.
 
-Both get `Meta.ordering` on the numeric field, ascending. `MarkingTable.__post_init__`
-**requires rows sorted by `expert_minimum` ascending** and raises otherwise, so the model's
-ordering is load-bearing rather than cosmetic — say that in a comment.
+Both get `Meta.ordering` on the numeric field, ascending — **but for different reasons, and
+only one of them is load-bearing.**
+
+`MarkingTableRow.Meta.ordering` is enforced downstream: `MarkingTable.__post_init__`
+**raises** on rows not sorted by `expert_minimum` ascending (`scoring/types.py:39-42`),
+because `lookup` walks them positionally via `floor_band_index` and would otherwise return
+the wrong cell in silence. Say that in a comment.
+
+`GradeBandRow.Meta.ordering` has no such consumer. `grade(*, percentage, bands)` collects
+every qualifying band and takes the highest minimum, and its docstring says outright that
+"ordering of the bands is irrelevant". **Kept anyway, decided 2026-08-27, for display** — an
+official reading a band set in arbitrary order is worse than the test is trivial — so it
+needs a test of its own: assert the bare queryset comes back ascending by `minimum`.
+Without that test the `ordering-gradebandrow` mutant cannot die, and it would be a mutant
+that reports a gap where none exists.
 
 - [ ] **Step 2: Write `exams/tables.py`**
 
@@ -458,7 +476,8 @@ per row.
 | `test_a_two_dimensional_table_builds` | two rows with different `expert_minimum`; `lookup` picks the right row |
 | `test_rows_out_of_order_raise` | insert rows so the queryset would be descending without `Meta.ordering`; assert `ValueError` when ordering is removed |
 | `test_a_row_with_the_wrong_number_of_percentages_raises` | `MarkingTable.__post_init__`'s length check |
-| `test_difficulty_and_artistry_bands_differ` | two components, 80 vs 90 minimum for Excellent; `grade(Decimal("85"), ...)` differs between them |
+| `test_difficulty_and_artistry_bands_differ` | two components, 80 vs 90 minimum for Excellent; `grade(percentage=Decimal("85"), bands=...)` differs between them |
+| `test_grade_bands_are_ordered_by_minimum` | bare queryset ascending, creation order disagreeing — the only thing that can kill `ordering-gradebandrow` |
 
 That last test is the one worth writing carefully: it must build **both** band sets and show
 the same percentage grading differently. A test that builds one set proves nothing about
@@ -469,7 +488,8 @@ bands being data.
 - [ ] **Step 5: Sweep, lint, commit**
 
 New mutants: `ordering-markingtablerow` (dropping it must break the sorted-rows check),
-`ordering-gradebandrow`.
+`ordering-gradebandrow` (killed only by the queryset test above — model mutants both, since
+`Meta.ordering` produces no DDL).
 
 Subject: `feat(exams): load marking tables and grade bands from rows`
 Body: that FIG republishes both every cycle, and that `scoring/` takes them as arguments
