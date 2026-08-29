@@ -440,6 +440,30 @@ an `ArrayField` of `DecimalField`. `MarkingTable.__post_init__` validates that e
 `percentages` has the same length as `difference_steps`, so a mismatch raises at build time
 rather than producing a silent wrong mark.
 
+**Decided 2026-08-27: `blank=True, default=list`, plus a `CheckConstraint` tying it to
+`marking_scheme`.** A theory component is marked by `mark_choice` and has no marking table
+at all, so requiring `difference_steps` there forces a value that means nothing. But leaving
+it merely optional lets a `NUMERIC` component be saved with no steps, and that only fails
+much later — when someone tries to mark a candidate. So the pairing is a schema fact:
+
+```python
+models.CheckConstraint(
+    condition=(
+        Q(marking_scheme=MarkingScheme.NUMERIC, difference_steps__len__gt=0)
+        | Q(marking_scheme=MarkingScheme.CHOICE, difference_steps__len=0)
+    ),
+    name="ck_component_steps_match_marking_scheme",
+)
+```
+
+Django renders `__len` as `coalesce(array_length(...), 0)`, verified. Note `default=list` is
+not a marking table expressed as a Python literal — it is *empty*, which is the same
+distinction `to_decimal` draws between a blank answer and an unreadable one.
+
+**This is the first constraint in the plan that spans two fields**, and it is what finally
+connects `marking_scheme` to something. Compare `kind` and `aspect`, which are still
+unconnected across tables — a theory `Exam` with a `DA` component remains representable.
+
 `GradeBandRow(component, name, minimum)` — `minimum` a `DecimalField`, inclusive.
 `UniqueConstraint(("component", "name"))`.
 
@@ -479,6 +503,13 @@ per row.
 | `test_difficulty_and_artistry_bands_differ` | two components, 80 vs 90 minimum for Excellent; `grade(percentage=Decimal("85"), bands=...)` differs between them |
 | `test_grade_bands_are_ordered_by_minimum` | bare queryset ascending, creation order disagreeing — the only thing that can kill `ordering-gradebandrow` |
 
+Two more belong in `tests/exams/test_definition.py`, since the constraint is on
+`ExamComponent`: `test_a_choice_component_may_not_have_difference_steps` and
+`test_a_numeric_component_must_have_difference_steps`, both matching on
+`ck_component_steps_match_marking_scheme`. Adding `difference_steps` also breaks the seven
+Task 3 tests that create components — theory ones now omit the field, practical ones supply
+a real list.
+
 That last test is the one worth writing carefully: it must build **both** band sets and show
 the same percentage grading differently. A test that builds one set proves nothing about
 bands being data.
@@ -489,7 +520,8 @@ bands being data.
 
 New mutants: `ordering-markingtablerow` (dropping it must break the sorted-rows check),
 `ordering-gradebandrow` (killed only by the queryset test above — model mutants both, since
-`Meta.ordering` produces no DDL).
+`Meta.ordering` produces no DDL), `ck-component-steps-match-scheme` and
+`uq-row-expert-minimum` (migration mutants, `--create-db`).
 
 Subject: `feat(exams): load marking tables and grade bands from rows`
 Body: that FIG republishes both every cycle, and that `scoring/` takes them as arguments

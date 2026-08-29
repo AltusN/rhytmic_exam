@@ -1,3 +1,4 @@
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 from questions.models import Aspect
@@ -58,6 +59,13 @@ class ExamComponent(models.Model):
         blank=True,
         help_text="The aspect of the exam component i.e. 'DA' or '' if theory",
     )
+    difference_steps = ArrayField(
+        models.DecimalField(
+            max_digits=4,
+            decimal_places=2,
+            help_text="The difference step for this component",
+        )
+    )
 
     class Meta:
         ordering = ["position"]
@@ -78,4 +86,63 @@ class ExamComponent(models.Model):
         return f"{self.exam} - {self.name} - {self.position} - {self.marking_scheme}"
 
 
-__all__ = ["Exam", "ExamKind", "ExamComponent", "MarkingScheme"]
+class MarkingTableRow(models.Model):
+    component = models.ForeignKey(
+        ExamComponent, on_delete=models.CASCADE, related_name="marking_rows"
+    )
+    expert_minimum = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        help_text="The expert minimum for this marking table row",
+    )
+    percentages = ArrayField(
+        models.DecimalField(
+            max_digits=5,
+            decimal_places=2,
+            help_text="The percentage for this marking table row",
+        )
+    )
+
+    class Meta:
+        # load-bearing MarkingTable.__post_init__ raises ValueError if not ordered
+        # because lookup walks them positively through floor_band_index
+        ordering = ["expert_minimum"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["component", "expert_minimum"],
+                name="uq_one_row_per_expert_minimum_per_component",
+            ),
+        ]
+
+
+class GradeBandRow(models.Model):
+    component = models.ForeignKey(
+        ExamComponent, on_delete=models.CASCADE, related_name="grade_bands"
+    )
+    name = models.CharField(
+        max_length=50,
+        help_text="The name of the grade band row i.e 'Excellent' or 'Good'",
+    )
+    minimum = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        help_text="The minimum value for this grade band including the lower bound",
+    )
+
+    class Meta:
+        ordering = ["minimum"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["component", "name"], name="uq_one_band_per_name_per_component"
+            )
+        ]
+
+
+__all__ = [
+    "Exam",
+    "ExamKind",
+    "ExamComponent",
+    "MarkingScheme",
+    "MarkingTableRow",
+    "GradeBandRow",
+]
