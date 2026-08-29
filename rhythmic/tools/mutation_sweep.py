@@ -186,6 +186,42 @@ MUTANTS = [
         'condition=models.Q(("kind__in", ["PRACTICAL", "THEORY"])),',
         'condition=models.Q(("level__gte", 0)),',
     ),
+    (
+        "ordering-component",
+        "exams/models/definition.py",
+        'ordering = ["position"]',
+        "ordering = []",
+    ),
+    (
+        # A component has no meaning without its exam. Under PROTECT the exam
+        # cannot be deleted at all, so the cascade test stops seeing an empty table.
+        "ondelete-component-exam",
+        "exams/models/definition.py",
+        'on_delete=models.CASCADE, related_name="components"',
+        'on_delete=models.PROTECT, related_name="components"',
+    ),
+    (
+        # Swaps the key onto a column the tests vary freely, so the constraint
+        # still exists and still never fires.
+        "uq-component-position",
+        "exams/migrations/0002_examcomponent.py",
+        'fields=("exam", "position"),\n                        name="uq_one_component_position_per_exam",',
+        'fields=("exam", "name"),\n                        name="uq_one_component_position_per_exam",',
+    ),
+    (
+        "uq-component-aspect",
+        "exams/migrations/0002_examcomponent.py",
+        'fields=("exam", "aspect"),\n                        name="uq_one_component_per_aspect_per_exam",',
+        'fields=("exam", "name"),\n                        name="uq_one_component_per_aspect_per_exam",',
+    ),
+    (
+        # position__gte=0 always holds, so the check passes whatever marking
+        # scheme is stored -- including the '' Django writes for an unset field.
+        "ck-component-marking-scheme",
+        "exams/migrations/0002_examcomponent.py",
+        '("marking_scheme__in", ["CHOICE", "NUMERIC"])',
+        '("position__gte", 0)',
+    ),
 ]
 
 HISTORY_TAILS = {

@@ -1,3 +1,3 @@
-from exams.models.definition import Exam, ExamKind
+from exams.models.definition import Exam, ExamComponent, ExamKind, MarkingScheme
 
-__all__ = ["Exam", "ExamKind"]
+__all__ = ["Exam", "ExamKind", "ExamComponent", "MarkingScheme"]
