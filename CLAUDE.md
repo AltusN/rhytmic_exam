@@ -504,7 +504,7 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Three plans finished: the scoring package (seven tasks), the Django skeleton
-(five) and the questions app (nine).** As of 2026-08-27, **148 tests pass** and both
+(five) and the questions app (nine).** As of 2026-08-30, **163 tests pass** and both
 `ruff check .` and `ruff format --check .` are clean. Run all three from `rhythmic/`.
 
 **Postgres must be running for the full suite to pass.** `docker compose up -d` from
@@ -523,10 +523,16 @@ marking. **Six findings close in it** — F1 and F2 at the freeze, F3 and F4 at 
 the component percentage, F9 at membership, F10/F11/F12 at the two-exam split and the
 dated exam.
 
-**Tasks 1 and 2 landed** — `f188aa4` and `6dcf513`. `Exam` carries level, year and
-kind, with `uq_one_exam_per_level_year_kind` and `ck_exam_kind_is_valid`.
-**Next action is Task 3, `ExamComponent`.** Then accounts and the roster, then the
-React island last.
+**Part A is half done — Tasks 1 to 4 landed**, `f188aa4`, `6dcf513`, `f8c1cb9`, `5b24459`.
+`Exam` carries level, year and kind; `ExamComponent` is one per marked section;
+`MarkingTableRow` and `GradeBandRow` hold the tables as rows, with `exams/tables.py`
+adapting them into `scoring/`'s frozen dataclasses. **Next action is Task 5, membership —
+where F9 closes.** Then accounts and the roster, then the React island last.
+
+**`exams/tables.py` is the only module in the tree importing both `scoring` and Django**,
+and that is a property to preserve rather than a coincidence. `scoring/ruff.toml` bans the
+frameworks inside `scoring/`; nothing bans `scoring` from the Django side, so the boundary
+in that direction is held by keeping the join in one file where a reviewer can see it.
 
 **`rhythmic/tools/mutation_sweep.py` exists and should be run at the end of every
 task from now on.** It breaks one claim at a time and checks that a test objects; a
@@ -542,7 +548,26 @@ Task 9, 2026-08-24: **23 mutants, 22 killed, 1 survived** — the survivor,
 `list_filter` on aspect, is the one Task 8 declared out of scope. Task 9 added the
 catalogue's first **template** mutant; nothing in the tool assumed Python. After
 Task 2 of the exams plan, 2026-08-27: **26 mutants, 25 killed, 1 survived**, the same
-survivor.
+survivor. After Task 4, 2026-08-30: **37 mutants, 36 killed, 1 survived**, still the same
+one. The sweep now takes minutes rather than seconds, because each migration mutant rebuilds
+the test database.
+
+**Three near-misses in Task 4, all the same shape: the test's inputs matched what the
+mutation would produce, so the assertion could not see it.**
+
+- Rows inserted in *ascending* `expert_minimum` passed with `Meta.ordering` deleted — for a
+  small unordered scan Postgres returns insertion order, which already matched. Inserting
+  them descending is what makes the mutant die, at `scoring/types.py:40`.
+- A `lookup` on the **middle** column of three survived a mutation reversing the
+  percentages: index 1 is a fixed point of a 3-element reversal. Any other column kills it.
+- A test named for grade bands asserted on marking-table lookups instead, so
+  `build_grade_bands` could `return []` with the whole suite green.
+
+The defence is mechanical: **make the test's inputs disagree with the order or shape the
+mutation produces**, and pair a behavioural assertion through the public entry point with a
+structural one on what was built. The structural assertion — comparing a whole row against
+a tuple literal — killed both the reversal and a `list`-instead-of-`tuple` mutation that has
+no behavioural symptom at all.
 
 **Mutate where the claim actually lives, and know which ones need a fresh database.**
 A `UniqueConstraint` or `CheckConstraint` is DDL: it must be mutated in the
