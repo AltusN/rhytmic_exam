@@ -6,6 +6,10 @@ from exams.models.definition import (
     MarkingScheme,
     MarkingTableRow,
 )
+from exams.models.membership import (
+    ComponentPracticalItem,
+    ComponentQuestion,
+)
 
 __all__ = [
     "Exam",
@@ -14,4 +18,6 @@ __all__ = [
     "MarkingScheme",
     "MarkingTableRow",
     "GradeBandRow",
+    "ComponentQuestion",
+    "ComponentPracticalItem",
 ]
