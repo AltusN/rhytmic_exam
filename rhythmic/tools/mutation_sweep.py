@@ -19,17 +19,41 @@ import sys
 RHYTHMIC = pathlib.Path(__file__).resolve().parent.parent
 PYTHON = RHYTHMIC.parent / ".venv" / "bin" / "python"
 
-TEST_PATHS = [
+# Cheapest first. pytest honours argument order, and every mutant runs under `-x`,
+# so a mutant killed by a cheap file never pays for the expensive ones. Measured
+# 2026-08-30: admin 3.9s and preview 2.4s, every other file 0.3-0.8s, of which
+# 0.56s is fixed interpreter and Django startup shared by all of them.
+QUESTIONS_TESTS = [
     "tests/questions/test_theory.py",
     "tests/questions/test_practical.py",
     "tests/questions/test_blocks.py",
     "tests/questions/test_history.py",
-    "tests/questions/test_admin.py",
     "tests/questions/test_preview.py",
-    "tests/exams/test_definition.py",
-    "tests/exams/test_tables.py",
-    "tests/exams/test_membership.py",
+    "tests/questions/test_admin.py",
 ]
+EXAMS_TESTS = [
+    "tests/exams/test_membership.py",
+    "tests/exams/test_tables.py",
+    "tests/exams/test_definition.py",
+]
+TEST_PATHS = EXAMS_TESTS + QUESTIONS_TESTS
+
+# Which tests can plausibly kill a mutant, by the app its target lives in. Scoping
+# is what makes the sweep quick: an exams mutant took 6.2s against everything and
+# 0.9s against tests/exams alone.
+#
+# Narrowing is only safe in one direction. A KILLED verdict is trustworthy whatever
+# the scope -- some test objected, and that is a fact about the suite. A SURVIVED
+# verdict is not: the killing test may simply not have run. So a mutant that
+# survives its scope is re-run against everything before being reported, which
+# costs a full run only for the rare survivor.
+SCOPES = {"exams": EXAMS_TESTS, "questions": QUESTIONS_TESTS}
+
+
+def scope_for(relative_path: str) -> list[str]:
+    app = relative_path.split("/", 1)[0]
+    return SCOPES.get(app, TEST_PATHS)
+
 
 # (name, file, text to find, text to put in its place)
 #
@@ -302,8 +326,8 @@ for model, tail in HISTORY_TAILS.items():
     )
 
 
-def run_tests(*, fresh_database: bool) -> int:
-    """Run the suite once. `fresh_database` rebuilds the test database first.
+def run_tests(paths: list[str], *, fresh_database: bool) -> int:
+    """Run `paths` once. `fresh_database` rebuilds the test database first.
 
     `--reuse-db` keeps the sweep fast, but pytest-django then never re-applies
     migrations, so a mutated migration is invisible and its mutant is reported
@@ -315,7 +339,7 @@ def run_tests(*, fresh_database: bool) -> int:
             str(PYTHON),
             "-m",
             "pytest",
-            *TEST_PATHS,
+            *paths,
             "-q",
             "-x",
             "--no-header",
@@ -341,7 +365,12 @@ def main() -> int:
             continue
         try:
             source.write_text(original.replace(before, after, 1))
-            returncode = run_tests(fresh_database="migrations" in relative_path)
+            fresh = "migrations" in relative_path
+            scope = scope_for(relative_path)
+            returncode = run_tests(scope, fresh_database=fresh)
+            if returncode == 0 and scope is not TEST_PATHS:
+                # Survived its scope. Confirm against everything before believing it.
+                returncode = run_tests(TEST_PATHS, fresh_database=fresh)
         finally:
             source.write_text(original)
         if returncode == 0:
