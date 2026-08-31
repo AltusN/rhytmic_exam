@@ -112,6 +112,29 @@ def test_a_theory_exam_has_one_component():
 
 
 @pytest.mark.django_db
+def test_difference_steps_defaults_to_empty_when_omitted():
+    # default=list belongs on the ArrayField itself, not on its base_field:
+    # a per-element default is meaningless. Omitting the kwarg entirely is
+    # what the base_field placement failed at, with a NOT NULL violation.
+    exam = Exam.objects.create(
+        kind=ExamKind.THEORY,
+        level=1,
+        year=2023,
+    )
+    component = ExamComponent.objects.create(
+        exam=exam,
+        name="Theory Component",
+        position=1,
+        marking_scheme=MarkingScheme.CHOICE,
+        aspect="",
+    )
+
+    component.refresh_from_db()
+
+    assert component.difference_steps == []
+
+
+@pytest.mark.django_db
 def test_a_practical_exam_has_four_components_per_aspect():
     exam = Exam.objects.create(
         kind=ExamKind.PRACTICAL,

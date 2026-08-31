@@ -64,9 +64,9 @@ class ExamComponent(models.Model):
             max_digits=4,
             decimal_places=2,
             help_text="The difference step for this component",
-            blank=True,
-            default=list,
-        )
+        ),
+        blank=True,
+        default=list,
     )
 
     class Meta:
