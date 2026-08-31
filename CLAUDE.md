@@ -504,7 +504,7 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Three plans finished: the scoring package (seven tasks), the Django skeleton
-(five) and the questions app (nine).** As of 2026-08-30, **163 tests pass** and both
+(five) and the questions app (nine).** As of 2026-08-30, **169 tests pass** and both
 `ruff check .` and `ruff format --check .` are clean. Run all three from `rhythmic/`.
 
 **Postgres must be running for the full suite to pass.** `docker compose up -d` from
@@ -523,11 +523,26 @@ marking. **Six findings close in it** — F1 and F2 at the freeze, F3 and F4 at 
 the component percentage, F9 at membership, F10/F11/F12 at the two-exam split and the
 dated exam.
 
-**Part A is half done — Tasks 1 to 4 landed**, `f188aa4`, `6dcf513`, `f8c1cb9`, `5b24459`.
-`Exam` carries level, year and kind; `ExamComponent` is one per marked section;
+**Part A is finished — Tasks 1 to 5 landed**, `f188aa4`, `6dcf513`, `f8c1cb9`, `5b24459`,
+`56b834b`. `Exam` carries level, year and kind; `ExamComponent` is one per marked section;
 `MarkingTableRow` and `GradeBandRow` hold the tables as rows, with `exams/tables.py`
-adapting them into `scoring/`'s frozen dataclasses. **Next action is Task 5, membership —
-where F9 closes.** Then accounts and the roster, then the React island last.
+adapting them into `scoring/`'s frozen dataclasses; `ComponentQuestion` and
+`ComponentPracticalItem` make membership explicit rows. The plan calls Part A
+independently shippable. **Next action is Part B, Task 6, `Sitting`.** Then accounts and
+the roster, then the React island last.
+
+**F9 is closed, and closed by absence.** There is no level field on a membership row and no
+comparison to a candidate's level anywhere — selection is "the component's members", so
+legacy's `exam_level == user.level` has nothing to be written against. F10, F11 and F12
+went with the two-exam split and the dated exam. What remains for Part B is F1 and F2 at
+the freeze, F3 and F4 at marking, and F5 at the component percentage.
+
+**Still unguarded, and worth knowing before Part B.** `Exam.kind` and `ExamComponent.aspect`
+are unconnected: a `THEORY` exam with a `DA` component is representable and nothing objects,
+because a Postgres `CHECK` cannot reach across tables. `ExamComponent.marking_scheme` and
+`difference_steps` *are* paired, by `ck_component_steps_match_marking_scheme` — the first
+constraint in this app spanning two fields. And `level`/`year` accept `0`, since
+`PositiveSmallIntegerField` only bounds them below.
 
 **`exams/tables.py` is the only module in the tree importing both `scoring` and Django**,
 and that is a property to preserve rather than a coincidence. `scoring/ruff.toml` bans the
@@ -549,8 +564,19 @@ Task 9, 2026-08-24: **23 mutants, 22 killed, 1 survived** — the survivor,
 catalogue's first **template** mutant; nothing in the tool assumed Python. After
 Task 2 of the exams plan, 2026-08-27: **26 mutants, 25 killed, 1 survived**, the same
 survivor. After Task 4, 2026-08-30: **37 mutants, 36 killed, 1 survived**, still the same
-one. The sweep now takes minutes rather than seconds, because each migration mutant rebuilds
-the test database.
+one. After Task 5, 2026-08-30: **40 mutants, 39 killed, 1 survived**, still the same one.
+
+**The sweep scopes each mutant to its app's tests, cheapest file first** (`86d24a4`). It ran
+everything for every mutant and had started exceeding two minutes. The cost turned out to be
+test selection, not the database — `--create-db` is only 0.6s dearer than `--reuse-db`, while
+`test_admin` is 3.9s and `test_preview` 2.4s against 0.3-0.8s for every other file. Scoping
+took an exams mutant from 6.2s to 0.7s and the whole run to 82s, verdicts unchanged.
+
+**A mutant that survives its scope is re-run against everything before being reported**, and
+that guard is the point. A KILLED verdict holds whatever the scope, because a test objected;
+a SURVIVED verdict does not, because the killing test may not have run. Not parallelised
+deliberately: the sweep mutates files in the working tree, so concurrent workers would each
+need a git worktree and their own test database.
 
 **Three near-misses in Task 4, all the same shape: the test's inputs matched what the
 mutation would produce, so the assertion could not see it.**
