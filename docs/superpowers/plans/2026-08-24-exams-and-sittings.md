@@ -497,8 +497,7 @@ per row.
 | test | asserts |
 |---|---|
 | `test_the_legacy_single_row_scheme_builds` | one row, columns at 0.05 intervals; the built table's `lookup` reproduces a known cell |
-| `test_a_two_dimensional_table_builds` | two rows with different `expert_minimum`; `lookup` picks the right row |
-| `test_rows_out_of_order_raise` | insert rows so the queryset would be descending without `Meta.ordering`; assert `ValueError` when ordering is removed |
+| `test_a_two_dimensional_table_builds` | two rows with different `expert_minimum`; `lookup` picks the right row — **and the rows are inserted descending**, see below |
 | `test_a_row_with_the_wrong_number_of_percentages_raises` | `MarkingTable.__post_init__`'s length check |
 | `test_difficulty_and_artistry_bands_differ` | two components, 80 vs 90 minimum for Excellent; `grade(percentage=Decimal("85"), bands=...)` differs between them |
 | `test_grade_bands_are_ordered_by_minimum` | bare queryset ascending, creation order disagreeing — the only thing that can kill `ordering-gradebandrow` |
@@ -513,6 +512,24 @@ a real list.
 That last test is the one worth writing carefully: it must build **both** band sets and show
 the same percentage grading differently. A test that builds one set proves nothing about
 bands being data.
+
+**`test_rows_out_of_order_raise` was dropped, 2026-08-27.** It could not be written as
+named: with `Meta.ordering` in place the queryset always comes back sorted, so
+`build_marking_table` never sees unsorted rows and the `ValueError` never fires. The claim
+belongs inside `test_a_two_dimensional_table_builds` instead — **insert the rows with
+descending `expert_minimum`**, so the table only builds if the ordering sorts them.
+
+That insert order is load-bearing and was found the hard way. Written ascending, the test
+passed with `Meta.ordering` deleted, because Postgres returns insertion order for a small
+unordered scan and insertion order already matched. Inserted descending, deleting the
+ordering fails at `scoring/types.py:40` — "Rows must be sorted by expert_minimum in
+ascending order". Say so in a comment next to the inserts, or someone will tidy them back
+into order.
+
+**The general rule, worth applying to every test in this plan:** make the test's inputs
+disagree with the order or shape the mutation would produce. Two instances hit in this task
+alone — creation order matching expected order, and a `lookup` on the middle column of three,
+where reversing the percentages is a fixed point and the assertion cannot see it.
 
 - [ ] **Step 4: Run red, implement, green**
 
