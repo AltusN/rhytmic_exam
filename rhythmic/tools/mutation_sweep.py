@@ -27,6 +27,7 @@ TEST_PATHS = [
     "tests/questions/test_admin.py",
     "tests/questions/test_preview.py",
     "tests/exams/test_definition.py",
+    "tests/exams/test_tables.py",
 ]
 
 # (name, file, text to find, text to put in its place)
@@ -221,6 +222,44 @@ MUTANTS = [
         "exams/migrations/0002_examcomponent.py",
         '("marking_scheme__in", ["CHOICE", "NUMERIC"])',
         '("position__gte", 0)',
+    ),
+    (
+        "ordering-markingtablerow",
+        "exams/models/definition.py",
+        'ordering = ["expert_minimum"]',
+        "ordering = []",
+    ),
+    (
+        "ordering-gradebandrow",
+        "exams/models/definition.py",
+        'ordering = ["minimum"]',
+        "ordering = []",
+    ),
+    (
+        "tables-empty-grade-bands",
+        "exams/tables.py",
+        "return [\n        GradeBand(name=row.name, minimum=row.minimum)\n        for row in component.grade_bands.all()\n    ]",
+        "return []",
+    ),
+    (
+        "tables-percentages-not-tuple",
+        "exams/tables.py",
+        "percentages=tuple(row.percentages)",
+        "percentages=row.percentages",
+    ),
+    (
+        # __gte instead of __gt lets a NUMERIC component keep an empty
+        # difference_steps array, which the design says must never happen.
+        "ck-component-steps-numeric",
+        "exams/migrations/0005_alter_examcomponent_difference_steps_and_more.py",
+        '("difference_steps__len__gt", 0), ("marking_scheme", "NUMERIC")',
+        '("difference_steps__len__gte", 0), ("marking_scheme", "NUMERIC")',
+    ),
+    (
+        "uq-row-expert-minimum",
+        "exams/migrations/0004_alter_gradebandrow_minimum_and_more.py",
+        'fields=("component", "expert_minimum"),\n                name="uq_one_row_per_expert_minimum_per_component",',
+        'fields=("component",),\n                name="uq_one_row_per_expert_minimum_per_component",',
     ),
 ]
 

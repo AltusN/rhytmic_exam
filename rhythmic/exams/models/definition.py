@@ -64,6 +64,8 @@ class ExamComponent(models.Model):
             max_digits=4,
             decimal_places=2,
             help_text="The difference step for this component",
+            blank=True,
+            default=list,
         )
     )
 
@@ -79,6 +81,15 @@ class ExamComponent(models.Model):
             models.CheckConstraint(
                 condition=models.Q(marking_scheme__in=MarkingScheme.values),
                 name="ck_component_marking_scheme_is_valid",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    marking_scheme=MarkingScheme.NUMERIC, difference_steps__len__gt=0
+                )
+                | models.Q(
+                    marking_scheme=MarkingScheme.CHOICE, difference_steps__len=0
+                ),
+                name="ck_component_steps_match_marking_scheme",
             ),
         ]
 

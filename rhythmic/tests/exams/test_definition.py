@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import pytest
 from django.apps import apps
 from django.db import IntegrityError
@@ -98,6 +100,7 @@ def test_a_theory_exam_has_one_component():
         position=1,
         marking_scheme=MarkingScheme.CHOICE,
         aspect="",
+        difference_steps=[],
     )
 
     exam.refresh_from_db()
@@ -122,6 +125,7 @@ def test_a_practical_exam_has_four_components_per_aspect():
             position=position,
             marking_scheme=MarkingScheme.NUMERIC,
             aspect=aspect,
+            difference_steps=[Decimal("0.0"), Decimal("0.1"), Decimal("0.2")],
         )
 
     assert exam.components.count() == 4
@@ -140,6 +144,7 @@ def test_a_second_component_for_the_same_aspect_is_refused():
         position=1,
         marking_scheme=MarkingScheme.NUMERIC,
         aspect="DA",
+        difference_steps=[Decimal("0.0"), Decimal("0.1"), Decimal("0.2")],
     )
 
     with pytest.raises(IntegrityError, match="uq_one_component_per_aspect_per_exam"):
@@ -149,6 +154,7 @@ def test_a_second_component_for_the_same_aspect_is_refused():
             position=2,
             marking_scheme=MarkingScheme.NUMERIC,
             aspect="DA",
+            difference_steps=[Decimal("0.0"), Decimal("0.1"), Decimal("0.2")],
         )
 
 
@@ -165,6 +171,7 @@ def test_a_second_component_for_the_same_position_is_refused():
         position=1,
         marking_scheme=MarkingScheme.NUMERIC,
         aspect="DA",
+        difference_steps=[Decimal("0.0"), Decimal("0.1"), Decimal("0.2")],
     )
 
     with pytest.raises(IntegrityError, match="uq_one_component_position_per_exam"):
@@ -174,6 +181,7 @@ def test_a_second_component_for_the_same_position_is_refused():
             position=1,
             marking_scheme=MarkingScheme.NUMERIC,
             aspect="DB",
+            difference_steps=[Decimal("0.0"), Decimal("0.1"), Decimal("0.2")],
         )
 
 
@@ -190,6 +198,7 @@ def test_marking_scheme_is_not_silently_choice():
             name="Practical Component DA-1",
             position=1,
             aspect="DA",
+            difference_steps=[],
         )
 
 
@@ -206,6 +215,7 @@ def test_deleting_an_exam_cascades_to_components():
         position=1,
         marking_scheme=MarkingScheme.NUMERIC,
         aspect="DA",
+        difference_steps=[Decimal("0.0"), Decimal("0.1"), Decimal("0.2")],
     )
 
     exam.delete()
@@ -225,6 +235,7 @@ def test_components_are_ordered_by_position():
         position=2,
         marking_scheme=MarkingScheme.NUMERIC,
         aspect="DA",
+        difference_steps=[Decimal("0.0"), Decimal("0.2"), Decimal("0.4")],
     )
     component2 = ExamComponent.objects.create(
         exam=exam,
@@ -232,7 +243,70 @@ def test_components_are_ordered_by_position():
         position=1,
         marking_scheme=MarkingScheme.NUMERIC,
         aspect="DB",
+        difference_steps=[Decimal("0.0"), Decimal("0.1"), Decimal("0.2")],
     )
 
     components = list(ExamComponent.objects.all())
     assert components == [component2, component1]
+
+
+@pytest.mark.django_db
+def test_a_choice_component_may_not_have_difference_steps():
+    exam = Exam.objects.create(
+        kind=ExamKind.PRACTICAL,
+        level=1,
+        year=2023,
+    )
+    with pytest.raises(IntegrityError, match="ck_component_steps_match_marking_scheme"):
+        ExamComponent.objects.create(
+            exam=exam,
+            name="Practical Component DC-1",
+            position=1,
+            marking_scheme=MarkingScheme.CHOICE,
+            aspect="DC",
+            difference_steps=[Decimal("0.0"), Decimal("0.1"), Decimal("0.2")],
+        )
+
+
+@pytest.mark.django_db
+def test_a_numeric_component_must_have_difference_steps():
+    exam = Exam.objects.create(
+        kind=ExamKind.PRACTICAL,
+        level=1,
+        year=2023,
+    )
+    with pytest.raises(IntegrityError, match="ck_component_steps_match_marking_scheme"):
+        ExamComponent.objects.create(
+            exam=exam,
+            name="Practical Component DD-1",
+            position=1,
+            marking_scheme=MarkingScheme.NUMERIC,
+            aspect="DD",
+            difference_steps=[],
+        )
+
+
+@pytest.mark.django_db
+def test_a_theory_exam_cannot_have_two_aspectless_components():
+    exam = Exam.objects.create(
+        kind=ExamKind.THEORY,
+        level=1,
+        year=2023,
+    )
+    ExamComponent.objects.create(
+        exam=exam,
+        name="Theory Component 1",
+        position=1,
+        marking_scheme=MarkingScheme.CHOICE,
+        aspect="",
+        difference_steps=[],
+    )
+    with pytest.raises(IntegrityError, match="uq_one_component_per_aspect_per_exam"):
+        ExamComponent.objects.create(
+            exam=exam,
+            name="Theory Component 2",
+            position=2,
+            marking_scheme=MarkingScheme.CHOICE,
+            aspect="",
+            difference_steps=[],
+        )
