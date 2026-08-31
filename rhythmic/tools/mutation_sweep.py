@@ -28,6 +28,7 @@ TEST_PATHS = [
     "tests/questions/test_preview.py",
     "tests/exams/test_definition.py",
     "tests/exams/test_tables.py",
+    "tests/exams/test_membership.py",
 ]
 
 # (name, file, text to find, text to put in its place)
@@ -260,6 +261,28 @@ MUTANTS = [
         "exams/migrations/0004_alter_gradebandrow_minimum_and_more.py",
         'fields=("component", "expert_minimum"),\n                name="uq_one_row_per_expert_minimum_per_component",',
         'fields=("component",),\n                name="uq_one_row_per_expert_minimum_per_component",',
+    ),
+    (
+        # question's FK carries the same PROTECT as practical_item's, so the
+        # anchor must include the field name above it to hit only this one.
+        "ondelete-membership-question",
+        "exams/models/membership.py",
+        "question = models.ForeignKey(\n        Question,\n        on_delete=models.PROTECT,",
+        "question = models.ForeignKey(\n        Question,\n        on_delete=models.CASCADE,",
+    ),
+    (
+        "uq-membership-duplicate",
+        "exams/migrations/0007_componentpracticalitem_componentquestion.py",
+        'fields=("component", "question"),\n                        name="uq_one_question_per_component",',
+        'fields=("component", "position"),\n                        name="uq_one_question_per_component",',
+    ),
+    (
+        # Same trap as the on_delete above: ComponentPracticalItem carries an
+        # identical ordering line, so the anchor needs the class header.
+        "ordering-membership",
+        "exams/models/membership.py",
+        'class ComponentQuestion(models.Model):\n    component = models.ForeignKey(\n        ExamComponent,\n        on_delete=models.CASCADE,\n        related_name="question_members",\n    )\n    question = models.ForeignKey(\n        Question,\n        on_delete=models.PROTECT,\n        related_name="component_memberships",\n    )\n    position = models.PositiveSmallIntegerField(\n        help_text="The position of the question within the component."\n    )\n\n    class Meta:\n        ordering = ["position"]',
+        'class ComponentQuestion(models.Model):\n    component = models.ForeignKey(\n        ExamComponent,\n        on_delete=models.CASCADE,\n        related_name="question_members",\n    )\n    question = models.ForeignKey(\n        Question,\n        on_delete=models.PROTECT,\n        related_name="component_memberships",\n    )\n    position = models.PositiveSmallIntegerField(\n        help_text="The position of the question within the component."\n    )\n\n    class Meta:\n        ordering = []',
     ),
 ]
 
