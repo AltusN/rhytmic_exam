@@ -628,6 +628,31 @@ the first test to check it asserts on **identity**, not on counts alone.
 
 # Part B — sittings, the freeze, and results
 
+## Task 6, Step 0: the custom user model — a prerequisite this plan did not have
+
+**Decided 2026-08-30, before any of Task 6 was written.** `Sitting.judge` points at
+`settings.AUTH_USER_MODEL`, which was unset and therefore `auth.User`. The spec's layout
+lists `accounts/  # User, JudgeProfile, …`, so a custom user was always intended — and
+this plan's claim that "the foreign key never has to move" is only true if that user model
+exists *before* the foreign keys are written.
+
+So: create `accounts/` with nothing but `class User(AbstractUser): pass`, add it to
+`INSTALLED_APPS`, and set `AUTH_USER_MODEL = "accounts.User"`. The roster, `JudgeProfile`,
+allauth and permissions stay in the accounts plan; this is only the model swap.
+
+**Why now rather than later.** `simple_history` already added five `history_user` foreign
+keys to `AUTH_USER_MODEL` in `questions/migrations/0005_add_history.py`, committed and
+applied. Task 6 adds two more (`judge`, `certified_by`), Task 7 and 9 more again. Django's
+documented position is that changing `AUTH_USER_MODEL` after tables exist requires manually
+fixing the schema and moving data, and the dev database currently holds **two** user rows.
+The cost only rises from here.
+
+Note the migrations themselves are written against the *setting* — Django emits
+`swappable_dependency(settings.AUTH_USER_MODEL)` — so it is the applied schema, not the
+migration files, that pins the old model.
+
+---
+
 ## Task 6: `Sitting` — enrolment is a pending sitting
 
 **Files:**

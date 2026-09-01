@@ -285,6 +285,8 @@ single page.
 rhythmic/
 ├── config/              # settings, urls, wsgi
 ├── accounts/            # User, JudgeProfile, roster import, allauth, permissions
+│                        # User lands early - AUTH_USER_MODEL must be set before
+│                        # anything points a foreign key at it. The rest follows later.
 ├── questions/           # question bank and content model
 ├── exams/               # exam definitions, sittings, certification
 ├── scoring/             # plain Python. No Django import. No database.
