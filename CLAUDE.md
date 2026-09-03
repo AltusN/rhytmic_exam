@@ -342,12 +342,9 @@ absence as absence, never as a number.
 
 ## Layout
 
-```
-docs/superpowers/{specs,plans}/
-rhythmic/     the new system. Paths in the plan are relative to HERE.
-legacy/
-  flask_backend/    the 2023 Flask app. Reference only. Do not modify or run.
-```
+`docs/superpowers/{specs,plans}/` holds the specs and plans. `rhythmic/` is the new
+system, and **paths in the plans are relative to it**. `legacy/flask_backend/` is the
+2023 Flask app — **reference only, do not modify or run it**.
 
 **Tests live in `rhythmic/tests/`, one subdirectory per package** — `tests/scoring/`,
 `tests/questions/`, `tests/exams/`, `tests/config/`. Reorganised 2026-08-25 from a flat
@@ -504,13 +501,13 @@ says nothing whatever about commit messages; don't mistake one for the other.
 ## Current state
 
 **Three plans finished: the scoring package (seven tasks), the Django skeleton
-(five) and the questions app (nine).** As of 2026-08-30, **169 tests pass** and both
+(five) and the questions app (nine).** As of 2026-08-30 the suite passes and both
 `ruff check .` and `ruff format --check .` are clean. Run all three from `rhythmic/`.
 
 **Postgres must be running for the full suite to pass.** `docker compose up -d` from
 the repository root. `test_django_smoke.py::test_database_is_reachable` needs it, and
-so does every `@pytest.mark.django_db` test in the questions app; the 82 scoring
-tests do not.
+so does every `@pytest.mark.django_db` test in the questions app; the scoring tests
+do not.
 
 **Don't chase a plan's own test-count estimates** — the questions-app plan predicted
 54 by Task 6 and was written before the tests were.
@@ -523,9 +520,9 @@ marking. **Six findings close in it** — F1 and F2 at the freeze, F3 and F4 at 
 the component percentage, F9 at membership, F10/F11/F12 at the two-exam split and the
 dated exam.
 
-**Part A is finished — Tasks 1 to 5 landed**, `f188aa4`, `6dcf513`, `f8c1cb9`, `5b24459`,
-`56b834b`. `Exam` carries level, year and kind; `ExamComponent` is one per marked section;
-`MarkingTableRow` and `GradeBandRow` hold the tables as rows, with `exams/tables.py`
+**Part A is finished — Tasks 1 to 5 landed.** `Exam` carries level, year and kind;
+`ExamComponent` is one per marked section; `MarkingTableRow` and `GradeBandRow` hold
+the tables as rows, with `exams/tables.py`
 adapting them into `scoring/`'s frozen dataclasses; `ComponentQuestion` and
 `ComponentPracticalItem` make membership explicit rows. The plan calls Part A
 independently shippable. **Next action is Part B, Task 6, `Sitting`.** Then accounts and
@@ -557,26 +554,10 @@ SURVIVED mutant is a change to the code nobody noticed. Run from `rhythmic/`:
 ../.venv/bin/python tools/mutation_sweep.py
 ```
 
-First run against the finished questions app, 2026-08-22: **20 mutants, 11 killed,
-9 survived.** After Task 8, 2026-08-23: **21 mutants, 20 killed, 1 survived**. After
-Task 9, 2026-08-24: **23 mutants, 22 killed, 1 survived** — the survivor,
-`list_filter` on aspect, is the one Task 8 declared out of scope. Task 9 added the
-catalogue's first **template** mutant; nothing in the tool assumed Python. After
-Task 2 of the exams plan, 2026-08-27: **26 mutants, 25 killed, 1 survived**, the same
-survivor. After Task 4, 2026-08-30: **37 mutants, 36 killed, 1 survived**, still the same
-one. After Task 5, 2026-08-30: **40 mutants, 39 killed, 1 survived**, still the same one.
-
-**The sweep scopes each mutant to its app's tests, cheapest file first** (`86d24a4`). It ran
-everything for every mutant and had started exceeding two minutes. The cost turned out to be
-test selection, not the database — `--create-db` is only 0.6s dearer than `--reuse-db`, while
-`test_admin` is 3.9s and `test_preview` 2.4s against 0.3-0.8s for every other file. Scoping
-took an exams mutant from 6.2s to 0.7s and the whole run to 82s, verdicts unchanged.
-
-**A mutant that survives its scope is re-run against everything before being reported**, and
-that guard is the point. A KILLED verdict holds whatever the scope, because a test objected;
-a SURVIVED verdict does not, because the killing test may not have run. Not parallelised
-deliberately: the sweep mutates files in the working tree, so concurrent workers would each
-need a git worktree and their own test database.
+Latest run, after Task 5 of the exams plan, 2026-08-30: **40 mutants, 39 killed,
+1 survived** — the survivor is `list_filter` on aspect, which Task 8 declared out of
+scope. **How the sweep scopes its tests, which mutants need `--create-db`, where a
+claim actually lives and what `UNAPPLIED` means are in the `mutation-sweep` skill.**
 
 **Three near-misses in Task 4, all the same shape: the test's inputs matched what the
 mutation would produce, so the assertion could not see it.**
@@ -595,44 +576,6 @@ structural one on what was built. The structural assertion — comparing a whole
 a tuple literal — killed both the reversal and a `list`-instead-of-`tuple` mutation that has
 no behavioural symptom at all.
 
-**Mutate where the claim actually lives, and know which ones need a fresh database.**
-A `UniqueConstraint` or `CheckConstraint` is DDL: it must be mutated in the
-**migration**, because the test database is built from migrations and not from
-`models.py`. `Meta.ordering`, `default=`, `__str__` and `on_delete` produce no DDL, so
-they are mutated in the **model** — pointing an ordering mutant at a migration's
-`options` dict is unfalsifiable in both directions, and reported `UNAPPLIED` when it
-was tried on 2026-08-27.
-
-**The sweep used to run everything under `--reuse-db`, and that made migration mutants
-unfalsifiable** (fixed 2026-08-27, `8f4c345`). pytest-django reuses the existing test
-database and never re-applies migrations, so a mutated migration never reached the
-schema and came back `SURVIVED`. Verified on `Exam`'s unique constraint: same
-mutation, **6 passed** under `--reuse-db`, **2 failed** under `--create-db`. A false
-`SURVIVED` is the expensive direction — it reads as a gap in the suite and sends you
-to rewrite tests that were already correct. Mutants whose target path contains
-`migrations` now get `--create-db`; the rest keep `--reuse-db`.
-
-**`UNAPPLIED` is the sweep's most valuable line and the easiest to skim past.** It
-does not mean the claim is safe; it means the tool could not find the code to break,
-so it reported *nothing at all* about that claim. Exact-string matching plus a loud
-`UNAPPLIED` is what makes the report trustworthy when the code moves underneath it —
-a regex would have silently mutated something else. The consequence is that **the
-catalogue is maintained alongside the code, exactly like a test**: refactor a model
-and the sweep starts reporting less than it did, with no change in the survivor
-count. `ordering-routine` went `UNAPPLIED` the moment Task 8 changed the ordering.
-
-**The sweep cannot reach the schema, and that is a finding in itself.** The test
-database is built from `questions/migrations/`, not from `models.py`, so renaming
-`uq_one_correct_option_per_question` in the model passes the whole suite. Every
-constraint test in this project therefore tests the *migration*, and is only as
-trustworthy as someone having remembered to run `makemigrations`. Task 8 closed that
-with `test_dry_run_makemigrations`, which is what makes the rest mean what they
-appear to mean.
-
-New mutants belong in the catalogue as behaviour is added — the file is a record of
-what the code claims, which is why it is worth keeping rather than being a one-off
-script.
-
 **The three finished plans' commit-by-commit history lives in**
 `docs/superpowers/decisions-log.md` — the scoring package (`c0839c5`…`c54d8c5`), the
 Django skeleton (`13262c1`…`37500f1`) and the questions app (`d035ce8`…`797b09f`).
@@ -642,37 +585,8 @@ keyword-only, why `grade` consumes a rounded value, why `Routine.Meta.ordering` 
 a `pk` tiebreak, why deferred constraints are invisible to `pytest-django`, and why a
 missing name in a Django template renders as nothing at all.
 
-### Known limitation: authoring an option takes five saves
-
-**Django's admin does not nest inlines two levels deep**, and an option's text lives
-in an `OptionBlock`. So the Question page offers `QuestionBlock` and `Option` inlines
-— siblings, both children of `Question` — and an option's *text* is not reachable
-from it. Confirmed by inspecting the registry: `Question` carries
-`['QuestionBlock', 'Option']`, `Option` carries `['OptionBlock']`, and `OptionBlock`
-is not reachable from the Question page at all.
-
-Authoring one four-option question is therefore: create the options on the Question
-page (`position` and `is_correct` only), save, then open each Option separately and
-add its block. Five saves, four of them on pages the author has to know exist. Found
-2026-08-24 with eight real options in the dev database holding zero blocks and
-rendering as four empty `<li>` elements.
-
-**This weakens a claim the questions-app plan made** — that bulk import was
-unnecessary "because the admin is the authoring surface". It is the authoring
-surface; it is a slow one.
-
-**Not fixed, deliberately.** There is no question bank to enter yet, and the right
-shape depends on how many options are images rather than text — which the media
-migration will answer. Three routes when it matters: accept it; add a `text` field to
-`OptionInline` that writes an `OptionBlock` in `save_related`, which covers text-only
-options and still sends image options to the second page; or take
-`django-nested-admin`, which is a dependency that overrides a lot of admin internals.
-
-**A related trap for whoever hits this next.** `QuestionBlock` is *not* a question —
-the blocks of a `Question` are the parts of one stem, assembled in `position` order,
-and the options belong to the question as a whole. Two questions means two `Question`
-rows. A stem of two paragraphs renders its options after the second one, which reads
-like the options attached themselves to the wrong block.
+**Authoring an option in the admin takes five saves**, and the three fix routes are
+known — see `rhythmic/questions/CLAUDE.md`, which loads when you work in that app.
 
 ### Environment
 

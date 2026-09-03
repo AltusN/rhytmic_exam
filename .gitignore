@@ -26,3 +26,8 @@ rhytmic.log*
 
 # Uploaded media, Never committed
 rhythmic/media/
+
+# Machine-local Claude Code config: absolute paths and this clone's permission
+# grants. `.claude/skills/` is shared and stays tracked.
+.claude/settings.local.json
+.claude/settings.local.json.doctor-backup
