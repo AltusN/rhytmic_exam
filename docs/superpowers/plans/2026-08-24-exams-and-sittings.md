@@ -751,7 +751,7 @@ off `Sitting`.
 **Interfaces:**
 - Consumes: `Sitting`, `ExamComponent`, the membership models.
 - Produces: `SittingItem(sitting, component_name, component_position, marking_scheme,
-  position, question_snapshot, marking_key, response, marks_awarded, max_marks)`;
+  position, question_snapshot, marking_key, response, percentage)`;
   `start_sitting(sitting) -> None`.
 
 **This task is F1.** Legacy recomputed a result from the live question bank every time it
@@ -786,8 +786,22 @@ hat. Grouping items for `score_component` must use the frozen name.
 `question_snapshot`, `marking_key` and `response` are `JSONField`. `response` gets
 `null=True` and **no default** — absence is not a value, and `{}` would be a response.
 
-`marks_awarded` a `DecimalField(null=True)` — null until submission, not zero.
-`max_marks` a `DecimalField`.
+`percentage` a `DecimalField(max_digits=5, decimal_places=2, null=True)` — null until
+submission, **not zero**. Null is the F10/F3 distinction: unmarked is not the same as
+scored nothing.
+
+**It is called `percentage`, not `marks_awarded`, and there is no `max_marks`** (revised
+2026-09-03). `mark_choice` returns `Decimal("100")` or `Decimal("0")` and `mark_numeric`
+returns a `table.lookup`, so what lands here is already a percentage — `score_component`
+even names its parameter `item_percentages`. Calling it marks is **F5's exact slip**:
+legacy summed twenty marks worth five each and printed the total with a `%` on it, with
+nothing in the code recording that the two were different quantities. `max_marks` was
+dropped because nothing in Tasks 8 or 9 reads it, and nothing can: at `100` it is a
+constant column, and at `5` it is the marks-based model this rebuild abandoned.
+
+`max_digits=5` is load-bearing — a percentage reaches `100.00`, which is five digits, and
+Postgres **errors** rather than rounds on precision overflow. `max_digits=4` would fit
+`99.99` and reject a full score.
 
 `Meta.constraints`: `UniqueConstraint(("sitting", "position"))`.
 `Meta.ordering = ["position"]`.
@@ -860,7 +874,7 @@ copied rather than referenced so a later edit cannot regroup a finished result.
 - Consumes: `SittingItem`, `exams.tables`, `scoring.mark_choice`, `scoring.mark_numeric`.
 - Produces: `record_response(item, response) -> None`, `submit_sitting(sitting) -> None`.
 
-**Marks are stored, not recomputed.** `submit_sitting` writes `marks_awarded` onto every
+**Marks are stored, not recomputed.** `submit_sitting` writes `percentage` onto every
 item once. Nothing later recalculates it.
 
 - [ ] **Step 1: Write `record_response`**
@@ -873,7 +887,7 @@ runner concern, not a model one.
 
 For each item: `mark_choice(response, key)` when `marking_scheme` is `CHOICE`,
 `mark_numeric(response, expert_score, table)` when `NUMERIC`. Store the result in
-`marks_awarded`. Set `status=SUBMITTED`, `submitted_at=timezone.now()`.
+`percentage`. Set `status=SUBMITTED`, `submitted_at=timezone.now()`.
 
 `to_decimal` turns the stored string key into a `Decimal`. **Never `float(...)`** — F3.
 
@@ -887,10 +901,10 @@ next reader will conflate them — legacy did.
 | test | asserts |
 |---|---|
 | `test_a_correct_choice_scores_full_marks` | 100 |
-| `test_an_unanswered_item_scores_zero_but_is_not_absent` | `marks_awarded == 0` **and** the item exists — the F10/F3 distinction |
+| `test_an_unanswered_item_scores_zero_but_is_not_absent` | `percentage == 0` **and** the item exists — the F10/F3 distinction |
 | `test_a_numeric_response_is_marked_through_the_marking_table` | a known cell, asserted as `Decimal`, after reload |
 | `test_an_unreadable_numeric_response_scores_zero` | `"abc"` → 0, not a crash — **F4** |
-| `test_marks_are_not_recomputed_after_submission` | **the F1 test with teeth** — submit, then change the marking table rows *and* the question, reload, assert `marks_awarded` is unchanged |
+| `test_marks_are_not_recomputed_after_submission` | **the F1 test with teeth** — submit, then change the marking table rows *and* the question, reload, assert `percentage` is unchanged |
 | `test_submitting_twice_raises` | guard |
 
 - [ ] **Step 4: Run red, implement, green**
@@ -936,7 +950,7 @@ name from Task 7, which is what groups the items. `percentage` a
 - [ ] **Step 2: Extend `submit_sitting`**
 
 After marking every item, group them by `component_name`, call `score_component` on each
-group's `marks_awarded`, then `grade(percentage=..., bands=build_grade_bands(...))`, and
+group's `percentage`, then `grade(percentage=..., bands=build_grade_bands(...))`, and
 write one `ComponentResult` per group.
 
 `score_component` **raises** on an empty sequence rather than returning 0 — let it. A
