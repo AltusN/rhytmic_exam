@@ -35,8 +35,12 @@ EXAMS_TESTS = [
     "tests/exams/test_membership.py",
     "tests/exams/test_tables.py",
     "tests/exams/test_definition.py",
+    "tests/exams/test_sitting.py",
 ]
-TEST_PATHS = EXAMS_TESTS + QUESTIONS_TESTS
+# Only added to the fallback, never to a per-app scope: this is the one test that
+# catches model-versus-migration drift across every app, and the re-run against
+# "everything" should mean that.
+TEST_PATHS = EXAMS_TESTS + QUESTIONS_TESTS + ["tests/config/test_smoke.py"]
 
 # Which tests can plausibly kill a mutant, by the app its target lives in. Scoping
 # is what makes the sweep quick: an exams mutant took 6.2s against everything and
@@ -299,6 +303,39 @@ MUTANTS = [
         "exams/migrations/0007_componentpracticalitem_componentquestion.py",
         'fields=("component", "question"),\n                        name="uq_one_question_per_component",',
         'fields=("component", "position"),\n                        name="uq_one_question_per_component",',
+    ),
+    (
+        "history-off-sitting",
+        "exams/models/sitting.py",
+        "outcome = models.CharField(max_length=255, blank=True)\n\n    history = HistoricalRecords()",
+        "outcome = models.CharField(max_length=255, blank=True)",
+    ),
+    (
+        "ondelete-sitting-judge",
+        "exams/models/sitting.py",
+        'settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="sittings"',
+        'settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sittings"',
+    ),
+    (
+        "status-default-pending",
+        "exams/models/sitting.py",
+        "max_length=11, choices=Status.choices, default=Status.PENDING",
+        "max_length=11, choices=Status.choices, default=Status.SUBMITTED",
+    ),
+    (
+        # Schema-level: no such constraint exists, so this needs --create-db to
+        # take effect. Only "retake the same exam" (test 2) tells this apart
+        # from unique-judge-exam-sitting below.
+        "unique-judge-sitting",
+        "exams/migrations/0008_historicalsitting_sitting.py",
+        '            options={\n                "ordering": ["exam", "started_at", "pk"],\n            },\n        ),\n    ]',
+        '            options={\n                "ordering": ["exam", "started_at", "pk"],\n            },\n        ),\n        migrations.AddConstraint(\n            model_name="sitting",\n            constraint=models.UniqueConstraint(\n                fields=("judge",), name="uq_test_mutant_judge_only"\n            ),\n        ),\n    ]',
+    ),
+    (
+        "unique-judge-exam-sitting",
+        "exams/migrations/0008_historicalsitting_sitting.py",
+        '            options={\n                "ordering": ["exam", "started_at", "pk"],\n            },\n        ),\n    ]',
+        '            options={\n                "ordering": ["exam", "started_at", "pk"],\n            },\n        ),\n        migrations.AddConstraint(\n            model_name="sitting",\n            constraint=models.UniqueConstraint(\n                fields=("judge", "exam"), name="uq_test_mutant_judge_exam"\n            ),\n        ),\n    ]',
     ),
     (
         # Same trap as the on_delete above: ComponentPracticalItem carries an

@@ -10,6 +10,7 @@ from exams.models.membership import (
     ComponentPracticalItem,
     ComponentQuestion,
 )
+from exams.models.sitting import Sitting, Status
 
 __all__ = [
     "Exam",
@@ -20,4 +21,6 @@ __all__ = [
     "GradeBandRow",
     "ComponentQuestion",
     "ComponentPracticalItem",
+    "Sitting",
+    "Status",
 ]
