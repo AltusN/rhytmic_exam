@@ -26,8 +26,13 @@ web = [
 
 [tool.ruff]
 line-length = 88
+# `*.md` mirrors the root ruff.toml. Ruff resolves the nearest config per file, so
+# nothing under rhythmic/ ever sees the root guard -- and `ruff format` reformats
+# Python code blocks INSIDE markdown, which is how a plan's `    "questions",` became
+# `("questions",)` on 2026-08-25. There is markdown under rhythmic/ now.
 extend-exclude = [
-    "build/"
+    "build/",
+    "*.md"
 ]
 
 [tool.ruff.lint]
