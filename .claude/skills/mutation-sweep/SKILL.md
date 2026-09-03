@@ -68,3 +68,35 @@ New mutants belong in the catalogue as behaviour is added — the file is a reco
 what the code claims, which is why it is worth keeping rather than being a one-off
 script.
 
+## The survivor re-run must actually run everything
+
+`TEST_PATHS` was `EXAMS_TESTS + QUESTIONS_TESTS` until Task 6 — no `tests/config/`, so
+the one test that catches model-versus-migration drift across every app sat outside the
+net that is supposed to be the last word. Demonstrated live rather than reasoned about:
+reversing `Sitting.Meta.ordering` survives `tests/exams/` and dies against
+`tests/config/test_smoke.py::test_dry_run_makemigrations`. That file is now in
+`TEST_PATHS` and in no per-app scope, so only survivors pay for it.
+
+Note *how* it kills. `test_dry_run_makemigrations` objects to the model and the
+migration disagreeing, not to the ordering being wrong — nothing asserts `Sitting`
+ordering anywhere. A KILLED from that test means "you forgot `makemigrations`", never
+"this claim is pinned".
+
+**Mutate a `Meta.ordering` by changing it, not by deleting it.** Deleting the line
+leaves an empty `class Meta:` and the file will not import, which is unfalsifiable in
+both directions.
+
+## Some tests have no mutant, and that is worth knowing rather than hunting
+
+Two from Task 6:
+
+- `test_a_judge_accumulates_sittings_over_years` is **subsumed** by the retake test —
+  every mutant that kills the first kills the second, so it adds no coverage on that
+  axis.
+- The F10 marker cannot be killed at all. The two `ExamKind` members can never collide,
+  because `TextChoices` calls `enum.unique` at class creation and the mutation raises
+  `ValueError` at *import*; `ck_exam_kind_is_valid` guards the column independently.
+
+Both are **documentation tests**: they record a claim for whoever later proposes
+changing it. Don't manufacture a catalogue entry for one, and don't read the absence of
+a mutant as a gap in the suite — that is what separates it from a SURVIVED.

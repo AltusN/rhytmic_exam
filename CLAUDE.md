@@ -83,6 +83,15 @@ a different disguise:
   `test_preview_requires_staff` with an anonymous client. Anonymous is redirected by
   `login_required` too, so it passes against the decorator the task exists to reject.
   Only a **signed-in non-staff** user separates them.
+- **the assertion reads the instance, not the row** — Task 6's
+  `assert sitting.status == Status.PENDING` on what `create()` returned. Django applies
+  `default=` in `Model.__init__`, in Python, before anything reaches Postgres, so that
+  asserts *Django applied the field default* rather than anything about the stored row.
+  Proved by giving `save()` a trailing `.update(status=SUBMITTED)`: the row said
+  `SUBMITTED`, the assertion read `PENDING` off the stale instance, and every test
+  passed. `refresh_from_db()` or a re-query closes it. This one matters beyond its own
+  test — **F1's whole complaint is that legacy recomputed results instead of recording
+  them, so every assertion here should be asking what the database holds.**
 
 Reading an assertion and judging it is what failed: nine of the first ten were caught
 late, the prefix one survived **two** review rounds after the trap had been named
@@ -90,8 +99,17 @@ twice in the same session, and the tenth was read and passed twice by Claude. Br
 the code and watching the test fail has never failed — `bisect_right - 1`,
 `get_queryset` returning `.none()`, `if False:` on the option rule, and the whole of
 Tasks 8 and 9. **Task 9 is the first task where every test was shown red before
-acceptance**, and both of its vacuous assertions died on the first review round
-instead of surviving several.
+acceptance**, and Task 6 of the exams plan was the second; both of Task 6's vacuous
+assertions died on the first review round.
+
+**To choose between two candidate assertions, find a mutant that lands in the gap
+between them.** Task 6's `default → SUBMITTED` mutant killed the in-memory and the
+refetched form equally, so it said nothing about which was stronger; only a mutation
+making the instance and the row *disagree* separated them. A mutant both candidates
+catch is not evidence that they are equivalent.
+
+**Some tests have no mutant, and that is worth knowing rather than hunting** — see the
+`mutation-sweep` skill for the two Task 6 examples and what to do about them.
 
 **Prefer an assertion that states the property over one that forbids a symptom.**
 Task 9's replacement gives two options identical visible content, differing only in
@@ -524,15 +542,26 @@ dated exam.
 `ExamComponent` is one per marked section; `MarkingTableRow` and `GradeBandRow` hold
 the tables as rows, with `exams/tables.py`
 adapting them into `scoring/`'s frozen dataclasses; `ComponentQuestion` and
-`ComponentPracticalItem` make membership explicit rows. The plan calls Part A
-independently shippable. **Next action is Part B, Task 6, `Sitting`.** Then accounts and
-the roster, then the React island last.
+`ComponentPracticalItem` make membership explicit rows.
+
+**Part B has started — Task 6 landed, `e33870b`.** `Sitting` is judge · exam with a
+status defaulting to `PENDING`, nullable `started_at`/`submitted_at`/`certified_at`,
+a `certified_by` pointing at the official rather than the candidate, and
+`HistoricalRecords`. **Next action is Task 7, `SittingItem` and the freeze.** Then
+accounts and the roster, then the React island last.
 
 **F9 is closed, and closed by absence.** There is no level field on a membership row and no
 comparison to a candidate's level anywhere — selection is "the component's members", so
 legacy's `exam_level == user.level` has nothing to be written against. F10, F11 and F12
 went with the two-exam split and the dated exam. What remains for Part B is F1 and F2 at
 the freeze, F3 and F4 at marking, and F5 at the component percentage.
+
+**F10 and F11 now have tests as well as a design.** A pending sitting *is* the
+enrolment, so a candidate who did not sit the practical has no practical sitting and
+legacy's fabricated `"0"` has no field to occupy. Nothing constrains `(judge)` or
+`(judge, exam)`, which is what lets a judge accumulate sittings and retake — the two
+migration mutants `unique-judge-sitting` and `unique-judge-exam-sitting` are what pin
+that absence, since a diff cannot show a constraint that was never written.
 
 **Still unguarded, and worth knowing before Part B.** `Exam.kind` and `ExamComponent.aspect`
 are unconnected: a `THEORY` exam with a `DA` component is representable and nothing objects,
@@ -554,10 +583,14 @@ SURVIVED mutant is a change to the code nobody noticed. Run from `rhythmic/`:
 ../.venv/bin/python tools/mutation_sweep.py
 ```
 
-Latest run, after Task 5 of the exams plan, 2026-08-30: **40 mutants, 39 killed,
-1 survived** — the survivor is `list_filter` on aspect, which Task 8 declared out of
-scope. **How the sweep scopes its tests, which mutants need `--create-db`, where a
-claim actually lives and what `UNAPPLIED` means are in the `mutation-sweep` skill.**
+Latest run, after Task 6, 2026-09-03: **45 mutants, 44 killed, 1 survived** — the
+survivor is `list_filter` on aspect, which Task 8 declared out of scope and which has
+now survived seven consecutive runs. **How the sweep scopes its tests, which mutants
+need `--create-db`, where a claim actually lives and what `UNAPPLIED` means are in the
+`mutation-sweep` skill.**
+
+**The survivor re-run was not actually running everything, and Task 6 caught it**
+(fixed `e33870b`; the mechanism is in the `mutation-sweep` skill).
 
 **Three near-misses in Task 4, all the same shape: the test's inputs matched what the
 mutation would produce, so the assertion could not see it.**
