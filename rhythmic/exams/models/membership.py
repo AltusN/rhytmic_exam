@@ -65,9 +65,3 @@ class ComponentPracticalItem(models.Model):
 
     def __str__(self) -> str:
         return f"{self.component} - {self.practical_item} (Position: {self.position})"
-
-
-__all__ = [
-    "ComponentQuestion",
-    "ComponentPracticalItem",
-]

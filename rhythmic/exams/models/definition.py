@@ -147,13 +147,3 @@ class GradeBandRow(models.Model):
                 fields=["component", "name"], name="uq_one_band_per_name_per_component"
             )
         ]
-
-
-__all__ = [
-    "Exam",
-    "ExamKind",
-    "ExamComponent",
-    "MarkingScheme",
-    "MarkingTableRow",
-    "GradeBandRow",
-]
