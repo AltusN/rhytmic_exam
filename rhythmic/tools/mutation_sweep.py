@@ -36,6 +36,7 @@ EXAMS_TESTS = [
     "tests/exams/test_tables.py",
     "tests/exams/test_definition.py",
     "tests/exams/test_sitting.py",
+    "tests/exams/test_freeze.py",
 ]
 # Only added to the fallback, never to a per-app scope: this is the one test that
 # catches model-versus-migration drift across every app, and the re-run against
@@ -344,6 +345,57 @@ MUTANTS = [
         "exams/models/membership.py",
         'class ComponentQuestion(models.Model):\n    component = models.ForeignKey(\n        ExamComponent,\n        on_delete=models.CASCADE,\n        related_name="question_members",\n    )\n    question = models.ForeignKey(\n        Question,\n        on_delete=models.PROTECT,\n        related_name="component_memberships",\n    )\n    position = models.PositiveSmallIntegerField(\n        help_text="The position of the question within the component."\n    )\n\n    class Meta:\n        ordering = ["position"]',
         'class ComponentQuestion(models.Model):\n    component = models.ForeignKey(\n        ExamComponent,\n        on_delete=models.CASCADE,\n        related_name="question_members",\n    )\n    question = models.ForeignKey(\n        Question,\n        on_delete=models.PROTECT,\n        related_name="component_memberships",\n    )\n    position = models.PositiveSmallIntegerField(\n        help_text="The position of the question within the component."\n    )\n\n    class Meta:\n        ordering = []',
+    ),
+    (
+        # Drops the correctness filter, so the generator yields the first option
+        # regardless of is_correct. Only a snapshot assertion on which option is
+        # actually recorded correct catches this.
+        "freeze-key-ignores-correctness",
+        "exams/freeze.py",
+        "(option for option in question.options.all() if option.is_correct), None",
+        "(option for option in question.options.all()), None",
+    ),
+    (
+        "freeze-empty-blocks",
+        "exams/freeze.py",
+        '"blocks": [_block(block) for block in question.blocks.all()],',
+        '"blocks": [],',
+    ),
+    (
+        "freeze-position-constant",
+        "exams/freeze.py",
+        "position=next(positions),",
+        "position=1,",
+    ),
+    (
+        "freeze-expert-score-float",
+        "exams/freeze.py",
+        '"expert_score": str(practical_item.expert_score),',
+        '"expert_score": str(float(practical_item.expert_score)),',
+    ),
+    (
+        # Reads sitting.status off the caller's object instead of the row the
+        # select_for_update just locked -- the bug this actually shipped with,
+        # found by probe rather than by a test. test_starting_an_already_started
+        # _sitting_raises kills it precisely because it does NOT refresh the
+        # sitting: start_sitting rebinds its local to the re-fetched row, so the
+        # caller's object still reads PENDING and the second call can only raise
+        # by consulting the database. Put a refresh_from_db back in that test and
+        # this mutant survives.
+        "freeze-guard-before-lock",
+        "exams/freeze.py",
+        "        sitting = Sitting.objects.select_for_update().get(pk=sitting.pk)\n"
+        "        if sitting.status != Status.PENDING:\n"
+        "            raise SittingAlreadyStarted()",
+        "        if sitting.status != Status.PENDING:\n"
+        "            raise SittingAlreadyStarted()\n"
+        "        sitting = Sitting.objects.select_for_update().get(pk=sitting.pk)",
+    ),
+    (
+        "ordering-sittingitem",
+        "exams/models/sitting.py",
+        'ordering = ["position", "pk"]',
+        'ordering = ["-position", "pk"]',
     ),
 ]
 

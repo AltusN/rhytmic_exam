@@ -10,7 +10,7 @@ from exams.models.membership import (
     ComponentPracticalItem,
     ComponentQuestion,
 )
-from exams.models.sitting import Sitting, Status
+from exams.models.sitting import Sitting, SittingItem, Status
 
 __all__ = [
     "Exam",
@@ -23,4 +23,5 @@ __all__ = [
     "ComponentPracticalItem",
     "Sitting",
     "Status",
+    "SittingItem",
 ]

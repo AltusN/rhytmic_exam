@@ -42,3 +42,26 @@ class Sitting(models.Model):
         if self.certified_by:
             return f"{self.exam} - {self.judge} - {self.status} - Certified by {self.certified_by}"
         return f"{self.exam} - {self.judge} - {self.status}"
+
+
+class SittingItem(models.Model):
+    sitting = models.ForeignKey(Sitting, on_delete=models.CASCADE, related_name="items")
+    component_name = models.CharField(max_length=50)
+    component_position = models.PositiveSmallIntegerField()
+    marking_scheme = models.CharField(max_length=7)
+    position = models.PositiveSmallIntegerField()
+    question_snapshot = models.JSONField()
+    marking_key = models.JSONField()
+    response = models.JSONField(null=True)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+
+    class Meta:
+        ordering = ["position", "pk"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["sitting", "position"], name="uq_one_item_position_per_sitting"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.component_name} - {self.position}"
