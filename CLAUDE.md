@@ -92,6 +92,15 @@ a different disguise:
   passed. `refresh_from_db()` or a re-query closes it. This one matters beyond its own
   test — **F1's whole complaint is that legacy recomputed results instead of recording
   them, so every assertion here should be asking what the database holds.**
+- **the test is never collected at all** — Task 7's F1 test, written as
+  `def the_snapshot_survives_editing_the_question(...)` with the `test_` prefix
+  dropped. This is the limiting case of the whole list: not a weak assertion but no
+  assertion, because pytest's default `python_functions = test*` skips the function
+  and the file still appears in the run contributing zero. Neither pytest nor ruff
+  says anything. It hid behind an `ImportError` until the module existed, and would
+  then have gone quiet inside a green suite. The defence is the one already in place —
+  **a test that cannot run cannot go red**, so watching each new test fail catches it
+  and reading the file does not.
 
 Reading an assertion and judging it is what failed: nine of the first ten were caught
 late, the prefix one survived **two** review rounds after the trap had been named
@@ -125,6 +134,20 @@ demonstrably not a reliable trigger:
   tests"** — Task 7's step said exactly that and neither of us held it.
 - **Claude mutates and reports** as part of the review round, not when something
   looks off. Name the line that must break to make this test fail, then break it.
+- **Claude also writes the catalogue entries in `tools/mutation_sweep.py`** (agreed
+  2026-09-06), and explains what each mutation does and which assertion kills it. It
+  is review apparatus rather than implementation, and Claude has already run every
+  mutation by the time the task ends — having Altus re-type them taught nothing and
+  lost the reasoning behind each anchor.
+- **Before asking for an extra assertion, name the mutant it catches that the
+  existing ones don't.** Three times in Task 7 Claude asked for a supplementary
+  assertion that no mutant could reach: `items.count() == 1` after the freeze guard
+  (pre-empted by `uq_one_item_position_per_sitting`, which refuses the second write
+  first), `response == {}` beside `response is None` (a property of `JSONField`, not
+  of this code), and `items.count() == 0` after the answer-key guard (pre-empted by
+  `transaction.atomic()` rolling the writes back). This is the same rule already
+  written down for choosing between two candidate assertions, applied to review
+  instead of to test design — and it is the reviewer who keeps breaking it.
 - **A test whose subject is a rendered page must be run with the row absent first.**
   Assert the string is missing, then assert it is present. Task 9 is templates, where
   every assertion is a substring of a page full of Django's own strings — the highest
